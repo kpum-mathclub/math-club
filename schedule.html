@@ -89,8 +89,9 @@
   new p5(p => {
     let circles = [];
     const numRings = 20;
-    const pointsPerRing = 6;
+    const pointsPerRing = 5;
     let trailBuffer;
+    let boosting = false;
 
     p.setup = () => {
       const cnv = p.createCanvas(p.windowWidth, p.windowHeight);
@@ -99,7 +100,6 @@
       cnv.style('pointer-events', 'none');
       p.angleMode(p.DEGREES);
 
-      // 軌跡描画用の別レイヤー
       trailBuffer = p.createGraphics(p.width, p.height);
       trailBuffer.clear();
       trailBuffer.angleMode(p.DEGREES);
@@ -111,11 +111,12 @@
         const radius = r * 40;
         for (let i = 0; i < pointsPerRing; i++) {
           const angle = p.random(360);
-          const speed = p.random(0.2, 1.0) * (r * 0.2);
+          const baseSpeed = p.random(0.1, 0.5) * (r * 0.1);
           circles.push({
             r: radius,
             angle: angle,
-            speed: speed,
+            baseSpeed: baseSpeed,
+            currentSpeed: baseSpeed,
             centerX,
             centerY
           });
@@ -124,31 +125,45 @@
     };
 
     p.draw = () => {
-      // フェードアウト効果（半透明白で塗り重ねる）
-      trailBuffer.fill(255, 255, 255, 20);  // 透明度20
+      // フェードアウトで残像
+      trailBuffer.fill(255, 255, 255, 20);
       trailBuffer.noStroke();
       trailBuffer.rect(0, 0, p.width, p.height);
 
       for (let c of circles) {
+        // ブースト判定
+        let speedFactor = boosting ? 5 : 0.4;
+        c.currentSpeed = c.baseSpeed * speedFactor;
+
         const x = c.centerX + p.cos(c.angle) * c.r;
         const y = c.centerY + p.sin(c.angle) * c.r;
 
-        // 軌跡（背景バッファに描画）
+        // 軌跡
         trailBuffer.noStroke();
         trailBuffer.fill(0, 100);
         trailBuffer.ellipse(x, y, 4);
 
-        // 中心の点
+        // 中心点
         p.noStroke();
         p.fill(0);
         p.ellipse(x, y, 6);
 
-        c.angle += c.speed;
+        c.angle += c.currentSpeed;
       }
 
-      // 軌跡レイヤーをメインキャンバスに合成
       p.image(trailBuffer, 0, 0);
     };
+
+    p.touchStarted = () => {
+      boosting = true;
+    };
+
+    p.touchEnded = () => {
+      boosting = false;
+    };
+
+    p.mousePressed = () => { boosting = true; };   // PC対応
+    p.mouseReleased = () => { boosting = false; };
 
     p.windowResized = () => {
       p.resizeCanvas(p.windowWidth, p.windowHeight);
