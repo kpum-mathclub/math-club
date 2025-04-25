@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
   <meta charset="UTF-8">
   <title>活動予定 | 数学研究部</title>
   <style>
@@ -87,5 +88,111 @@
       <td>外部講師による特別講演</td>
     </tr>
   </table>
+  <!-- 幾何学模様用canvas -->
+<script>
+  let circles = [];
+  let polygons = [];
+
+  function setup() {
+    let cnv = createCanvas(windowWidth, windowHeight);
+    cnv.position(0, 0);
+    cnv.style('z-index', '-1');
+    angleMode(DEGREES);
+    noStroke();
+
+    for (let i = 0; i < 3; i++) {
+      circles.push({
+        x: random(150, width - 150),
+        y: random(150, height - 150),
+        r: random(60, 100),
+        angle: random(360),
+        speed: random(0.5, 1.2)
+      });
+    }
+
+    for (let sides = 3; sides <= 6; sides++) {
+      polygons.push(new PolygonWalker(
+        random(150, width - 150),
+        random(150, height - 150),
+        random(60, 90),
+        sides,
+        random(1, 2)
+      ));
+    }
+  }
+
+  function draw() {
+    background(255);
+
+    fill(0, 20);
+    noStroke();
+    for (let c of circles) {
+      ellipse(c.x, c.y, c.r * 2);
+    }
+
+    fill(0);
+    for (let c of circles) {
+      let bx = c.x + cos(c.angle) * c.r;
+      let by = c.y + sin(c.angle) * c.r;
+      ellipse(bx, by, 10, 10);
+      c.angle += c.speed;
+    }
+
+    stroke(0, 60);
+    noFill();
+    for (let p of polygons) {
+      p.update();
+      p.draw();
+    }
+  }
+
+  function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+  }
+
+  class PolygonWalker {
+    constructor(x, y, r, sides, speed) {
+      this.x = x;
+      this.y = y;
+      this.r = r;
+      this.sides = sides;
+      this.speed = speed;
+      this.points = [];
+
+      for (let i = 0; i < sides; i++) {
+        let angle = 360 / sides * i - 90;
+        let px = this.x + cos(angle) * r;
+        let py = this.y + sin(angle) * r;
+        this.points.push(createVector(px, py));
+      }
+
+      this.currentEdge = 0;
+      this.t = 0;
+    }
+
+    update() {
+      this.t += this.speed * 0.01;
+      if (this.t >= 1) {
+        this.t = 0;
+        this.currentEdge = (this.currentEdge + 1) % this.sides;
+      }
+    }
+
+    draw() {
+      beginShape();
+      for (let pt of this.points) {
+        vertex(pt.x, pt.y);
+      }
+      endShape(CLOSE);
+
+      let a = this.points[this.currentEdge];
+      let b = this.points[(this.currentEdge + 1) % this.sides];
+      let bx = lerp(a.x, b.x, this.t);
+      let by = lerp(a.y, b.y, this.t);
+      fill(0);
+      ellipse(bx, by, 10, 10);
+    }
+  }
+</script>
 </body>
 </html>
