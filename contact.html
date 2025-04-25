@@ -111,5 +111,62 @@
       </p>
     </div>
   </div>
+  <script>
+  new p5(p => {
+    const ballCount = 20;
+    const balls = [];
+
+    class Ball {
+      constructor() {
+        this.r = p.random(10, 30); // 半径
+        this.x = p.random(this.r, p.windowWidth - this.r);
+        this.y = p.random(this.r, p.windowHeight - this.r);
+        this.vx = p.random(-2, 2);
+        this.vy = p.random(-2, 2);
+      }
+
+      move() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // 壁で反射
+        if (this.x - this.r < 0 || this.x + this.r > p.windowWidth) {
+          this.vx *= -1;
+        }
+        if (this.y - this.r < 0 || this.y + this.r > p.windowHeight) {
+          this.vy *= -1;
+        }
+      }
+
+      draw() {
+        p.noStroke();
+        p.fill(0, 50);
+        p.ellipse(this.x, this.y, this.r * 2);
+      }
+    }
+
+    p.setup = () => {
+      const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+      canvas.position(0, 0);
+      canvas.style('z-index', '-5');
+
+      for (let i = 0; i < ballCount; i++) {
+        balls.push(new Ball());
+      }
+    };
+
+    p.draw = () => {
+      p.clear();
+      for (let ball of balls) {
+        ball.move();
+        ball.draw();
+      }
+    };
+
+    p.windowResized = () => {
+      p.resizeCanvas(p.windowWidth, p.windowHeight);
+    };
+  });
+</script>
 </body>
 </html>
