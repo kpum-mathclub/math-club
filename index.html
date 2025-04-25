@@ -184,6 +184,7 @@
         this.next = this.chooseNext(this.current);
         this.t = 0;
         this.speed = p.random(0.003, 0.01);
+         this.phase = p.random(p.TWO_PI); //
       }
 
       chooseNext(current) {
@@ -211,14 +212,24 @@
         }
       }
 
-      display() {
-        const x = p.lerp(this.current.x, this.next.x, this.t);
-        const y = p.lerp(this.current.y, this.next.y, this.t);
-        p.noStroke();
-        p.fill(0);
-        p.ellipse(x, y, 6, 6);
-      }
-    }
+     display() {
+  const x = p.lerp(this.current.x, this.next.x, this.t);
+  const y = p.lerp(this.current.y, this.next.y, this.t);
+
+  const baseSize = 6;
+  const size = baseSize + p.sin(p.frameCount * 0.05 + this.phase) * 2;
+
+  const glow = 20 + 10 * p.sin(p.frameCount * 0.08 + this.phase); // 発光はやや速く
+
+  // 発光（外側のぼかし）
+  p.noStroke();
+  p.fill(0, 0, 0, 20);
+  p.ellipse(x, y, size + glow);
+
+  // 中心点
+  p.fill(0);
+  p.ellipse(x, y, size);
+}
 
     p.windowResized = () => {
       const height = document.documentElement.scrollHeight;
