@@ -132,7 +132,7 @@
 
       for (let c of circles) {
         // ブースト判定
-        let speedFactor = boosting ? 5 : 0.4;
+        let speedFactor = boosting ? 6 : 1.0;
         c.currentSpeed = c.baseSpeed * speedFactor;
 
         const x = c.centerX + p.cos(c.angle) * c.r;
