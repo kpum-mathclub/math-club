@@ -53,17 +53,19 @@
       text-decoration: none;
     }
 
-#content {
-  background: transparent;
-  position: relative;
-  z-index: auto; /* ここがポイント！ */
-}
-
+/* canvas：背景に置く */
 canvas {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: -1;
+  z-index: -1; /* 背景！ */
+}
+
+/* #content：文字・要素をcanvasより前に */
+#content {
+  background: transparent;
+  position: relative;
+  z-index: 1; /* canvasの上にする！ */
 }
     
   </style>
