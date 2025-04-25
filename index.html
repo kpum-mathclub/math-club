@@ -53,17 +53,19 @@
       text-decoration: none;
     }
 
-    #content {
+#content {
   background: transparent;
-  z-index: -1;
   position: relative;
+  z-index: auto; /* ここがポイント！ */
 }
 
-    canvas {
-      position: fixed;
-      top: 0;
-      left: 0;
-    }
+canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+}
+    
   </style>
 </head>
 <body>
