@@ -122,18 +122,29 @@
       p.frameRate(60); // 滑らかに
     };
 
-    p.draw = () => {
-      // 透明度を少しだけ下げて「残像(trail)」を出す
-      p.fill(255, 255, 255, 25);
-      p.noStroke();
-      p.rect(0, 0, p.width, p.height);
+ p.draw = () => {
+  // 残像を薄く描画（trailのため）
+  p.fill(255, 255, 255, 25);
+  p.noStroke();
+  p.rect(0, 0, p.width, p.height);
 
-      for (let w of walkers) {
-        w.update();
-        w.display();
-      }
-    };
+  // タイル（三角形）描画
+  p.noFill();
+  p.stroke(0, 40);
+  for (let t of triangles) {
+    p.beginShape();
+    for (let pt of t) {
+      p.vertex(pt.x, pt.y);
+    }
+    p.endShape(p.CLOSE);
+  }
 
+  // 点の描画
+  for (let w of walkers) {
+    w.update();
+    w.display();
+  }
+};
     function generateTriangleGrid() {
       const h = sideLength * Math.sqrt(3) / 2;
 
