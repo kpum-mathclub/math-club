@@ -107,7 +107,7 @@
     let adjacency = new Map();
     let walkers = [];
 
-  p.setup = () => {
+ p.setup = () => {
   const height = Math.max(
     document.body.scrollHeight,
     document.documentElement.scrollHeight
@@ -117,8 +117,7 @@
   cnv.style('z-index', '-10');
   cnv.style('pointer-events', 'none');
 
-  // 必ずこの順番！
-  generateTriangleGrid();
+  generateTriangleGrid(); // ← 初期生成
 
   if (points.length === 0) {
     console.error("pointsが空です！");
@@ -129,26 +128,28 @@
   }
 };
 
-    p.draw = () => {
-      p.clear();
+p.draw = () => {
+  p.background(255); // 毎フレーム背景を白で塗りつぶし
 
-      // 三角形描画（透明）
-      p.noFill();
-      p.stroke(0, 30);
-      for (let t of triangles) {
-        p.beginShape();
-        for (let pt of t) {
-          p.vertex(pt.x, pt.y);
-        }
-        p.endShape(p.CLOSE);
-      }
+  generateTriangleGrid(); // タイルを毎フレーム再生成（波効果）
 
-      // 点の描画
-      for (let w of walkers) {
-        w.update();
-        w.display();
-      }
-    };
+  // 三角タイルを描画
+  p.noFill();
+  p.stroke(0, 40);
+  for (let t of triangles) {
+    p.beginShape();
+    for (let pt of t) {
+      p.vertex(pt.x, pt.y);
+    }
+    p.endShape(p.CLOSE);
+  }
+
+  // 点を更新・表示（発光とサイズ周期付き）
+  for (let w of walkers) {
+    w.update();
+    w.display();
+  }
+};
 
     function generateTriangleGrid() {
       const h = sideLength * Math.sqrt(3) / 2;
