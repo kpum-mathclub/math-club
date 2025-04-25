@@ -129,11 +129,9 @@
 };
 
 p.draw = () => {
-  p.background(255); // 毎フレーム背景を白で塗りつぶし
+  p.background(255); // 背景を白で塗りつぶし
 
-  generateTriangleGrid(); // タイルを毎フレーム再生成（波効果）
-
-  // 三角タイルを描画
+  // 三角タイルを描く（波なし）
   p.noFill();
   p.stroke(0, 40);
   for (let t of triangles) {
@@ -144,7 +142,7 @@ p.draw = () => {
     p.endShape(p.CLOSE);
   }
 
-  // 点を更新・表示（発光とサイズ周期付き）
+  // 点の描画（発光・移動あり）
   for (let w of walkers) {
     w.update();
     w.display();
@@ -153,16 +151,15 @@ p.draw = () => {
 function generateTriangleGrid() {
   const h = sideLength * Math.sqrt(3) / 2;
   triangles = [];
-  adjacency.clear(); // ← 毎回リセット！
+  adjacency.clear();
 
   for (let y = 0; y < p.height + h; y += h) {
     for (let x = 0; x < p.width + sideLength; x += sideLength) {
       const xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
-      const waveOffset = 10 * Math.sin(p.frameCount * 0.05 + x * 0.03); // ← 波のゆらぎ！
 
-      const p1 = p.createVector(x + xOffset, y + waveOffset);
-      const p2 = p.createVector(x + sideLength / 2 + xOffset, y + h + waveOffset);
-      const p3 = p.createVector(x - sideLength / 2 + xOffset, y + h + waveOffset);
+      const p1 = p.createVector(x + xOffset, y);
+      const p2 = p.createVector(x + sideLength / 2 + xOffset, y + h);
+      const p3 = p.createVector(x - sideLength / 2 + xOffset, y + h);
 
       triangles.push([p1, p2, p3]);
 
