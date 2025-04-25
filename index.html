@@ -244,54 +244,41 @@ function generateTriangleGrid() {
   <!-- p5.js WebGL 地球（京都に赤ピン） -->
 <!-- 地球回転スクリプト -->
 <!-- p5.js CDN -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
-
-<!-- 回転地球スクリプト -->
+<!-- 回転する地球（京都に赤ピン） -->
 <script>
 new p5((p) => {
   let earthTexture;
   let angleX = 0, angleY = 0;
   let lastMouseX, lastMouseY;
   let dragging = false;
-  let textureLoaded = false;
+  let loaded = false;
 
   p.preload = () => {
     earthTexture = p.loadImage(
       "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Earthmap1000x500compac.jpg/800px-Earthmap1000x500compac.jpg",
-      () => {
-        textureLoaded = true; // 読み込み完了フラグ
-      }
+      () => { loaded = true; }
     );
   };
 
   p.setup = () => {
     const cnv = p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
-    cnv.position(0, 0);
-    cnv.style('z-index', '-10');
-    cnv.style('pointer-events', 'none');
+    cnv.style('position', 'fixed');
+    cnv.style('z-index', '-9'); // 三角タイル（-10）の上
     cnv.style('top', '0');
     cnv.style('left', '0');
+    cnv.style('pointer-events', 'none'); // クリック邪魔しない
     p.noStroke();
   };
 
   p.draw = () => {
-    p.background(255);
-
-    if (!textureLoaded) {
-      p.fill(0);
-      p.textAlign(p.CENTER, p.CENTER);
-      p.text("Loading...", 0, 0);
-      return;
-    }
-
+    if (!loaded) return;
+    p.clear(); // ←重要！
     p.rotateX(angleX);
     p.rotateY(angleY);
-
     p.texture(earthTexture);
-    p.textureMode(p.NORMAL);
     p.sphere(250);
 
-    // 京都府立医科大学の位置
+    // 京都府立医科大学（35.0242°N, 135.7699°E）
     const lat = 35.0242;
     const lon = 135.7699;
     const radius = 250;
@@ -304,7 +291,7 @@ new p5((p) => {
     p.push();
     p.translate(x, -y, z);
     p.fill(255, 0, 0);
-    p.sphere(5); // 赤ピン
+    p.sphere(6); // 赤いピン
     p.pop();
   };
 
