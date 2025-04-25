@@ -1,81 +1,99 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Earth</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
-  </head>
-  <body style="margin:0; overflow:hidden;">
-    <script>
-      new p5((p) => {
-        let earthTexture;
-        let angleX = 0,
-          angleY = 0;
-        let lastMouseX,
-          lastMouseY,
-          dragging = false,
-          loaded = false;
+<head>
+  <meta charset="UTF-8">
+  <title>Earth</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: black;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+<script>
+new p5((p) => {
+  let earthTexture;
+  let angleX = 0, angleY = 0;
+  let lastMouseX, lastMouseY;
+  let dragging = false;
+  let loaded = false;
 
-       p.preload = () => {
-  earthTexture = p.loadImage(
-    "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/land_ocean_ice_cloud_2048.jpg",
-    () => { loaded = true; }
-  );
-};
+  p.preload = () => {
+    earthTexture = p.loadImage(
+      "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/land_ocean_ice_cloud_2048.jpg",
+      () => { loaded = true; }
+    );
+  };
 
-        p.setup = () => {
-          p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
-          p.noStroke();
-        };
+  p.setup = () => {
+    p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
+    p.noStroke();
+  };
 
-        p.draw = () => {
-          if (!loaded) return;
-          p.clear();
-          p.rotateX(angleX);
-          p.rotateY(angleY);
-          p.texture(earthTexture);
-          p.sphere(250);
+  p.draw = () => {
+    if (!loaded) {
+      p.background(30);
+      p.fill(255);
+      p.textAlign(p.CENTER, p.CENTER);
+      p.text("Loading...", 0, 0);
+      return;
+    }
 
-          // 京都府立医科大学
-          const lat = 35.0242;
-          const lon = 135.7699;
-          const radius = 250;
-          const theta = p.radians(lon);
-          const phi = p.radians(90 - lat);
-          const x = radius * p.sin(phi) * p.cos(theta);
-          const y = radius * p.cos(phi);
-          const z = radius * p.sin(phi) * p.sin(theta);
+    p.background(0);
+    p.rotateX(angleX);
+    p.rotateY(angleY);
+    p.texture(earthTexture);
+    p.sphere(250);
 
-          p.push();
-          p.translate(x, -y, z);
-          p.fill(255, 0, 0);
-          p.sphere(6);
-          p.pop();
-        };
+    // 京都府立医科大学（赤ピン）
+    const lat = 35.0242;
+    const lon = 135.7699;
+    const r = 250;
+    const theta = p.radians(lon);
+    const phi = p.radians(90 - lat);
+    const x = r * p.sin(phi) * p.cos(theta);
+    const y = r * p.cos(phi);
+    const z = r * p.sin(phi) * p.sin(theta);
 
-        p.mousePressed = () => {
-          lastMouseX = p.mouseX;
-          lastMouseY = p.mouseY;
-          dragging = true;
-        };
+    p.push();
+    p.translate(x, -y, z);
+    p.fill(255, 0, 0);
+    p.sphere(6);
+    p.pop();
+  };
 
-        p.mouseDragged = () => {
-          if (dragging) {
-            angleY += (p.mouseX - lastMouseX) * 0.01;
-            angleX += (p.mouseY - lastMouseY) * 0.01;
-            lastMouseX = p.mouseX;
-            lastMouseY = p.mouseY;
-          }
-        };
+  p.mousePressed = () => {
+    lastMouseX = p.mouseX;
+    lastMouseY = p.mouseY;
+    dragging = true;
+  };
 
-        p.mouseReleased = () => {
-          dragging = false;
-        };
+  p.mouseDragged = () => {
+    if (dragging) {
+      const dx = p.mouseX - lastMouseX;
+      const dy = p.mouseY - lastMouseY;
+      angleY += dx * 0.01;
+      angleX += dy * 0.01;
+      lastMouseX = p.mouseX;
+      lastMouseY = p.mouseY;
+    }
+  };
 
-        p.windowResized = () => {
-          p.resizeCanvas(p.windowWidth, p.windowHeight);
-        };
-      });
-    </script>
-  </body>
+  p.mouseReleased = () => {
+    dragging = false;
+  };
+
+  p.windowResized = () => {
+    p.resizeCanvas(p.windowWidth, p.windowHeight);
+  };
+});
+</script>
+</body>
 </html>
