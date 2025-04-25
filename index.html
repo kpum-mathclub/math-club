@@ -150,26 +150,30 @@ p.draw = () => {
     w.display();
   }
 };
+function generateTriangleGrid() {
+  const h = sideLength * Math.sqrt(3) / 2;
+  triangles = [];
+  adjacency.clear(); // ← 毎回リセット！
 
-    function generateTriangleGrid() {
-      const h = sideLength * Math.sqrt(3) / 2;
+  for (let y = 0; y < p.height + h; y += h) {
+    for (let x = 0; x < p.width + sideLength; x += sideLength) {
+      const xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
+      const waveOffset = 10 * Math.sin(p.frameCount * 0.05 + x * 0.03); // ← 波のゆらぎ！
 
-      for (let y = 0; y < p.windowHeight + h; y += h) {
-        for (let x = 0; x < p.windowWidth + sideLength; x += sideLength) {
-          let xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
-          let p1 = p.createVector(x + xOffset, y);
-          let p2 = p.createVector(x + sideLength / 2 + xOffset, y + h);
-          let p3 = p.createVector(x - sideLength / 2 + xOffset, y + h);
-          triangles.push([p1, p2, p3]);
+      const p1 = p.createVector(x + xOffset, y + waveOffset);
+      const p2 = p.createVector(x + sideLength / 2 + xOffset, y + h + waveOffset);
+      const p3 = p.createVector(x - sideLength / 2 + xOffset, y + h + waveOffset);
 
-          registerEdge(p1, p2);
-          registerEdge(p2, p3);
-          registerEdge(p3, p1);
-        }
-      }
+      triangles.push([p1, p2, p3]);
 
-      points = Array.from(adjacency.keys()).map(k => adjacency.get(k).vec);
+      registerEdge(p1, p2);
+      registerEdge(p2, p3);
+      registerEdge(p3, p1);
     }
+  }
+
+  points = Array.from(adjacency.values()).map(obj => obj.vec);
+}
 
     function registerEdge(a, b) {
       const keyA = a.x + ',' + a.y;
