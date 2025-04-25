@@ -37,6 +37,7 @@
 </head>
 <body>
   <!-- ナビゲーションバー -->
+<!-- ナビゲーションバー -->
 <style>
   nav {
     position: fixed;
@@ -58,8 +59,33 @@
   nav a:hover {
     text-decoration: underline;
   }
+
   body {
-    padding-top: 60px;
+    margin: 0;
+    padding-top: 70px; /* ナビバー分の余白を追加 */
+    font-family: sans-serif;
+    background-color: white;
+    color: #111;
+  }
+
+  .banner {
+    background-color: #f0f8ff;
+    border: 2px solid #0077cc;
+    padding: 24px;
+    max-width: 800px;
+    margin: 40px auto;
+    border-radius: 12px;
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .banner a {
+    color: #0077cc;
+    font-weight: bold;
+    text-decoration: none;
+  }
+
+  .banner a:hover {
+    text-decoration: underline;
   }
 </style>
 
@@ -69,28 +95,34 @@
   <a href="contact.html">Contact</a>
   <a href="qa.html">Q&A</a>
 </nav>
-  <div id="content">
-    <h1>数学研究部</h1>
-    <p>Welcome to the Math Club!</p>
+
+<!-- 本文：タイトルとトリアス祭バナー -->
+<div id="content" style="padding: 40px;">
+  <h1 style="margin-bottom: 0;">数学研究部</h1>
+  <p style="margin-top: 8px;">Welcome to the Math Club!</p>
+
+  <!-- トリアス祭のお知らせボックス -->
+  <div class="banner">
+    <h2>トリアス祭 企画のお知らせ</h2>
+    <p>
+      数学研究部では、京都府立医科大学の学園祭「トリアス祭」にて、<br>
+      <strong>入試形式を再現した二日間の実践模試</strong>を実施いたします。
+    </p>
+    <p>
+      実際の入試さながらの緊張感の中で、本番を意識した力試しができる絶好の機会です。<br>
+      医学部志望の受験生の皆さまは、ぜひご参加ください。
+    </p>
+    <p>
+      また、昨年度の問題と解説をまとめた<strong>冊子も販売</strong>しております。<br>
+      ご希望の方は、当日ブースにてお求めいただけます。
+    </p>
+    <p>
+      詳細・最新情報は公式サイトをご覧ください：<br>
+      <a href="https://trias.link" target="_blank">トリアス祭 公式ホームページ</a>
+    </p>
+    <p>皆さまのご来場を、部員一同心よりお待ちしております。</p>
   </div>
-<section style="padding: 40px; max-width: 800px; margin: auto;">
-  <h2>トリアス祭 企画のお知らせ</h2>
-  <p>
-    数学研究部では、京都府立医科大学の学園祭「トリアス祭」にて、<br>
-    <strong>入試形式を再現した二日間の実践模試</strong>を実施いたします。
-  </p>
-  <p>
-    実際の入試さながらの緊張感の中で、本番を意識した力試しができる絶好の機会です。<br>
-    医学部志望の受験生の皆さまは、ぜひご参加ください。
-  </p>
-  <p>
-    また、昨年度の問題と解説をまとめた<strong>冊子も販売</strong>しております。<br>
-    ご希望の方は、当日ブースにてお求めいただけます。
-  </p>
-  <p style="margin-top: 20px;">
-    皆さまのご来場を、部員一同心よりお待ちしております。
-  </p>
-</section>
+</div>
 
   <!-- 幾何アニメーション -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
