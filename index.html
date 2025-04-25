@@ -1,193 +1,121 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
   <meta charset="UTF-8">
   <title>数学研究部 | Math Club</title>
-<style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background-color: white;
-    font-family: sans-serif;
-    color: black;
-  }
 
-  #content {
-    position: absolute;
-    z-index: 2;
-    top: 20px;
-    left: 20px;
-  }
+  <!-- p5.js & WebGL -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
 
-  .equation {
-    position: absolute;
-    font-size: 28px;
-    opacity: 0.4;
-    z-index: 1;
-    color: black;
-  }
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      color: black;
+      background: white;
+      overflow: hidden;
+    }
 
-  nav {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background: #111;
-    color: white;
-    padding: 12px 24px;
-    z-index: 999;
-    font-size: 18px;
-    display: flex;
-    gap: 20px;
-  }
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #111;
+      color: white;
+      padding: 12px 24px;
+      z-index: 999;
+      font-size: 18px;
+      display: flex;
+      gap: 20px;
+    }
+    nav a {
+      color: white;
+      text-decoration: none;
+    }
+    nav a:hover {
+      text-decoration: underline;
+    }
 
-  nav a {
-    color: white;
-    text-decoration: none;
-  }
+    body {
+      padding-top: 70px;
+    }
 
-  nav a:hover {
-    text-decoration: underline;
-  }
+    .banner {
+      background-color: rgba(255, 255, 255, 0.85); /* 半透明 */
+      border: 2px solid #0077cc;
+      padding: 24px;
+      max-width: 800px;
+      margin: 40px auto;
+      border-radius: 12px;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+      position: relative;
+      z-index: 1;
+    }
 
-  body {
-    padding-top: 70px;
-    font-family: sans-serif;
-    background-color: white;
-    color: #111;
-  }
+    .banner a {
+      color: #0077cc;
+      font-weight: bold;
+      text-decoration: none;
+    }
 
-  .banner {
-    background-color: rgba(255, 255, 255, 0.8); /* ここが透明背景 */
-    border: 2px solid #0077cc;
-    padding: 24px;
-    max-width: 800px;
-    margin: 40px auto;
-    border-radius: 12px;
-    box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
-    position: relative;
-    z-index: 1;
-  }
+    .banner a:hover {
+      text-decoration: underline;
+    }
 
-  .banner a {
-    color: #0077cc;
-    font-weight: bold;
-    text-decoration: none;
-  }
-
-  .banner a:hover {
-    text-decoration: underline;
-  }
-</style>
-
-  <!-- MathJax -->
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script id="MathJax-script" async
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    #content {
+      position: relative;
+      z-index: 2;
+    }
+  </style>
 </head>
 <body>
-  <!-- ナビゲーションバー -->
-<!-- ナビゲーションバー -->
-<style>
-  nav {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background: #111;
-    color: white;
-    padding: 12px 24px;
-    z-index: 999;
-    font-size: 18px;
-    display: flex;
-    gap: 20px;
-  }
-  nav a {
-    color: white;
-    text-decoration: none;
-  }
-  nav a:hover {
-    text-decoration: underline;
-  }
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="schedule.html">Schedule</a>
+    <a href="contact.html">Contact</a>
+    <a href="qa.html">Q&A</a>
+  </nav>
 
-  body {
-    margin: 0;
-    padding-top: 70px; /* ナビバー分の余白を追加 */
-    font-family: sans-serif;
-    background-color: white;
-    color: #111;
-  }
+  <div id="content">
+    <h1 style="margin: 40px 20px 10px;">数学研究部</h1>
+    <p style="margin: 0 20px;">Welcome to the Math Club!</p>
 
-  .banner {
-    background-color: #f0f8ff;
-    border: 2px solid #0077cc;
-    padding: 24px;
-    max-width: 800px;
-    margin: 40px auto;
-    border-radius: 12px;
-    box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
-  }
-
-  .banner a {
-    color: #0077cc;
-    font-weight: bold;
-    text-decoration: none;
-  }
-
-  .banner a:hover {
-    text-decoration: underline;
-  }
-</style>
-
-<nav>
-  <a href="index.html">Home</a>
-  <a href="schedule.html">Schedule</a>
-  <a href="contact.html">Contact</a>
-  <a href="qa.html">Q&A</a>
-</nav>
-
-<!-- 本文：タイトルとトリアス祭バナー -->
-<div id="content" style="padding: 40px;">
-  <h1 style="margin-bottom: 0;">数学研究部</h1>
-  <p style="margin-top: 8px;">Welcome to the Math Club!</p>
-
-  <!-- トリアス祭のお知らせボックス -->
-  <div class="banner">
-    <h2>トリアス祭 企画のお知らせ</h2>
-    <p>
-      数学研究部では、京都府立医科大学の学園祭「トリアス祭」にて、<br>
-      <strong>入試形式を再現した二日間の実践模試</strong>を実施いたします。
-    </p>
-    <p>
-      実際の入試さながらの緊張感の中で、本番を意識した力試しができる絶好の機会です。<br>
-      医学部志望の受験生の皆さまは、ぜひご参加ください。
-    </p>
-    <p>
-      また、昨年度の問題と解説をまとめた<strong>冊子も販売</strong>しております。<br>
-      ご希望の方は、当日ブースにてお求めいただけます。
-    </p>
-    <p>
-      詳細・最新情報は公式サイトをご覧ください：<br>
-      <a href="https://trias.link" target="_blank">トリアス祭 公式ホームページ</a>
-    </p>
-    <p>皆さまのご来場を、部員一同心よりお待ちしております。</p>
+    <div class="banner">
+      <h2>トリアス祭 企画のお知らせ</h2>
+      <p>
+        数学研究部では、京都府立医科大学の学園祭「トリアス祭」にて、<br>
+        <strong>入試形式を再現した二日間の実践模試</strong>を実施いたします。
+      </p>
+      <p>
+        実際の入試さながらの緊張感の中で、本番を意識した力試しができる絶好の機会です。<br>
+        医学部志望の受験生の皆さまは、ぜひご参加ください。
+      </p>
+      <p>
+        また、昨年度の問題と解説をまとめた<strong>冊子も販売</strong>しております。<br>
+        ご希望の方は、当日ブースにてお求めいただけます。
+      </p>
+      <p>
+        詳細・最新情報は公式サイトをご覧ください：<br>
+        <a href="https://trias.link" target="_blank">トリアス祭 公式ホームページ</a>
+      </p>
+      <p>皆さまのご来場を、部員一同心よりお待ちしております。</p>
+    </div>
   </div>
-</div>
 
-  <!-- 幾何アニメーション -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+  <!-- Canvas: 幾何学模様 -->
   <script>
     let circles = [];
     let polygons = [];
 
     function setup() {
-      createCanvas(windowWidth, windowHeight);
+      let c2d = createCanvas(windowWidth, windowHeight);
+      c2d.position(0, 0);
+      c2d.style('z-index', '-2');
       angleMode(DEGREES);
       noStroke();
 
-      // 回転円
       for (let i = 0; i < 3; i++) {
         circles.push({
           x: random(150, width - 150),
@@ -198,7 +126,6 @@
         });
       }
 
-      // 多角形ウォーカー
       for (let sides = 3; sides <= 6; sides++) {
         polygons.push(new PolygonWalker(
           random(150, width - 150),
@@ -211,16 +138,14 @@
     }
 
     function draw() {
-      background(255);
+      clear();
 
-      // 円描画
       fill(0, 20);
       noStroke();
       for (let c of circles) {
         ellipse(c.x, c.y, c.r * 2);
       }
 
-      // 球描画
       fill(0);
       for (let c of circles) {
         let bx = c.x + cos(c.angle) * c.r;
@@ -229,7 +154,6 @@
         c.angle += c.speed;
       }
 
-      // 多角形とボール
       stroke(0, 60);
       noFill();
       for (let p of polygons) {
@@ -238,11 +162,6 @@
       }
     }
 
-    function windowResized() {
-      resizeCanvas(windowWidth, windowHeight);
-    }
-
-    // 多角形クラス
     class PolygonWalker {
       constructor(x, y, r, sides, speed) {
         this.x = x;
@@ -272,7 +191,6 @@
       }
 
       draw() {
-        noFill();
         beginShape();
         for (let pt of this.points) {
           vertex(pt.x, pt.y);
@@ -288,89 +206,98 @@
       }
     }
   </script>
-  <!-- p5.js WebGL を読み込む -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
 
-<!-- WebGLで正二十面体を表示＋ドラッグ操作 -->
-<script>
-let angleX = 0;
-let angleY = 0;
-let lastMouseX, lastMouseY;
-let dragging = false;
+  <!-- Canvas: 正二十面体 -->
+  <script>
+    let canvas3D;
+    let angleX = 0;
+    let angleY = 0;
+    let lastMouseX, lastMouseY;
+    let dragging = false;
+    let icosahedronVertices = [];
+    let icosahedronFaces = [];
 
-let icosahedronVertices = [];
-let icosahedronFaces = [];
-
-function setup() {
-  let cnv = createCanvas(windowWidth, windowHeight, WEBGL);
-  cnv.style('position', 'fixed');
-  cnv.style('top', '0');
-  cnv.style('left', '0');
-  cnv.style('z-index', '-1');
-  noStroke();
-  setupIcosahedron();
-}
-
-function draw() {
-  background(255);
-
-  rotateX(angleX);
-  rotateY(angleY);
-
-  fill(0, 40);
-  for (let face of icosahedronFaces) {
-    beginShape();
-    for (let i of face) {
-      let v = icosahedronVertices[i];
-      vertex(v[0] * 150, v[1] * 150, v[2] * 150);
+    function setup2() {
+      canvas3D = createCanvas(windowWidth, windowHeight, WEBGL);
+      canvas3D.position(0, 0);
+      canvas3D.style('z-index', '-3');
+      noFill();
+      setupIcosahedron();
     }
-    endShape(CLOSE);
-  }
-}
 
-function mousePressed() {
-  lastMouseX = mouseX;
-  lastMouseY = mouseY;
-  dragging = true;
-}
+    function draw2() {
+      clear();
+      rotateX(angleX);
+      rotateY(angleY);
 
-function mouseDragged() {
-  if (dragging) {
-    let dx = mouseX - lastMouseX;
-    let dy = mouseY - lastMouseY;
-    angleY += dx * 0.01;
-    angleX += dy * 0.01;
-    lastMouseX = mouseX;
-    lastMouseY = mouseY;
-  }
-}
+      for (let face of icosahedronFaces) {
+        let v0 = createVector(...icosahedronVertices[face[0]]);
+        let v1 = createVector(...icosahedronVertices[face[1]]);
+        let v2 = createVector(...icosahedronVertices[face[2]]);
+        let normal = p5.Vector.cross(p5.Vector.sub(v1, v0), p5.Vector.sub(v2, v0)).normalize();
+        let view = createVector(0, 0, -1);
+        let facing = p5.Vector.dot(normal, view) < 0;
 
-function mouseReleased() {
-  dragging = false;
-}
+        strokeWeight(facing ? 2 : 0.5);
+        stroke(facing ? 0 : 100);
 
-function setupIcosahedron() {
-  const phi = (1 + sqrt(5)) / 2;
-  const a = 1;
-  const b = 1 / phi;
+        beginShape();
+        for (let i of face) {
+          let v = icosahedronVertices[i];
+          vertex(v[0] * 150, v[1] * 150, v[2] * 150);
+        }
+        endShape(CLOSE);
+      }
+    }
 
-  icosahedronVertices = [
-    [-a,  b,  0], [ a,  b,  0], [-a, -b,  0], [ a, -b,  0],
-    [ 0, -a,  b], [ 0,  a,  b], [ 0, -a, -b], [ 0,  a, -b],
-    [ b,  0, -a], [ b,  0,  a], [-b,  0, -a], [-b,  0,  a]
-  ];
+    function setupIcosahedron() {
+      const phi = (1 + sqrt(5)) / 2;
+      const a = 1;
+      const b = 1 / phi;
 
-  icosahedronFaces = [
-    [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
-    [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
-    [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
-    [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
-  ];
-}
+      icosahedronVertices = [
+        [-a,  b,  0], [ a,  b,  0], [-a, -b,  0], [ a, -b,  0],
+        [ 0, -a,  b], [ 0,  a,  b], [ 0, -a, -b], [ 0,  a, -b],
+        [ b,  0, -a], [ b,  0,  a], [-b,  0, -a], [-b,  0,  a]
+      ];
 
-function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
-}
-</script>
+      icosahedronFaces = [
+        [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+        [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+        [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+        [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
+      ];
+    }
+
+    function mousePressed() {
+      lastMouseX = mouseX;
+      lastMouseY = mouseY;
+      dragging = true;
+    }
+
+    function mouseDragged() {
+      if (dragging) {
+        let dx = mouseX - lastMouseX;
+        let dy = mouseY - lastMouseY;
+        angleY += dx * 0.01;
+        angleX += dy * 0.01;
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
+      }
+    }
+
+    function mouseReleased() {
+      dragging = false;
+    }
+
+    function windowResized() {
+      resizeCanvas(windowWidth, windowHeight);
+    }
+
+    new p5(p => {
+      p.setup = setup2;
+      p.draw = draw2;
+    }, 'canvas3D');
+  </script>
 </body>
 </html>
