@@ -10,18 +10,36 @@
       overflow: hidden;
       background-color: white;
       font-family: sans-serif;
-      color: black;
     }
+
     #content {
       position: absolute;
       z-index: 2;
       top: 20px;
       left: 20px;
+      color: black;
     }
-    canvas {
-      display: block;
+
+    #equations {
+      position: absolute;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .equation {
+      position: absolute;
+      font-size: 24px;
+      opacity: 0.1;
+      transition: opacity 5s ease-in-out;
     }
   </style>
+
+  <!-- MathJax -->
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
   <div id="content">
@@ -29,38 +47,55 @@
     <p>Welcome to the Math Club!</p>
   </div>
 
+  <div id="equations"></div>
+
   <!-- p5.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
   <script>
-    let equations = [
-      '∂²u/∂t² = c² ∂²u/∂x²',
-      'e^{iπ} + 1 = 0',
-      'f(x) = ∫_{-∞}^{∞} F(ξ)e^{2πiξx} dξ',
-      '∇·E = ρ/ε₀',
-      'lim_{n→∞} (1 + 1/n)^n = e',
-      'iħ ∂ψ/∂t = Ĥψ'
+    let eqList = [
+      '\\( e^{i\\pi} + 1 = 0 \\)',
+      '\\( \\frac{\\partial^2 u}{\\partial t^2} = c^2 \\frac{\\partial^2 u}{\\partial x^2} \\)',
+      '\\( \\lim_{n \\to \\infty} \\left(1 + \\frac{1}{n}\\right)^n = e \\)',
+      '\\( f(x) = \\int_{-\\infty}^{\\infty} F(\\xi) e^{2\\pi i \\xi x} d\\xi \\)',
+      '\\( \\nabla \\cdot \\vec{E} = \\frac{\\rho}{\\varepsilon_0} \\)',
+      '\\( i\\hbar \\frac{\\partial \\psi}{\\partial t} = \\hat{H}\\psi \\)'
     ];
 
-    let eqs = [];
+    function addEquation() {
+      const container = document.getElementById('equations');
+      const eq = document.createElement('div');
+      eq.className = 'equation';
+      eq.style.left = `${Math.random() * 80 + 10}%`;
+      eq.style.top = `${Math.random() * 70 + 15}%`;
+      eq.innerHTML = eqList[Math.floor(Math.random() * eqList.length)];
+      container.appendChild(eq);
+      MathJax.typesetPromise([eq]).then(() => {
+        eq.style.opacity = 0.5;
+        setTimeout(() => {
+          eq.style.opacity = 0;
+          setTimeout(() => container.removeChild(eq), 6000);
+        }, 4000);
+      });
+    }
 
+    setInterval(addEquation, 3000); // 3秒ごとに新しい数式を追加
+
+    // 幾何学模様（より鮮やかに）
     function setup() {
       createCanvas(windowWidth, windowHeight);
-      textAlign(CENTER, CENTER);
-      textSize(28);
-      frameRate(60);
+      strokeWeight(1.5);
+      noFill();
     }
 
     function draw() {
-      background(255, 255, 255, 20);
+      background(255, 20); // 白背景に残像を残す
+      stroke(0, 80);
 
-      // 幾何学模様（ゆっくり）
-      stroke(0, 50);
-      noFill();
-      if (frameCount % 60 === 0) {
+      for (let i = 0; i < 6; i++) {
         let x = random(width);
         let y = random(height);
-        let r = random(40, 100);
-        let n = int(random(3, 8));
+        let r = random(30, 100);
+        let n = int(random(3, 7));
         beginShape();
         for (let a = 0; a < TWO_PI; a += TWO_PI / n) {
           let sx = x + cos(a) * r;
@@ -70,24 +105,14 @@
         endShape(CLOSE);
       }
 
-      // 数式の表示とフェード
-      for (let i = eqs.length - 1; i >= 0; i--) {
-        let e = eqs[i];
-        fill(0, e.alpha);
-        text(e.text, e.x, e.y);
-        e.alpha -= 0.5;
-        if (e.alpha <= 0) eqs.splice(i, 1);
+      // ランダム線
+      for (let i = 0; i < 5; i++) {
+        line(random(width), random(height), random(width), random(height));
       }
 
-      // 一定間隔で新しい数式を追加
-      if (frameCount % 180 === 0) {
-        let newEq = {
-          text: random(equations),
-          x: random(width * 0.2, width * 0.8),
-          y: random(height * 0.2, height * 0.8),
-          alpha: 255
-        };
-        eqs.push(newEq);
+      // 点も追加
+      for (let i = 0; i < 10; i++) {
+        point(random(width), random(height));
       }
     }
 
