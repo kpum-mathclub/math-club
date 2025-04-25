@@ -40,18 +40,42 @@
     <p>Welcome to the Math Club!</p>
   </div>
 
-  <!-- 背景数式 -->
-  <div class="equation" style="top: 30%; left: 20%;">
+  <!-- 背景数式（11個） -->
+  <div class="equation" style="top: 15%; left: 10%;">
     \[\frac{\partial^2 u}{\partial t^2} = c^2 \frac{\partial^2 u}{\partial x^2}\]
   </div>
-  <div class="equation" style="top: 55%; left: 60%;">
+  <div class="equation" style="top: 25%; left: 70%;">
     \[e^{i\pi} + 1 = 0\]
   </div>
-  <div class="equation" style="top: 75%; left: 10%;">
+  <div class="equation" style="top: 45%; left: 15%;">
     \[\lim_{n \to \infty} \left(1 + \frac{1}{n}\right)^n = e\]
   </div>
+  <div class="equation" style="top: 55%; left: 65%;">
+    \[E = mc^2\]
+  </div>
+  <div class="equation" style="top: 70%; left: 20%;">
+    \[i\hbar \frac{\partial \psi}{\partial t} = \hat{H}\psi\]
+  </div>
+  <div class="equation" style="top: 75%; left: 75%;">
+    \[\nabla \cdot \vec{E} = \frac{\rho}{\varepsilon_0}\]
+  </div>
+  <div class="equation" style="top: 35%; left: 35%;">
+    \[\vec{F} = q(\vec{E} + \vec{v} \times \vec{B})\]
+  </div>
+  <div class="equation" style="top: 20%; left: 45%;">
+    \[R = \frac{V}{I}\]
+  </div>
+  <div class="equation" style="top: 60%; left: 40%;">
+    \[\oint \vec{B} \cdot d\vec{\ell} = \mu_0 I\]
+  </div>
+  <div class="equation" style="top: 80%; left: 50%;">
+    \[\det(A - \lambda I) = 0\]
+  </div>
+  <div class="equation" style="top: 30%; left: 80%;">
+    \[\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}\]
+  </div>
 
-  <!-- 幾何学模様 -->
+  <!-- 幾何アニメーション -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
   <script>
     let circles = [];
@@ -62,7 +86,7 @@
       angleMode(DEGREES);
       noStroke();
 
-      // 円の設定（球が回転）
+      // 回転円
       for (let i = 0; i < 3; i++) {
         circles.push({
           x: random(150, width - 150),
@@ -73,7 +97,7 @@
         });
       }
 
-      // 正三角形～正六角形（辺をなぞる球）
+      // 多角形ウォーカー
       for (let sides = 3; sides <= 6; sides++) {
         polygons.push(new PolygonWalker(
           random(150, width - 150),
@@ -84,81 +108,84 @@
         ));
       }
     }
-function draw() {
-  background(255);
 
-  // 円と球
-  fill(0, 20);
-  noStroke();
-  for (let c of circles) {
-    ellipse(c.x, c.y, c.r * 2);
-  }
+    function draw() {
+      background(255);
 
-  fill(0);
-  for (let c of circles) {
-    let bx = c.x + cos(c.angle) * c.r;
-    let by = c.y + sin(c.angle) * c.r;
-    ellipse(bx, by, 10, 10);
-    c.angle += c.speed;
-  }
+      // 円描画
+      fill(0, 20);
+      noStroke();
+      for (let c of circles) {
+        ellipse(c.x, c.y, c.r * 2);
+      }
 
-  // 多角形と球
-  stroke(0, 60);
-  noFill(); // ←ここで多角形を透明に
-  for (let p of polygons) {
-    p.update();
-    p.draw();
-  }
-}
+      // 球描画
+      fill(0);
+      for (let c of circles) {
+        let bx = c.x + cos(c.angle) * c.r;
+        let by = c.y + sin(c.angle) * c.r;
+        ellipse(bx, by, 10, 10);
+        c.angle += c.speed;
+      }
 
-// --- 正多角形ウォーカー ---
-class PolygonWalker {
-  constructor(x, y, r, sides, speed) {
-    this.x = x;
-    this.y = y;
-    this.r = r;
-    this.sides = sides;
-    this.speed = speed;
-    this.points = [];
-
-    for (let i = 0; i < sides; i++) {
-      let angle = 360 / sides * i - 90;
-      let px = this.x + cos(angle) * r;
-      let py = this.y + sin(angle) * r;
-      this.points.push(createVector(px, py));
+      // 多角形とボール
+      stroke(0, 60);
+      noFill();
+      for (let p of polygons) {
+        p.update();
+        p.draw();
+      }
     }
 
-    this.currentEdge = 0;
-    this.t = 0;
-  }
-
-  update() {
-    this.t += this.speed * 0.01;
-    if (this.t >= 1) {
-      this.t = 0;
-      this.currentEdge = (this.currentEdge + 1) % this.sides;
+    function windowResized() {
+      resizeCanvas(windowWidth, windowHeight);
     }
-  }
 
-  draw() {
-    noFill(); // 多角形は塗りなしで
-    beginShape();
-    for (let pt of this.points) {
-      vertex(pt.x, pt.y);
+    // 多角形クラス
+    class PolygonWalker {
+      constructor(x, y, r, sides, speed) {
+        this.x = x;
+        this.y = y;
+        this.r = r;
+        this.sides = sides;
+        this.speed = speed;
+        this.points = [];
+
+        for (let i = 0; i < sides; i++) {
+          let angle = 360 / sides * i - 90;
+          let px = this.x + cos(angle) * r;
+          let py = this.y + sin(angle) * r;
+          this.points.push(createVector(px, py));
+        }
+
+        this.currentEdge = 0;
+        this.t = 0;
+      }
+
+      update() {
+        this.t += this.speed * 0.01;
+        if (this.t >= 1) {
+          this.t = 0;
+          this.currentEdge = (this.currentEdge + 1) % this.sides;
+        }
+      }
+
+      draw() {
+        noFill();
+        beginShape();
+        for (let pt of this.points) {
+          vertex(pt.x, pt.y);
+        }
+        endShape(CLOSE);
+
+        let a = this.points[this.currentEdge];
+        let b = this.points[(this.currentEdge + 1) % this.sides];
+        let bx = lerp(a.x, b.x, this.t);
+        let by = lerp(a.y, b.y, this.t);
+        fill(0);
+        ellipse(bx, by, 10, 10);
+      }
     }
-    endShape(CLOSE);
-
-    // 線上を移動する球だけ塗りつぶし
-    let a = this.points[this.currentEdge];
-    let b = this.points[(this.currentEdge + 1) % this.sides];
-    let bx = lerp(a.x, b.x, this.t);
-    let by = lerp(a.y, b.y, this.t);
-
-    fill(0);
-    ellipse(bx, by, 10, 10);
-  }
-}
-   
   </script>
 </body>
 </html>
