@@ -10,7 +10,7 @@
       padding: 0;
       font-family: sans-serif;
       background: white;
-      overflow: hidden;
+      overflow-x: hidden;
     }
 
     nav {
@@ -26,6 +26,7 @@
       display: flex;
       gap: 20px;
     }
+
     nav a {
       color: white;
       text-decoration: none;
@@ -35,39 +36,18 @@
       padding-top: 70px;
     }
 
-    .banner {
-      background-color: rgba(255, 255, 255, 0.8);
-      border: 2px solid #0077cc;
-      padding: 24px;
-      max-width: 800px;
-      margin: 40px auto;
-      border-radius: 12px;
-      box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+    #content {
       position: relative;
       z-index: 1;
+      background: transparent;
+      padding: 40px;
     }
 
-    .banner a {
-      color: #0077cc;
-      font-weight: bold;
-      text-decoration: none;
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
     }
-
-/* canvas：背景に置く */
-canvas {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: -1; /* 背景！ */
-}
-
-/* #content：文字・要素をcanvasより前に */
-#content {
-  background: transparent;
-  position: relative;
-  z-index: 1; /* canvasの上にする！ */
-}
-    
   </style>
 </head>
 <body>
@@ -79,172 +59,92 @@ canvas {
   </nav>
 
   <div id="content">
-    <h1 style="margin: 40px 20px 10px;">数学研究部</h1>
-    <p style="margin: 0 20px;">Welcome to the Math Club!</p>
-
-
+    <h1>数学研究部</h1>
+    <p>Welcome to the Math Club!</p>
   </div>
 
-<!-- 2D 幾何学模様スケッチ -->
-<!-- 修正版：三角タイル背景 -->
-<script>
-  new p5(p => {
-    let triangles = [];
-    let walkers = [];
-    const sideLength = 60;
-    const walkerCount = 12;
+  <!-- 三角タイル背景 -->
+  <script>
+    new p5(p => {
+      let triangles = [];
+      let walkers = [];
+      const sideLength = 60;
+      const walkerCount = 12;
 
- p.setup = () => {
-  let fullHeight = document.body.scrollHeight;
-  let cnv = p.createCanvas(p.windowWidth, fullHeight);
-  cnv.position(0, 0);
-  cnv.style('z-index', '-4');
-  generateTriangleGrid();
-  for (let i = 0; i < walkerCount; i++) {
-    walkers.push(new Walker(p.random(triangles)));
-  }
-};
-
-    p.draw = () => {
-      p.clear();
-
-      // 三角形グリッド（透明）
-      p.noFill();
-      p.stroke(0, 40);
-      for (let t of triangles) {
-        p.beginShape();
-        for (let pt of t) {
-          p.vertex(pt.x, pt.y);
+      p.setup = () => {
+        const height = document.documentElement.scrollHeight;
+        let cnv = p.createCanvas(p.windowWidth, height);
+        cnv.position(0, 0);
+        cnv.style('z-index', '-4');
+        p.noFill();
+        p.stroke(0, 30);
+        generateTriangleGrid();
+        for (let i = 0; i < walkerCount; i++) {
+          walkers.push(new Walker(p.random(triangles)));
         }
-        p.endShape(p.CLOSE);
-      }
+      };
 
-      // 点の描画
-      for (let w of walkers) {
-        w.update();
-        w.display();
-      }
-    };
+      p.draw = () => {
+        p.clear();
+        for (let t of triangles) {
+          p.beginShape();
+          for (let pt of t) {
+            p.vertex(pt.x, pt.y);
+          }
+          p.endShape(p.CLOSE);
+        }
 
-    function generateTriangleGrid() {
-      const h = sideLength * Math.sqrt(3) / 2;
-      for (let y = 0; y < p.height + h; y += h) {
-        for (let x = 0; x < p.width + sideLength; x += sideLength) {
-          let xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
-          let p1 = p.createVector(x + xOffset, y);
-          let p2 = p.createVector(x + sideLength / 2 + xOffset, y + h);
-          let p3 = p.createVector(x - sideLength / 2 + xOffset, y + h);
-          triangles.push([p1, p2, p3]);
+        for (let w of walkers) {
+          w.update();
+          w.display();
+        }
+      };
+
+      function generateTriangleGrid() {
+        const h = sideLength * Math.sqrt(3) / 2;
+        for (let y = 0; y < p.height + h; y += h) {
+          for (let x = 0; x < p.width + sideLength; x += sideLength) {
+            let xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
+            let p1 = p.createVector(x + xOffset, y);
+            let p2 = p.createVector(x + sideLength / 2 + xOffset, y + h);
+            let p3 = p.createVector(x - sideLength / 2 + xOffset, y + h);
+            triangles.push([p1, p2, p3]);
+          }
         }
       }
-    }
 
-    class Walker {
-      constructor(triangle) {
-        this.triangle = triangle;
-        this.edge = Math.floor(p.random(3));
-        this.t = p.random();
-        this.speed = p.random(0.002, 0.01);
-      }
-
-      update() {
-        this.t += this.speed;
-        if (this.t > 1) {
-          this.t = 0;
+      class Walker {
+        constructor(triangle) {
+          this.triangle = triangle;
           this.edge = Math.floor(p.random(3));
+          this.t = p.random();
+          this.speed = p.random(0.002, 0.01);
+        }
+
+        update() {
+          this.t += this.speed;
+          if (this.t > 1) {
+            this.t = 0;
+            this.edge = Math.floor(p.random(3));
+          }
+        }
+
+        display() {
+          const a = this.triangle[this.edge];
+          const b = this.triangle[(this.edge + 1) % 3];
+          const x = p.lerp(a.x, b.x, this.t);
+          const y = p.lerp(a.y, b.y, this.t);
+          p.noStroke();
+          p.fill(0);
+          p.ellipse(x, y, 6, 6);
         }
       }
 
-      display() {
-        const a = this.triangle[this.edge];
-        const b = this.triangle[(this.edge + 1) % 3];
-        const x = p.lerp(a.x, b.x, this.t);
-        const y = p.lerp(a.y, b.y, this.t);
-        p.noStroke();
-        p.fill(0);
-        p.ellipse(x, y, 6, 6);
-      }
-    }
-
-    p.windowResized = () => {
-      p.resizeCanvas(p.windowWidth, p.windowHeight);
-    };
-  });
-</script>
-
-<!-- 3D 正二十面体スケッチ -->
-<script>
-  new p5(p => {
-    let angleX = 0;
-    let angleY = 0;
-    let lastMouseX, lastMouseY;
-    let dragging = false;
-    let vertices = [];
-    let faces = [];
-
-    p.setup = () => {
-      let cnv = p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
-      cnv.style('z-index', '-3');
-      cnv.position(0, 0);
-      p.noFill();
-      p.stroke(0);
-      p.strokeWeight(1.5);
-      setupIcosahedron();
-    };
-
-    p.draw = () => {
-      p.clear();
-      p.rotateX(angleX);
-      p.rotateY(angleY);
-
-      for (let face of faces) {
-        p.beginShape();
-        for (let i of face) {
-          let v = vertices[i];
-          p.vertex(v[0] * 150, v[1] * 150, v[2] * 150);
-        }
-        p.endShape(p.CLOSE);
-      }
-    };
-
-    p.mousePressed = () => {
-      lastMouseX = p.mouseX;
-      lastMouseY = p.mouseY;
-      dragging = true;
-    };
-
-    p.mouseDragged = () => {
-      if (dragging) {
-        let dx = p.mouseX - lastMouseX;
-        let dy = p.mouseY - lastMouseY;
-        angleY += dx * 0.01;
-        angleX += dy * 0.01;
-        lastMouseX = p.mouseX;
-        lastMouseY = p.mouseY;
-      }
-    };
-
-    p.mouseReleased = () => {
-      dragging = false;
-    };
-
-    function setupIcosahedron() {
-      const phi = (1 + Math.sqrt(5)) / 2;
-      const a = 1;
-      const b = 1 / phi;
-      vertices = [
-        [-a, b, 0], [a, b, 0], [-a, -b, 0], [a, -b, 0],
-        [0, -a, b], [0, a, b], [0, -a, -b], [0, a, -b],
-        [b, 0, -a], [b, 0, a], [-b, 0, -a], [-b, 0, a]
-      ];
-      faces = [
-        [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
-        [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
-        [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
-        [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
-      ];
-    }
-  });
-</script>
+      p.windowResized = () => {
+        const height = document.documentElement.scrollHeight;
+        p.resizeCanvas(p.windowWidth, height);
+      };
+    });
+  </script>
 </body>
 </html>
