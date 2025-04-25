@@ -8,37 +8,22 @@
       margin: 0;
       padding: 0;
       overflow: hidden;
+      background-color: white;
       font-family: sans-serif;
-    }
-    #equation {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 32px;
-      opacity: 0.08;
-      z-index: 1;
-      pointer-events: none;
+      color: black;
     }
     #content {
       position: absolute;
       z-index: 2;
       top: 20px;
       left: 20px;
-      color: inherit;
+    }
+    canvas {
+      display: block;
     }
   </style>
-  <!-- MathJax -->
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script id="MathJax-script" async
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-  </script>
 </head>
 <body>
-  <div id="equation">
-    \[\frac{\partial^2 u}{\partial t^2} = c^2 \frac{\partial^2 u}{\partial x^2}\]
-  </div>
-
   <div id="content">
     <h1>数学研究部</h1>
     <p>Welcome to the Math Club!</p>
@@ -47,56 +32,67 @@
   <!-- p5.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
   <script>
-    let bgColor = 17; // 初期背景色（黒）
-    let lastShapeTime = 0;
-    let shapeInterval = 1000; // 1秒に1回描画
+    let equations = [
+      '∂²u/∂t² = c² ∂²u/∂x²',
+      'e^{iπ} + 1 = 0',
+      'f(x) = ∫_{-∞}^{∞} F(ξ)e^{2πiξx} dξ',
+      '∇·E = ρ/ε₀',
+      'lim_{n→∞} (1 + 1/n)^n = e',
+      'iħ ∂ψ/∂t = Ĥψ'
+    ];
+
+    let eqs = [];
 
     function setup() {
-      createCanvas(window.innerWidth, window.innerHeight);
-      noFill();
+      createCanvas(windowWidth, windowHeight);
+      textAlign(CENTER, CENTER);
+      textSize(28);
       frameRate(60);
     }
 
     function draw() {
-      background(bgColor, 30); // 薄く残像
-      if (millis() - lastShapeTime > shapeInterval) {
-        drawSmoothPolygon();
-        lastShapeTime = millis();
-      }
-    }
+      background(255, 255, 255, 20);
 
-    function drawSmoothPolygon() {
-      stroke(bgColor === 17 ? 255 : 0, 40); // 黒背景なら白線、白背景なら黒線
-      let x = random(width);
-      let y = random(height);
-      let r = random(40, 100);
-      let n = int(random(3, 8));
-      beginShape();
-      for (let a = 0; a < TWO_PI; a += TWO_PI / n) {
-        let sx = x + cos(a) * r;
-        let sy = y + sin(a) * r;
-        vertex(sx, sy);
+      // 幾何学模様（ゆっくり）
+      stroke(0, 50);
+      noFill();
+      if (frameCount % 60 === 0) {
+        let x = random(width);
+        let y = random(height);
+        let r = random(40, 100);
+        let n = int(random(3, 8));
+        beginShape();
+        for (let a = 0; a < TWO_PI; a += TWO_PI / n) {
+          let sx = x + cos(a) * r;
+          let sy = y + sin(a) * r;
+          vertex(sx, sy);
+        }
+        endShape(CLOSE);
       }
-      endShape(CLOSE);
+
+      // 数式の表示とフェード
+      for (let i = eqs.length - 1; i >= 0; i--) {
+        let e = eqs[i];
+        fill(0, e.alpha);
+        text(e.text, e.x, e.y);
+        e.alpha -= 0.5;
+        if (e.alpha <= 0) eqs.splice(i, 1);
+      }
+
+      // 一定間隔で新しい数式を追加
+      if (frameCount % 180 === 0) {
+        let newEq = {
+          text: random(equations),
+          x: random(width * 0.2, width * 0.8),
+          y: random(height * 0.2, height * 0.8),
+          alpha: 255
+        };
+        eqs.push(newEq);
+      }
     }
 
     function windowResized() {
-      resizeCanvas(window.innerWidth, window.innerHeight);
-    }
-
-    function mousePressed() {
-      // 背景色のトグル（黒⇄白）
-      if (bgColor === 17) {
-        bgColor = 255;
-        document.body.style.backgroundColor = "#fff";
-        document.getElementById("content").style.color = "#000";
-        document.getElementById("equation").style.color = "#000";
-      } else {
-        bgColor = 17;
-        document.body.style.backgroundColor = "#111";
-        document.getElementById("content").style.color = "#fff";
-        document.getElementById("equation").style.color = "#fff";
-      }
+      resizeCanvas(windowWidth, windowHeight);
     }
   </script>
 </body>
