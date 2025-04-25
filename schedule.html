@@ -86,185 +86,67 @@
   </table>
   <!-- 幾何学模様用canvas -->
 <script>
-  let circles = [];
-  let walkers = [];
+  new p5(p => {
+    let circles = [];
+    const numRings = 9;
+    const pointsPerRing = 6;
 
-  function setup() {
-    let cnv = createCanvas(windowWidth, windowHeight);
-    cnv.position(0, 0);
-    cnv.style('z-index', '-1');
-    angleMode(DEGREES);
-    noStroke();
+    p.setup = () => {
+      const cnv = p.createCanvas(p.windowWidth, p.windowHeight);
+      cnv.position(0, 0);
+      cnv.style('z-index', '-1');
+      cnv.style('pointer-events', 'none');
+      p.angleMode(p.DEGREES);
 
-    // 通常の円
-    for (let i = 0; i < 3; i++) {
-      let cx = random(150, width - 150);
-      let cy = random(150, height - 150);
-      let r = random(60, 100);
-      circles.push({ x: cx, y: cy, r, angle: random(360), speed: random(0.5, 1.2) });
-    }
+      const centerX = p.width / 2;
+      const centerY = p.height / 2;
 
-    // 正多角形
-    for (let i = 0; i < 3; i++) {
-      walkers.push(new PolygonWalker(random(150, width - 150), random(150, height - 150), 5, 80, 2));
-    }
-
-    // 星型
-    for (let i = 0; i < 2; i++) {
-      walkers.push(new StarWalker(random(150, width - 150), random(150, height - 150), 5, 50, 90, 2));
-    }
-
-    // ランダム閉曲線
-    for (let i = 0; i < 2; i++) {
-      walkers.push(new CurveWalker(random(150, width - 150), random(150, height - 150), 6));
-    }
-  }
-
-  function draw() {
-    background(255);
-
-    // 円と点
-    fill(0, 20);
-    noStroke();
-    for (let c of circles) {
-      ellipse(c.x, c.y, c.r * 2);
-    }
-
-    fill(0);
-    for (let c of circles) {
-      let bx = c.x + cos(c.angle) * c.r;
-      let by = c.y + sin(c.angle) * c.r;
-      ellipse(bx, by, 10, 10);
-      c.angle += c.speed;
-    }
-
-    // 多角形・星・曲線
-    for (let w of walkers) {
-      w.update();
-      w.draw();
-    }
-  }
-
-  function windowResized() {
-    resizeCanvas(windowWidth, windowHeight);
-  }
-
-  class PolygonWalker {
-    constructor(x, y, sides, r, speed) {
-      this.points = [];
-      this.t = 0;
-      this.speed = speed;
-      for (let i = 0; i < sides; i++) {
-        let angle = 360 / sides * i - 90;
-        let px = x + cos(angle) * r;
-        let py = y + sin(angle) * r;
-        this.points.push(createVector(px, py));
+      for (let r = 1; r <= numRings; r++) {
+        const radius = r * 40; // 任意に調整
+        for (let i = 0; i < pointsPerRing; i++) {
+          const angle = p.random(360);
+          const speed = p.random(0.2, 1.0) * (r * 0.2);
+          circles.push({
+            r: radius,
+            angle: angle,
+            speed: speed,
+            centerX,
+            centerY
+          });
+        }
       }
-      this.currentEdge = 0;
-    }
+    };
 
-    update() {
-      this.t += this.speed * 0.01;
-      if (this.t >= 1) {
-        this.t = 0;
-        this.currentEdge = (this.currentEdge + 1) % this.points.length;
+    p.draw = () => {
+      p.clear();
+
+      for (let c of circles) {
+        const x = c.centerX + p.cos(c.angle) * c.r;
+        const y = c.centerY + p.sin(c.angle) * c.r;
+
+        // 輝き（外側ぼかし）
+        p.noStroke();
+        p.fill(0, 0, 0, 30);
+        p.ellipse(x, y, 18);
+
+        // 中心の点
+        p.fill(0);
+        p.ellipse(x, y, 6);
+
+        c.angle += c.speed;
       }
-    }
+    };
 
-    draw() {
-      stroke(0, 60);
-      noFill();
-      beginShape();
-      for (let pt of this.points) vertex(pt.x, pt.y);
-      endShape(CLOSE);
-
-      let a = this.points[this.currentEdge];
-      let b = this.points[(this.currentEdge + 1) % this.points.length];
-      let bx = lerp(a.x, b.x, this.t);
-      let by = lerp(a.y, b.y, this.t);
-      fill(0);
-      ellipse(bx, by, 10, 10);
-    }
-  }
-
-  class StarWalker {
-    constructor(x, y, points, innerR, outerR, speed) {
-      this.points = [];
-      this.t = 0;
-      this.speed = speed;
-      let total = points * 2;
-      for (let i = 0; i < total; i++) {
-        let angle = 360 / total * i - 90;
-        let r = i % 2 === 0 ? outerR : innerR;
-        let px = x + cos(angle) * r;
-        let py = y + sin(angle) * r;
-        this.points.push(createVector(px, py));
+    p.windowResized = () => {
+      p.resizeCanvas(p.windowWidth, p.windowHeight);
+      const centerX = p.width / 2;
+      const centerY = p.height / 2;
+      for (let c of circles) {
+        c.centerX = centerX;
+        c.centerY = centerY;
       }
-      this.currentEdge = 0;
-    }
-
-    update() {
-      this.t += this.speed * 0.01;
-      if (this.t >= 1) {
-        this.t = 0;
-        this.currentEdge = (this.currentEdge + 1) % this.points.length;
-      }
-    }
-
-    draw() {
-      stroke(0, 60);
-      noFill();
-      beginShape();
-      for (let pt of this.points) vertex(pt.x, pt.y);
-      endShape(CLOSE);
-
-      let a = this.points[this.currentEdge];
-      let b = this.points[(this.currentEdge + 1) % this.points.length];
-      let bx = lerp(a.x, b.x, this.t);
-      let by = lerp(a.y, b.y, this.t);
-      fill(0);
-      ellipse(bx, by, 10, 10);
-    }
-  }
-
-  class CurveWalker {
-    constructor(cx, cy, points) {
-      this.path = [];
-      this.t = 0;
-      this.speed = random(0.003, 0.01);
-      for (let i = 0; i < points; i++) {
-        let angle = 360 / points * i;
-        let r = random(40, 80);
-        let x = cx + cos(angle) * r;
-        let y = cy + sin(angle) * r;
-        this.path.push(createVector(x, y));
-      }
-      this.path.push(this.path[0]); // 閉曲線
-    }
-
-    update() {
-      this.t += this.speed;
-      if (this.t >= this.path.length - 1) this.t = 0;
-    }
-
-    draw() {
-      stroke(0, 40);
-      noFill();
-      beginShape();
-      for (let pt of this.path) vertex(pt.x, pt.y);
-      endShape(CLOSE);
-
-      let i = floor(this.t);
-      let a = this.path[i];
-      let b = this.path[i + 1];
-      let f = this.t - i;
-      let x = lerp(a.x, b.x, f);
-      let y = lerp(a.y, b.y, f);
-
-      fill(0);
-      ellipse(x, y, 10, 10);
-    }
-  }
+    };
+  });
 </script>
 </body>
 </html>
