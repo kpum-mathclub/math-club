@@ -241,5 +241,78 @@ function generateTriangleGrid() {
     };
   });
 </script>
+  <!-- p5.js WebGL 地球（京都に赤ピン） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+<script>
+let earthTexture;
+let angleX = 0, angleY = 0;
+let lastMouseX, lastMouseY;
+let dragging = false;
+
+function preload() {
+  earthTexture = loadImage("https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Earthmap1000x500compac.jpg/800px-Earthmap1000x500compac.jpg");
+}
+
+function setup() {
+  const canvas = createCanvas(windowWidth, windowHeight, WEBGL);
+  canvas.style('position', 'fixed');
+  canvas.style('z-index', '-10');
+  canvas.style('top', '0');
+  canvas.style('left', '0');
+  noStroke();
+  textureMode(NORMAL);
+}
+
+function draw() {
+  background(255);
+  rotateX(angleX);
+  rotateY(angleY);
+
+  // 地球描画
+  texture(earthTexture);
+  sphere(250);
+
+  // 京都の位置（緯度経度 → ラジアン → xyz）
+  const lat = 35.0242;
+  const lon = 135.7699;
+  const radius = 250;
+  const theta = radians(lon);
+  const phi = radians(90 - lat);
+  const x = radius * sin(phi) * cos(theta);
+  const y = radius * cos(phi);
+  const z = radius * sin(phi) * sin(theta);
+
+  push();
+  translate(x, -y, z);
+  fill(255, 0, 0);
+  sphere(5); // 赤いピン（小さな球）
+  pop();
+}
+
+function mousePressed() {
+  lastMouseX = mouseX;
+  lastMouseY = mouseY;
+  dragging = true;
+}
+
+function mouseDragged() {
+  if (dragging) {
+    let dx = mouseX - lastMouseX;
+    let dy = mouseY - lastMouseY;
+    angleY += dx * 0.01;
+    angleX += dy * 0.01;
+    lastMouseX = mouseX;
+    lastMouseY = mouseY;
+  }
+}
+
+function mouseReleased() {
+  dragging = false;
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+}
+</script>
 </body>
 </html>
