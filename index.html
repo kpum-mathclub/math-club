@@ -242,77 +242,80 @@ function generateTriangleGrid() {
   });
 </script>
   <!-- p5.js WebGL 地球（京都に赤ピン） -->
+<!-- 地球回転スクリプト -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
 <script>
-let earthTexture;
-let angleX = 0, angleY = 0;
-let lastMouseX, lastMouseY;
-let dragging = false;
+new p5((p) => {
+  let earthTexture;
+  let angleX = 0, angleY = 0;
+  let lastMouseX, lastMouseY;
+  let dragging = false;
 
-function preload() {
-  earthTexture = loadImage("https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Earthmap1000x500compac.jpg/800px-Earthmap1000x500compac.jpg");
-}
+  p.preload = () => {
+    earthTexture = p.loadImage("https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Earthmap1000x500compac.jpg/800px-Earthmap1000x500compac.jpg");
+  };
 
-function setup() {
-  const canvas = createCanvas(windowWidth, windowHeight, WEBGL);
-  canvas.style('position', 'fixed');
-  canvas.style('z-index', '-10');
-  canvas.style('top', '0');
-  canvas.style('left', '0');
-  noStroke();
-  textureMode(NORMAL);
-}
+  p.setup = () => {
+    const canvas = p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
+    canvas.style('position', 'fixed');
+    canvas.style('z-index', '-10');
+    canvas.style('top', '0');
+    canvas.style('left', '0');
+    p.noStroke();
+    p.textureMode(p.NORMAL);
+  };
 
-function draw() {
-  background(255);
-  rotateX(angleX);
-  rotateY(angleY);
+  p.draw = () => {
+    p.background(255);
+    p.rotateX(angleX);
+    p.rotateY(angleY);
 
-  // 地球描画
-  texture(earthTexture);
-  sphere(250);
+    // 地球
+    p.texture(earthTexture);
+    p.sphere(250);
 
-  // 京都の位置（緯度経度 → ラジアン → xyz）
-  const lat = 35.0242;
-  const lon = 135.7699;
-  const radius = 250;
-  const theta = radians(lon);
-  const phi = radians(90 - lat);
-  const x = radius * sin(phi) * cos(theta);
-  const y = radius * cos(phi);
-  const z = radius * sin(phi) * sin(theta);
+    // 京都府立医科大学に赤ピン
+    const lat = 35.0242;
+    const lon = 135.7699;
+    const radius = 250;
+    const theta = p.radians(lon);
+    const phi = p.radians(90 - lat);
+    const x = radius * p.sin(phi) * p.cos(theta);
+    const y = radius * p.cos(phi);
+    const z = radius * p.sin(phi) * p.sin(theta);
 
-  push();
-  translate(x, -y, z);
-  fill(255, 0, 0);
-  sphere(5); // 赤いピン（小さな球）
-  pop();
-}
+    p.push();
+    p.translate(x, -y, z);
+    p.fill(255, 0, 0);
+    p.sphere(5);
+    p.pop();
+  };
 
-function mousePressed() {
-  lastMouseX = mouseX;
-  lastMouseY = mouseY;
-  dragging = true;
-}
+  p.mousePressed = () => {
+    lastMouseX = p.mouseX;
+    lastMouseY = p.mouseY;
+    dragging = true;
+  };
 
-function mouseDragged() {
-  if (dragging) {
-    let dx = mouseX - lastMouseX;
-    let dy = mouseY - lastMouseY;
-    angleY += dx * 0.01;
-    angleX += dy * 0.01;
-    lastMouseX = mouseX;
-    lastMouseY = mouseY;
-  }
-}
+  p.mouseDragged = () => {
+    if (dragging) {
+      const dx = p.mouseX - lastMouseX;
+      const dy = p.mouseY - lastMouseY;
+      angleY += dx * 0.01;
+      angleX += dy * 0.01;
+      lastMouseX = p.mouseX;
+      lastMouseY = p.mouseY;
+    }
+  };
 
-function mouseReleased() {
-  dragging = false;
-}
+  p.mouseReleased = () => {
+    dragging = false;
+  };
 
-function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
-}
+  p.windowResized = () => {
+    p.resizeCanvas(p.windowWidth, p.windowHeight);
+  };
+});
 </script>
 </body>
 </html>
