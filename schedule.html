@@ -179,6 +179,7 @@
     }
 
     draw() {
+      noFill();
       beginShape();
       for (let pt of this.points) {
         vertex(pt.x, pt.y);
