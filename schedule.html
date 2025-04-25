@@ -87,7 +87,7 @@
   <!-- 幾何学模様用canvas -->
 <script>
   let circles = [];
-  let polygons = [];
+  let walkers = [];
 
   function setup() {
     let cnv = createCanvas(windowWidth, windowHeight);
@@ -96,30 +96,34 @@
     angleMode(DEGREES);
     noStroke();
 
+    // 通常の円
     for (let i = 0; i < 3; i++) {
-      circles.push({
-        x: random(150, width - 150),
-        y: random(150, height - 150),
-        r: random(60, 100),
-        angle: random(360),
-        speed: random(0.5, 1.2)
-      });
+      let cx = random(150, width - 150);
+      let cy = random(150, height - 150);
+      let r = random(60, 100);
+      circles.push({ x: cx, y: cy, r, angle: random(360), speed: random(0.5, 1.2) });
     }
 
-    for (let sides = 3; sides <= 6; sides++) {
-      polygons.push(new PolygonWalker(
-        random(150, width - 150),
-        random(150, height - 150),
-        random(60, 90),
-        sides,
-        random(1, 2)
-      ));
+    // 正多角形
+    for (let i = 0; i < 3; i++) {
+      walkers.push(new PolygonWalker(random(150, width - 150), random(150, height - 150), 5, 80, 2));
+    }
+
+    // 星型
+    for (let i = 0; i < 2; i++) {
+      walkers.push(new StarWalker(random(150, width - 150), random(150, height - 150), 5, 50, 90, 2));
+    }
+
+    // ランダム閉曲線
+    for (let i = 0; i < 2; i++) {
+      walkers.push(new CurveWalker(random(150, width - 150), random(150, height - 150), 6));
     }
   }
 
   function draw() {
     background(255);
 
+    // 円と点
     fill(0, 20);
     noStroke();
     for (let c of circles) {
@@ -134,11 +138,10 @@
       c.angle += c.speed;
     }
 
-    stroke(0, 60);
-    noFill();
-    for (let p of polygons) {
-      p.update();
-      p.draw();
+    // 多角形・星・曲線
+    for (let w of walkers) {
+      w.update();
+      w.draw();
     }
   }
 
@@ -147,47 +150,119 @@
   }
 
   class PolygonWalker {
-    constructor(x, y, r, sides, speed) {
-      this.x = x;
-      this.y = y;
-      this.r = r;
-      this.sides = sides;
-      this.speed = speed;
+    constructor(x, y, sides, r, speed) {
       this.points = [];
-
+      this.t = 0;
+      this.speed = speed;
       for (let i = 0; i < sides; i++) {
         let angle = 360 / sides * i - 90;
-        let px = this.x + cos(angle) * r;
-        let py = this.y + sin(angle) * r;
+        let px = x + cos(angle) * r;
+        let py = y + sin(angle) * r;
         this.points.push(createVector(px, py));
       }
-
       this.currentEdge = 0;
-      this.t = 0;
     }
 
     update() {
       this.t += this.speed * 0.01;
       if (this.t >= 1) {
         this.t = 0;
-        this.currentEdge = (this.currentEdge + 1) % this.sides;
+        this.currentEdge = (this.currentEdge + 1) % this.points.length;
       }
     }
 
     draw() {
+      stroke(0, 60);
       noFill();
       beginShape();
-      for (let pt of this.points) {
-        vertex(pt.x, pt.y);
-      }
+      for (let pt of this.points) vertex(pt.x, pt.y);
       endShape(CLOSE);
 
       let a = this.points[this.currentEdge];
-      let b = this.points[(this.currentEdge + 1) % this.sides];
+      let b = this.points[(this.currentEdge + 1) % this.points.length];
       let bx = lerp(a.x, b.x, this.t);
       let by = lerp(a.y, b.y, this.t);
       fill(0);
       ellipse(bx, by, 10, 10);
+    }
+  }
+
+  class StarWalker {
+    constructor(x, y, points, innerR, outerR, speed) {
+      this.points = [];
+      this.t = 0;
+      this.speed = speed;
+      let total = points * 2;
+      for (let i = 0; i < total; i++) {
+        let angle = 360 / total * i - 90;
+        let r = i % 2 === 0 ? outerR : innerR;
+        let px = x + cos(angle) * r;
+        let py = y + sin(angle) * r;
+        this.points.push(createVector(px, py));
+      }
+      this.currentEdge = 0;
+    }
+
+    update() {
+      this.t += this.speed * 0.01;
+      if (this.t >= 1) {
+        this.t = 0;
+        this.currentEdge = (this.currentEdge + 1) % this.points.length;
+      }
+    }
+
+    draw() {
+      stroke(0, 60);
+      noFill();
+      beginShape();
+      for (let pt of this.points) vertex(pt.x, pt.y);
+      endShape(CLOSE);
+
+      let a = this.points[this.currentEdge];
+      let b = this.points[(this.currentEdge + 1) % this.points.length];
+      let bx = lerp(a.x, b.x, this.t);
+      let by = lerp(a.y, b.y, this.t);
+      fill(0);
+      ellipse(bx, by, 10, 10);
+    }
+  }
+
+  class CurveWalker {
+    constructor(cx, cy, points) {
+      this.path = [];
+      this.t = 0;
+      this.speed = random(0.003, 0.01);
+      for (let i = 0; i < points; i++) {
+        let angle = 360 / points * i;
+        let r = random(40, 80);
+        let x = cx + cos(angle) * r;
+        let y = cy + sin(angle) * r;
+        this.path.push(createVector(x, y));
+      }
+      this.path.push(this.path[0]); // 閉曲線
+    }
+
+    update() {
+      this.t += this.speed;
+      if (this.t >= this.path.length - 1) this.t = 0;
+    }
+
+    draw() {
+      stroke(0, 40);
+      noFill();
+      beginShape();
+      for (let pt of this.path) vertex(pt.x, pt.y);
+      endShape(CLOSE);
+
+      let i = floor(this.t);
+      let a = this.path[i];
+      let b = this.path[i + 1];
+      let f = this.t - i;
+      let x = lerp(a.x, b.x, f);
+      let y = lerp(a.y, b.y, f);
+
+      fill(0);
+      ellipse(x, y, 10, 10);
     }
   }
 </script>
