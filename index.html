@@ -189,58 +189,50 @@
     }
 
     class Walker {
-      constructor() {
-        this.current = p.random(points);
-        this.next = this.chooseNext(this.current);
-        this.t = 0;
-        this.speed = p.random(0.003, 0.01);
-         this.phase = p.random(p.TWO_PI); //
-      }
+  constructor() {
+    this.current = p.random(points);
+    this.next = this.chooseNext(this.current);
+    this.t = 0;
+    this.speed = p.random(0.003, 0.008);
+    this.phase = p.random(p.TWO_PI); // ← これが絶対に必要
+  }
 
-      chooseNext(current) {
-        const key = current.x + ',' + current.y;
-        const options = adjacency.get(key)?.neighbors;
-        if (!options || options.length === 0) return current;
+  chooseNext(current) {
+    const key = current.x + ',' + current.y;
+    const options = adjacency.get(key)?.neighbors;
+    if (!options || options.length === 0) return current;
 
-        let next;
-        do {
-          next = p.random(options);
-        } while (
-          next.x === current.x &&
-          next.y === current.y &&
-          options.length > 1
-        );
-        return next;
-      }
+    let next;
+    do {
+      next = p.random(options);
+    } while (next.x === current.x && next.y === current.y && options.length > 1);
+    return next;
+  }
 
-      update() {
-        this.t += this.speed;
-        if (this.t >= 1) {
-          this.current = this.next;
-          this.next = this.chooseNext(this.current);
-          this.t = 0;
-        }
-      }
+  update() {
+    this.t += this.speed;
+    if (this.t >= 1) {
+      this.current = this.next;
+      this.next = this.chooseNext(this.current);
+      this.t = 0;
+    }
+  }
 
-     display() {
-  const x = p.lerp(this.current.x, this.next.x, this.t);
-  const y = p.lerp(this.current.y, this.next.y, this.t);
+  display() {
+    const x = p.lerp(this.current.x, this.next.x, this.t);
+    const y = p.lerp(this.current.y, this.next.y, this.t);
 
-  const baseSize = 6;
-  const size = baseSize + p.sin(p.frameCount * 0.05 + this.phase) * 2;
+    const size = 6 + p.sin(p.frameCount * 0.05 + this.phase) * 2;
+    const glow = 20 + 10 * p.sin(p.frameCount * 0.08 + this.phase);
 
-  const glow = 20 + 10 * p.sin(p.frameCount * 0.08 + this.phase); // 発光はやや速く
+    p.noStroke();
+    p.fill(0, 0, 0, 25); // 外側ぼかし
+    p.ellipse(x, y, size + glow);
 
-  // 発光（外側のぼかし）
-  p.noStroke();
-  p.fill(0, 0, 0, 20);
-  p.ellipse(x, y, size + glow);
-
-  // 中心点
-  p.fill(0);
-  p.ellipse(x, y, size);
+    p.fill(0);
+    p.ellipse(x, y, size);
+  }
 }
-
     p.windowResized = () => {
       const height = document.documentElement.scrollHeight;
       p.resizeCanvas(p.windowWidth, height);
