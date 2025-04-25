@@ -109,51 +109,50 @@
 
     p.setup = () => {
       const height = document.body.scrollHeight;
-      let cnv = p.createCanvas(p.windowWidth, height);
+      const cnv = p.createCanvas(p.windowWidth, height);
       cnv.position(0, 0);
-      cnv.style('z-index', '-4');
+      cnv.style('z-index', '-10');
       cnv.style('pointer-events', 'none');
+      p.background(255); // 白背景
       generateTriangleGrid();
-
       for (let i = 0; i < walkerCount; i++) {
         walkers.push(new Walker());
       }
-
-      p.frameRate(60); // 滑らかに
     };
 
- p.draw = () => {
-  // 残像を薄く描画（trailのため）
-  p.fill(255, 255, 255, 25);
-  p.noStroke();
-  p.rect(0, 0, p.width, p.height);
+    p.draw = () => {
+      // 残像効果（背景をうっすら上書き）
+      p.fill(255, 255, 255, 10);
+      p.noStroke();
+      p.rect(0, 0, p.width, p.height);
 
-  // タイル（三角形）描画
-  p.noFill();
-  p.stroke(0, 40);
-  for (let t of triangles) {
-    p.beginShape();
-    for (let pt of t) {
-      p.vertex(pt.x, pt.y);
-    }
-    p.endShape(p.CLOSE);
-  }
+      // タイル（三角形）を描く
+      p.noFill();
+      p.stroke(0, 50);
+      for (let t of triangles) {
+        p.beginShape();
+        for (let pt of t) {
+          p.vertex(pt.x, pt.y);
+        }
+        p.endShape(p.CLOSE);
+      }
 
-  // 点の描画
-  for (let w of walkers) {
-    w.update();
-    w.display();
-  }
-};
+      // 点の描画
+      for (let w of walkers) {
+        w.update();
+        w.display();
+      }
+    };
+
     function generateTriangleGrid() {
       const h = sideLength * Math.sqrt(3) / 2;
 
       for (let y = 0; y < p.height + h; y += h) {
         for (let x = 0; x < p.width + sideLength; x += sideLength) {
-          let xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
-          let p1 = p.createVector(x + xOffset, y);
-          let p2 = p.createVector(x + sideLength / 2 + xOffset, y + h);
-          let p3 = p.createVector(x - sideLength / 2 + xOffset, y + h);
+          const xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
+          const p1 = p.createVector(x + xOffset, y);
+          const p2 = p.createVector(x + sideLength / 2 + xOffset, y + h);
+          const p3 = p.createVector(x - sideLength / 2 + xOffset, y + h);
           triangles.push([p1, p2, p3]);
 
           registerEdge(p1, p2);
@@ -162,7 +161,7 @@
         }
       }
 
-      points = Array.from(adjacency.keys()).map(k => adjacency.get(k).vec);
+      points = Array.from(adjacency.values()).map(obj => obj.vec);
     }
 
     function registerEdge(a, b) {
@@ -188,7 +187,7 @@
         this.current = p.random(points);
         this.next = this.chooseNext(this.current);
         this.t = 0;
-        this.speed = p.random(0.003, 0.007);
+        this.speed = p.random(0.003, 0.008);
         this.phase = p.random(p.TWO_PI);
         this.glowPhase = p.random(p.TWO_PI);
       }
@@ -220,14 +219,14 @@
 
         const baseSize = 6;
         const size = baseSize + p.sin(p.frameCount * 0.05 + this.phase) * 3;
-        const glow = 40 + 20 * p.sin(p.frameCount * 0.08 + this.glowPhase); // glow周期少し早く
+        const glow = 30 + 10 * p.sin(p.frameCount * 0.08 + this.glowPhase);
 
-        // 外側の発光
+        // 発光（ぼかし）部分
         p.noStroke();
         p.fill(0, 0, 0, 20);
         p.ellipse(x, y, size + glow);
 
-        // 中心点
+        // 中心
         p.fill(0);
         p.ellipse(x, y, size);
       }
