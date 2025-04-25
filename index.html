@@ -84,21 +84,26 @@
         }
       };
 
-      p.draw = () => {
-        p.clear();
-        for (let t of triangles) {
-          p.beginShape();
-          for (let pt of t) {
-            p.vertex(pt.x, pt.y);
-          }
-          p.endShape(p.CLOSE);
-        }
+ p.draw = () => {
+  p.clear();
 
-        for (let w of walkers) {
-          w.update();
-          w.display();
-        }
-      };
+  // 透明三角形を描く
+  p.noFill(); // ← これが重要！！
+  p.stroke(0, 30);
+  for (let t of triangles) {
+    p.beginShape();
+    for (let pt of t) {
+      p.vertex(pt.x, pt.y);
+    }
+    p.endShape(p.CLOSE);
+  }
+
+  // 点の描画
+  for (let w of walkers) {
+    w.update();
+    w.display();
+  }
+};
 
       function generateTriangleGrid() {
         const h = sideLength * Math.sqrt(3) / 2;
