@@ -115,27 +115,42 @@
   new p5(p => {
     const ballCount = 20;
     const balls = [];
+    let isPressing = false;
 
     class Ball {
       constructor() {
         this.r = p.random(10, 30);
         this.x = p.random(this.r, p.windowWidth - this.r);
         this.y = p.random(this.r, p.windowHeight - this.r);
-        this.vx = p.random(-2, 2);
-        this.vy = p.random(-2, 2);
-        this.color = p.color(30, 30, 30, 100); // 少し濃く
+        this.baseVx = p.random(-1, 1);
+        this.baseVy = p.random(-1, 1);
+        this.vx = this.baseVx;
+        this.vy = this.baseVy;
+        this.color = p.color(30, 30, 30, 100);
       }
 
       move() {
+        this.vx = isPressing ? this.baseVx * 3 : this.baseVx;
+        this.vy = isPressing ? this.baseVy * 3 : this.baseVy;
+
         this.x += this.vx;
         this.y += this.vy;
 
-        // 壁で反射
-        if (this.x - this.r < 0 || this.x + this.r > p.width) {
-          this.vx *= -1;
+        if (this.x - this.r < 0) {
+          this.x = this.r;
+          this.baseVx *= -1;
         }
-        if (this.y - this.r < 0 || this.y + this.r > p.height) {
-          this.vy *= -1;
+        if (this.x + this.r > p.width) {
+          this.x = p.width - this.r;
+          this.baseVx *= -1;
+        }
+        if (this.y - this.r < 0) {
+          this.y = this.r;
+          this.baseVy *= -1;
+        }
+        if (this.y + this.r > p.height) {
+          this.y = p.height - this.r;
+          this.baseVy *= -1;
         }
       }
 
@@ -147,10 +162,10 @@
     }
 
     p.setup = () => {
-      const canvas = p.createCanvas(p.windowWidth, document.body.scrollHeight);
+      const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
       canvas.position(0, 0);
       canvas.style('z-index', '-10');
-      canvas.style('pointer-events', 'none'); // 干渉しない
+      canvas.style('pointer-events', 'none');
       for (let i = 0; i < ballCount; i++) {
         balls.push(new Ball());
       }
@@ -165,8 +180,14 @@
     };
 
     p.windowResized = () => {
-      p.resizeCanvas(p.windowWidth, document.body.scrollHeight);
+      p.resizeCanvas(p.windowWidth, p.windowHeight);
     };
+
+    // 長押しイベント
+    p.mousePressed = () => { isPressing = true; };
+    p.mouseReleased = () => { isPressing = false; };
+    p.touchStarted = () => { isPressing = true; };
+    p.touchEnded = () => { isPressing = false; };
   });
 </script>
 </body>
