@@ -113,7 +113,7 @@
       cnv.position(0, 0);
       cnv.style('z-index', '-10');
       cnv.style('pointer-events', 'none');
-      p.background(255); // 白背景
+      p.background(255); // 一度白背景を設定
       generateTriangleGrid();
       for (let i = 0; i < walkerCount; i++) {
         walkers.push(new Walker());
@@ -121,10 +121,10 @@
     };
 
     p.draw = () => {
-      // 残像効果（背景をうっすら上書き）
-    
+      // 白背景を完全に毎フレーム塗りつぶし
+      p.background(255);
 
-      // タイル（三角形）を描く
+      // 三角タイルの描画
       p.noFill();
       p.stroke(0, 50);
       for (let t of triangles) {
@@ -186,8 +186,6 @@
         this.next = this.chooseNext(this.current);
         this.t = 0;
         this.speed = p.random(0.003, 0.008);
-        this.phase = p.random(p.TWO_PI);
-        this.glowPhase = p.random(p.TWO_PI);
       }
 
       chooseNext(current) {
@@ -214,19 +212,9 @@
       display() {
         const x = p.lerp(this.current.x, this.next.x, this.t);
         const y = p.lerp(this.current.y, this.next.y, this.t);
-
-        const baseSize = 6;
-        const size = baseSize + p.sin(p.frameCount * 0.05 + this.phase) * 3;
-        const glow = 30 + 10 * p.sin(p.frameCount * 0.08 + this.glowPhase);
-
-        // 発光（ぼかし）部分
         p.noStroke();
-        p.fill(0, 0, 0, 20);
-        p.ellipse(x, y, size + glow);
-
-        // 中心
         p.fill(0);
-        p.ellipse(x, y, size);
+        p.ellipse(x, y, 8);
       }
     }
 
