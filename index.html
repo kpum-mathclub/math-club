@@ -236,5 +236,89 @@
       }
     }
   </script>
+  <!-- p5.js WebGL を読み込む -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+
+<!-- WebGLで正二十面体を表示＋ドラッグ操作 -->
+<script>
+let angleX = 0;
+let angleY = 0;
+let lastMouseX, lastMouseY;
+let dragging = false;
+
+let icosahedronVertices = [];
+let icosahedronFaces = [];
+
+function setup() {
+  let cnv = createCanvas(windowWidth, windowHeight, WEBGL);
+  cnv.style('position', 'fixed');
+  cnv.style('top', '0');
+  cnv.style('left', '0');
+  cnv.style('z-index', '-1');
+  noStroke();
+  setupIcosahedron();
+}
+
+function draw() {
+  background(255);
+
+  rotateX(angleX);
+  rotateY(angleY);
+
+  fill(0, 40);
+  for (let face of icosahedronFaces) {
+    beginShape();
+    for (let i of face) {
+      let v = icosahedronVertices[i];
+      vertex(v[0] * 150, v[1] * 150, v[2] * 150);
+    }
+    endShape(CLOSE);
+  }
+}
+
+function mousePressed() {
+  lastMouseX = mouseX;
+  lastMouseY = mouseY;
+  dragging = true;
+}
+
+function mouseDragged() {
+  if (dragging) {
+    let dx = mouseX - lastMouseX;
+    let dy = mouseY - lastMouseY;
+    angleY += dx * 0.01;
+    angleX += dy * 0.01;
+    lastMouseX = mouseX;
+    lastMouseY = mouseY;
+  }
+}
+
+function mouseReleased() {
+  dragging = false;
+}
+
+function setupIcosahedron() {
+  const phi = (1 + sqrt(5)) / 2;
+  const a = 1;
+  const b = 1 / phi;
+
+  icosahedronVertices = [
+    [-a,  b,  0], [ a,  b,  0], [-a, -b,  0], [ a, -b,  0],
+    [ 0, -a,  b], [ 0,  a,  b], [ 0, -a, -b], [ 0,  a, -b],
+    [ b,  0, -a], [ b,  0,  a], [-b,  0, -a], [-b,  0,  a]
+  ];
+
+  icosahedronFaces = [
+    [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+    [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+    [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+    [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
+  ];
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+}
+</script>
 </body>
 </html>
