@@ -101,39 +101,33 @@
 <script>
   new p5(p => {
     const sideLength = 60;
-    const walkerCount = 36;
+    const walkerCount = 12;
     let triangles = [];
     let points = [];
     let adjacency = new Map();
     let walkers = [];
 
     p.setup = () => {
-      const height = document.documentElement.scrollHeight;
+      const height = document.body.scrollHeight;
       let cnv = p.createCanvas(p.windowWidth, height);
       cnv.position(0, 0);
       cnv.style('z-index', '-4');
-
+      cnv.style('pointer-events', 'none');
       generateTriangleGrid();
+
       for (let i = 0; i < walkerCount; i++) {
         walkers.push(new Walker());
       }
+
+      p.frameRate(60); // 滑らかに
     };
 
     p.draw = () => {
-      p.clear();
+      // 透明度を少しだけ下げて「残像(trail)」を出す
+      p.fill(255, 255, 255, 25);
+      p.noStroke();
+      p.rect(0, 0, p.width, p.height);
 
-      // 三角形描画（透明）
-      p.noFill();
-      p.stroke(0, 30);
-      for (let t of triangles) {
-        p.beginShape();
-        for (let pt of t) {
-          p.vertex(pt.x, pt.y);
-        }
-        p.endShape(p.CLOSE);
-      }
-
-      // 点の描画
       for (let w of walkers) {
         w.update();
         w.display();
@@ -143,8 +137,8 @@
     function generateTriangleGrid() {
       const h = sideLength * Math.sqrt(3) / 2;
 
-      for (let y = 0; y < p.windowHeight + h; y += h) {
-        for (let x = 0; x < p.windowWidth + sideLength; x += sideLength) {
+      for (let y = 0; y < p.height + h; y += h) {
+        for (let x = 0; x < p.width + sideLength; x += sideLength) {
           let xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
           let p1 = p.createVector(x + xOffset, y);
           let p2 = p.createVector(x + sideLength / 2 + xOffset, y + h);
@@ -183,7 +177,9 @@
         this.current = p.random(points);
         this.next = this.chooseNext(this.current);
         this.t = 0;
-        this.speed = p.random(0.003, 0.01);
+        this.speed = p.random(0.003, 0.007);
+        this.phase = p.random(p.TWO_PI);
+        this.glowPhase = p.random(p.TWO_PI);
       }
 
       chooseNext(current) {
@@ -194,11 +190,7 @@
         let next;
         do {
           next = p.random(options);
-        } while (
-          next.x === current.x &&
-          next.y === current.y &&
-          options.length > 1
-        );
+        } while (next.x === current.x && next.y === current.y && options.length > 1);
         return next;
       }
 
@@ -214,15 +206,24 @@
       display() {
         const x = p.lerp(this.current.x, this.next.x, this.t);
         const y = p.lerp(this.current.y, this.next.y, this.t);
+
+        const baseSize = 6;
+        const size = baseSize + p.sin(p.frameCount * 0.05 + this.phase) * 3;
+        const glow = 40 + 20 * p.sin(p.frameCount * 0.08 + this.glowPhase); // glow周期少し早く
+
+        // 外側の発光
         p.noStroke();
+        p.fill(0, 0, 0, 20);
+        p.ellipse(x, y, size + glow);
+
+        // 中心点
         p.fill(0);
-        p.ellipse(x, y, 6, 6);
+        p.ellipse(x, y, size);
       }
     }
 
     p.windowResized = () => {
-      const height = document.documentElement.scrollHeight;
-      p.resizeCanvas(p.windowWidth, height);
+      p.resizeCanvas(p.windowWidth, document.body.scrollHeight);
     };
   });
 </script>
