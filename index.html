@@ -3,16 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <title>数学研究部 | Math Club</title>
-
-  <!-- p5.js & WebGL -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
-
   <style>
     html, body {
       margin: 0;
       padding: 0;
       font-family: sans-serif;
-      color: black;
       background: white;
       overflow: hidden;
     }
@@ -34,16 +30,13 @@
       color: white;
       text-decoration: none;
     }
-    nav a:hover {
-      text-decoration: underline;
-    }
 
     body {
       padding-top: 70px;
     }
 
     .banner {
-      background-color: rgba(255, 255, 255, 0.85); /* 半透明 */
+      background-color: rgba(255, 255, 255, 0.8);
       border: 2px solid #0077cc;
       padding: 24px;
       max-width: 800px;
@@ -60,13 +53,16 @@
       text-decoration: none;
     }
 
-    .banner a:hover {
-      text-decoration: underline;
-    }
-
     #content {
       position: relative;
       z-index: 2;
+      color: #111;
+    }
+
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
     }
   </style>
 </head>
@@ -84,220 +80,197 @@
 
     <div class="banner">
       <h2>トリアス祭 企画のお知らせ</h2>
-      <p>
-        数学研究部では、京都府立医科大学の学園祭「トリアス祭」にて、<br>
-        <strong>入試形式を再現した二日間の実践模試</strong>を実施いたします。
-      </p>
-      <p>
-        実際の入試さながらの緊張感の中で、本番を意識した力試しができる絶好の機会です。<br>
-        医学部志望の受験生の皆さまは、ぜひご参加ください。
-      </p>
-      <p>
-        また、昨年度の問題と解説をまとめた<strong>冊子も販売</strong>しております。<br>
-        ご希望の方は、当日ブースにてお求めいただけます。
-      </p>
-      <p>
-        詳細・最新情報は公式サイトをご覧ください：<br>
-        <a href="https://trias.link" target="_blank">トリアス祭 公式ホームページ</a>
-      </p>
-      <p>皆さまのご来場を、部員一同心よりお待ちしております。</p>
+      <p>京都府立医科大学のトリアス祭にて、<strong>入試形式の模試</strong>を実施いたします。</p>
+      <p>昨年度の問題冊子も販売予定です。ぜひご参加ください。</p>
+      <p><a href="https://trias.link" target="_blank">トリアス祭 公式サイトはこちら</a></p>
     </div>
   </div>
 
-  <!-- Canvas: 幾何学模様 -->
+  <!-- 2D 幾何学模様スケッチ -->
   <script>
-    let circles = [];
-    let polygons = [];
+    new p5(p => {
+      let circles = [];
+      let polygons = [];
 
-    function setup() {
-      let c2d = createCanvas(windowWidth, windowHeight);
-      c2d.position(0, 0);
-      c2d.style('z-index', '-2');
-      angleMode(DEGREES);
-      noStroke();
+      p.setup = () => {
+        let cnv = p.createCanvas(p.windowWidth, p.windowHeight);
+        cnv.style('z-index', '-2');
+        cnv.position(0, 0);
+        p.angleMode(p.DEGREES);
 
-      for (let i = 0; i < 3; i++) {
-        circles.push({
-          x: random(150, width - 150),
-          y: random(150, height - 150),
-          r: random(60, 100),
-          angle: random(360),
-          speed: random(0.5, 1.2)
-        });
-      }
-
-      for (let sides = 3; sides <= 6; sides++) {
-        polygons.push(new PolygonWalker(
-          random(150, width - 150),
-          random(150, height - 150),
-          random(60, 90),
-          sides,
-          random(1, 2)
-        ));
-      }
-    }
-
-    function draw() {
-      clear();
-
-      fill(0, 20);
-      noStroke();
-      for (let c of circles) {
-        ellipse(c.x, c.y, c.r * 2);
-      }
-
-      fill(0);
-      for (let c of circles) {
-        let bx = c.x + cos(c.angle) * c.r;
-        let by = c.y + sin(c.angle) * c.r;
-        ellipse(bx, by, 10, 10);
-        c.angle += c.speed;
-      }
-
-      stroke(0, 60);
-      noFill();
-      for (let p of polygons) {
-        p.update();
-        p.draw();
-      }
-    }
-
-    class PolygonWalker {
-      constructor(x, y, r, sides, speed) {
-        this.x = x;
-        this.y = y;
-        this.r = r;
-        this.sides = sides;
-        this.speed = speed;
-        this.points = [];
-
-        for (let i = 0; i < sides; i++) {
-          let angle = 360 / sides * i - 90;
-          let px = this.x + cos(angle) * r;
-          let py = this.y + sin(angle) * r;
-          this.points.push(createVector(px, py));
+        for (let i = 0; i < 3; i++) {
+          circles.push({
+            x: p.random(150, p.width - 150),
+            y: p.random(150, p.height - 150),
+            r: p.random(60, 100),
+            angle: p.random(360),
+            speed: p.random(0.5, 1.2)
+          });
         }
 
-        this.currentEdge = 0;
-        this.t = 0;
-      }
+        for (let sides = 3; sides <= 6; sides++) {
+          polygons.push(new PolygonWalker(
+            p.random(150, p.width - 150),
+            p.random(150, p.height - 150),
+            p.random(60, 90),
+            sides,
+            p.random(1, 2)
+          ));
+        }
+      };
 
-      update() {
-        this.t += this.speed * 0.01;
-        if (this.t >= 1) {
+      p.draw = () => {
+        p.clear();
+
+        p.fill(0, 20);
+        p.noStroke();
+        for (let c of circles) {
+          p.ellipse(c.x, c.y, c.r * 2);
+        }
+
+        p.fill(0);
+        for (let c of circles) {
+          let bx = c.x + p.cos(c.angle) * c.r;
+          let by = c.y + p.sin(c.angle) * c.r;
+          p.ellipse(bx, by, 10, 10);
+          c.angle += c.speed;
+        }
+
+        p.stroke(0, 60);
+        p.noFill();
+        for (let poly of polygons) {
+          poly.update();
+          poly.draw(p);
+        }
+      };
+
+      class PolygonWalker {
+        constructor(x, y, r, sides, speed) {
+          this.x = x;
+          this.y = y;
+          this.r = r;
+          this.sides = sides;
+          this.speed = speed;
+          this.points = [];
+
+          for (let i = 0; i < sides; i++) {
+            let angle = 360 / sides * i - 90;
+            let px = this.x + p.cos(angle) * r;
+            let py = this.y + p.sin(angle) * r;
+            this.points.push(p.createVector(px, py));
+          }
+
+          this.currentEdge = 0;
           this.t = 0;
-          this.currentEdge = (this.currentEdge + 1) % this.sides;
+        }
+
+        update() {
+          this.t += this.speed * 0.01;
+          if (this.t >= 1) {
+            this.t = 0;
+            this.currentEdge = (this.currentEdge + 1) % this.sides;
+          }
+        }
+
+        draw(p) {
+          p.beginShape();
+          for (let pt of this.points) {
+            p.vertex(pt.x, pt.y);
+          }
+          p.endShape(p.CLOSE);
+
+          let a = this.points[this.currentEdge];
+          let b = this.points[(this.currentEdge + 1) % this.sides];
+          let bx = p.lerp(a.x, b.x, this.t);
+          let by = p.lerp(a.y, b.y, this.t);
+          p.fill(0);
+          p.ellipse(bx, by, 10, 10);
         }
       }
-
-      draw() {
-        beginShape();
-        for (let pt of this.points) {
-          vertex(pt.x, pt.y);
-        }
-        endShape(CLOSE);
-
-        let a = this.points[this.currentEdge];
-        let b = this.points[(this.currentEdge + 1) % this.sides];
-        let bx = lerp(a.x, b.x, this.t);
-        let by = lerp(a.y, b.y, this.t);
-        fill(0);
-        ellipse(bx, by, 10, 10);
-      }
-    }
+    });
   </script>
 
-  <!-- Canvas: 正二十面体 -->
+  <!-- 3D 正二十面体スケッチ -->
   <script>
-    let canvas3D;
-    let angleX = 0;
-    let angleY = 0;
-    let lastMouseX, lastMouseY;
-    let dragging = false;
-    let icosahedronVertices = [];
-    let icosahedronFaces = [];
-
-    function setup2() {
-      canvas3D = createCanvas(windowWidth, windowHeight, WEBGL);
-      canvas3D.position(0, 0);
-      canvas3D.style('z-index', '-3');
-      noFill();
-      setupIcosahedron();
-    }
-
-    function draw2() {
-      clear();
-      rotateX(angleX);
-      rotateY(angleY);
-
-      for (let face of icosahedronFaces) {
-        let v0 = createVector(...icosahedronVertices[face[0]]);
-        let v1 = createVector(...icosahedronVertices[face[1]]);
-        let v2 = createVector(...icosahedronVertices[face[2]]);
-        let normal = p5.Vector.cross(p5.Vector.sub(v1, v0), p5.Vector.sub(v2, v0)).normalize();
-        let view = createVector(0, 0, -1);
-        let facing = p5.Vector.dot(normal, view) < 0;
-
-        strokeWeight(facing ? 2 : 0.5);
-        stroke(facing ? 0 : 100);
-
-        beginShape();
-        for (let i of face) {
-          let v = icosahedronVertices[i];
-          vertex(v[0] * 150, v[1] * 150, v[2] * 150);
-        }
-        endShape(CLOSE);
-      }
-    }
-
-    function setupIcosahedron() {
-      const phi = (1 + sqrt(5)) / 2;
-      const a = 1;
-      const b = 1 / phi;
-
-      icosahedronVertices = [
-        [-a,  b,  0], [ a,  b,  0], [-a, -b,  0], [ a, -b,  0],
-        [ 0, -a,  b], [ 0,  a,  b], [ 0, -a, -b], [ 0,  a, -b],
-        [ b,  0, -a], [ b,  0,  a], [-b,  0, -a], [-b,  0,  a]
-      ];
-
-      icosahedronFaces = [
-        [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
-        [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
-        [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
-        [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
-      ];
-    }
-
-    function mousePressed() {
-      lastMouseX = mouseX;
-      lastMouseY = mouseY;
-      dragging = true;
-    }
-
-    function mouseDragged() {
-      if (dragging) {
-        let dx = mouseX - lastMouseX;
-        let dy = mouseY - lastMouseY;
-        angleY += dx * 0.01;
-        angleX += dy * 0.01;
-        lastMouseX = mouseX;
-        lastMouseY = mouseY;
-      }
-    }
-
-    function mouseReleased() {
-      dragging = false;
-    }
-
-    function windowResized() {
-      resizeCanvas(windowWidth, windowHeight);
-    }
-
     new p5(p => {
-      p.setup = setup2;
-      p.draw = draw2;
-    }, 'canvas3D');
+      let angleX = 0;
+      let angleY = 0;
+      let lastMouseX, lastMouseY;
+      let dragging = false;
+      let vertices = [];
+      let faces = [];
+
+      p.setup = () => {
+        let cnv = p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
+        cnv.style('z-index', '-3');
+        cnv.position(0, 0);
+        p.noFill();
+        setupIcosahedron();
+      };
+
+      p.draw = () => {
+        p.clear();
+        p.rotateX(angleX);
+        p.rotateY(angleY);
+
+        for (let face of faces) {
+          let v0 = p.createVector(...vertices[face[0]]);
+          let v1 = p.createVector(...vertices[face[1]]);
+          let v2 = p.createVector(...vertices[face[2]]);
+          let normal = p5.Vector.cross(p5.Vector.sub(v1, v0), p5.Vector.sub(v2, v0)).normalize();
+          let view = p.createVector(0, 0, -1);
+          let facing = p5.Vector.dot(normal, view) < 0;
+
+          p.stroke(facing ? 0 : 100);
+          p.strokeWeight(facing ? 2 : 0.5);
+
+          p.beginShape();
+          for (let i of face) {
+            let v = vertices[i];
+            p.vertex(v[0] * 150, v[1] * 150, v[2] * 150);
+          }
+          p.endShape(p.CLOSE);
+        }
+      };
+
+      p.mousePressed = () => {
+        lastMouseX = p.mouseX;
+        lastMouseY = p.mouseY;
+        dragging = true;
+      };
+
+      p.mouseDragged = () => {
+        if (dragging) {
+          let dx = p.mouseX - lastMouseX;
+          let dy = p.mouseY - lastMouseY;
+          angleY += dx * 0.01;
+          angleX += dy * 0.01;
+          lastMouseX = p.mouseX;
+          lastMouseY = p.mouseY;
+        }
+      };
+
+      p.mouseReleased = () => {
+        dragging = false;
+      };
+
+      function setupIcosahedron() {
+        const phi = (1 + Math.sqrt(5)) / 2;
+        const a = 1;
+        const b = 1 / phi;
+        vertices = [
+          [-a, b, 0], [a, b, 0], [-a, -b, 0], [a, -b, 0],
+          [0, -a, b], [0, a, b], [0, -a, -b], [0, a, -b],
+          [b, 0, -a], [b, 0, a], [-b, 0, -a], [-b, 0, a]
+        ];
+        faces = [
+          [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+          [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+          [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+          [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
+        ];
+      }
+    });
   </script>
 </body>
 </html>
