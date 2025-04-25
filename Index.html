@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>数学研究部 | Math Club</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #111;
+      color: white;
+      font-family: sans-serif;
+    }
+    #equation {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 32px;
+      opacity: 0.1;
+      z-index: 1;
+    }
+    #content {
+      position: absolute;
+      z-index: 2;
+      top: 20px;
+      left: 20px;
+    }
+  </style>
+  <!-- MathJax -->
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+</head>
+<body>
+  <!-- 数式 -->
+  <div id="equation">
+    \[\frac{\partial^2 u}{\partial t^2} = c^2 \frac{\partial^2 u}{\partial x^2}\]
+  </div>
+
+  <!-- 表示内容 -->
+  <div id="content">
+    <h1>数学研究部</h1>
+    <p>Welcome to the Math Club!</p>
+  </div>
+
+  <!-- p5.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+  <script>
+    function setup() {
+      createCanvas(window.innerWidth, window.innerHeight);
+      noFill();
+      stroke(255, 255, 255, 50);
+    }
+
+    function draw() {
+      background(17, 17, 17, 20); // 半透明で軌跡が残る
+      for (let i = 0; i < 10; i++) {
+        let x = random(width);
+        let y = random(height);
+        let r = random(20, 80);
+        polygon(x, y, r, int(random(3, 8)));
+      }
+    }
+
+    function polygon(x, y, radius, npoints) {
+      let angle = TWO_PI / npoints;
+      beginShape();
+      for (let a = 0; a < TWO_PI; a += angle) {
+        let sx = x + cos(a) * radius;
+        let sy = y + sin(a) * radius;
+        vertex(sx, sy);
+      }
+      endShape(CLOSE);
+    }
+
+    function windowResized() {
+      resizeCanvas(window.innerWidth, window.innerHeight);
+    }
+  </script>
+</body>
+</html>
