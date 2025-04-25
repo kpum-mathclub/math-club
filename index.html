@@ -94,15 +94,16 @@ canvas {
     const sideLength = 60;
     const walkerCount = 12;
 
-    p.setup = () => {
-      let cnv = p.createCanvas(p.windowWidth, p.windowHeight);
-      cnv.position(0, 0);
-      cnv.style('z-index', '-4');
-      generateTriangleGrid();
-      for (let i = 0; i < walkerCount; i++) {
-        walkers.push(new Walker(p.random(triangles)));
-      }
-    };
+ p.setup = () => {
+  let fullHeight = document.body.scrollHeight;
+  let cnv = p.createCanvas(p.windowWidth, fullHeight);
+  cnv.position(0, 0);
+  cnv.style('z-index', '-4');
+  generateTriangleGrid();
+  for (let i = 0; i < walkerCount; i++) {
+    walkers.push(new Walker(p.random(triangles)));
+  }
+};
 
     p.draw = () => {
       p.clear();
