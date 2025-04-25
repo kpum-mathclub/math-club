@@ -16,14 +16,12 @@
           dragging = false,
           loaded = false;
 
-        p.preload = () => {
-          earthTexture = p.loadImage(
-            "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Earthmap1000x500compac.jpg/800px-Earthmap1000x500compac.jpg",
-            () => {
-              loaded = true;
-            }
-          );
-        };
+       p.preload = () => {
+  earthTexture = p.loadImage(
+    "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/land_ocean_ice_cloud_2048.jpg",
+    () => { loaded = true; }
+  );
+};
 
         p.setup = () => {
           p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
