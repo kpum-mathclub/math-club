@@ -35,6 +35,39 @@
     src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
+  <!-- ナビゲーションバー -->
+<style>
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: #111;
+    color: white;
+    padding: 12px 24px;
+    z-index: 999;
+    font-size: 18px;
+    display: flex;
+    gap: 20px;
+  }
+  nav a {
+    color: white;
+    text-decoration: none;
+  }
+  nav a:hover {
+    text-decoration: underline;
+  }
+  body {
+    padding-top: 60px;
+  }
+</style>
+
+<nav>
+  <a href="index.html">Home</a>
+  <a href="schedule.html">Schedule</a>
+  <a href="contact.html">Contact</a>
+  <a href="qa.html">Q&A</a>
+</nav>
   <div id="content">
     <h1>数学研究部</h1>
     <p>Welcome to the Math Club!</p>
