@@ -64,92 +64,133 @@
   </div>
 
   <!-- 三角タイル背景 -->
-  <script>
-    new p5(p => {
-      let triangles = [];
-      let walkers = [];
-      const sideLength = 60;
-      const walkerCount = 12;
+<script>
+  new p5(p => {
+    const sideLength = 60;
+    const walkerCount = 12;
+    let triangles = [];
+    let points = [];
+    let adjacency = new Map();
+    let walkers = [];
 
-      p.setup = () => {
-        const height = document.documentElement.scrollHeight;
-        let cnv = p.createCanvas(p.windowWidth, height);
-        cnv.position(0, 0);
-        cnv.style('z-index', '-4');
-        p.noFill();
-        p.stroke(0, 30);
-        generateTriangleGrid();
-        for (let i = 0; i < walkerCount; i++) {
-          walkers.push(new Walker(p.random(triangles)));
+    p.setup = () => {
+      const height = document.documentElement.scrollHeight;
+      let cnv = p.createCanvas(p.windowWidth, height);
+      cnv.position(0, 0);
+      cnv.style('z-index', '-4');
+
+      generateTriangleGrid();
+      for (let i = 0; i < walkerCount; i++) {
+        walkers.push(new Walker());
+      }
+    };
+
+    p.draw = () => {
+      p.clear();
+
+      // 三角形描画（透明）
+      p.noFill();
+      p.stroke(0, 30);
+      for (let t of triangles) {
+        p.beginShape();
+        for (let pt of t) {
+          p.vertex(pt.x, pt.y);
         }
-      };
+        p.endShape(p.CLOSE);
+      }
 
- p.draw = () => {
-  p.clear();
+      // 点の描画
+      for (let w of walkers) {
+        w.update();
+        w.display();
+      }
+    };
 
-  // 透明三角形を描く
-  p.noFill(); // ← これが重要！！
-  p.stroke(0, 30);
-  for (let t of triangles) {
-    p.beginShape();
-    for (let pt of t) {
-      p.vertex(pt.x, pt.y);
+    function generateTriangleGrid() {
+      const h = sideLength * Math.sqrt(3) / 2;
+
+      for (let y = 0; y < p.windowHeight + h; y += h) {
+        for (let x = 0; x < p.windowWidth + sideLength; x += sideLength) {
+          let xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
+          let p1 = p.createVector(x + xOffset, y);
+          let p2 = p.createVector(x + sideLength / 2 + xOffset, y + h);
+          let p3 = p.createVector(x - sideLength / 2 + xOffset, y + h);
+          triangles.push([p1, p2, p3]);
+
+          registerEdge(p1, p2);
+          registerEdge(p2, p3);
+          registerEdge(p3, p1);
+        }
+      }
+
+      points = Array.from(adjacency.keys()).map(k => adjacency.get(k).vec);
     }
-    p.endShape(p.CLOSE);
-  }
 
-  // 点の描画
-  for (let w of walkers) {
-    w.update();
-    w.display();
-  }
-};
+    function registerEdge(a, b) {
+      const keyA = a.x + ',' + a.y;
+      const keyB = b.x + ',' + b.y;
 
-      function generateTriangleGrid() {
-        const h = sideLength * Math.sqrt(3) / 2;
-        for (let y = 0; y < p.height + h; y += h) {
-          for (let x = 0; x < p.width + sideLength; x += sideLength) {
-            let xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
-            let p1 = p.createVector(x + xOffset, y);
-            let p2 = p.createVector(x + sideLength / 2 + xOffset, y + h);
-            let p3 = p.createVector(x - sideLength / 2 + xOffset, y + h);
-            triangles.push([p1, p2, p3]);
-          }
+      if (!adjacency.has(keyA)) adjacency.set(keyA, { vec: a, neighbors: [] });
+      if (!adjacency.has(keyB)) adjacency.set(keyB, { vec: b, neighbors: [] });
+
+      const neighborsA = adjacency.get(keyA).neighbors;
+      const neighborsB = adjacency.get(keyB).neighbors;
+
+      if (!neighborsA.some(n => n.x === b.x && n.y === b.y)) {
+        neighborsA.push(adjacency.get(keyB).vec);
+      }
+      if (!neighborsB.some(n => n.x === a.x && n.y === a.y)) {
+        neighborsB.push(adjacency.get(keyA).vec);
+      }
+    }
+
+    class Walker {
+      constructor() {
+        this.current = p.random(points);
+        this.next = this.chooseNext(this.current);
+        this.t = 0;
+        this.speed = p.random(0.003, 0.01);
+      }
+
+      chooseNext(current) {
+        const key = current.x + ',' + current.y;
+        const options = adjacency.get(key)?.neighbors;
+        if (!options || options.length === 0) return current;
+
+        let next;
+        do {
+          next = p.random(options);
+        } while (
+          next.x === current.x &&
+          next.y === current.y &&
+          options.length > 1
+        );
+        return next;
+      }
+
+      update() {
+        this.t += this.speed;
+        if (this.t >= 1) {
+          this.current = this.next;
+          this.next = this.chooseNext(this.current);
+          this.t = 0;
         }
       }
 
-      class Walker {
-        constructor(triangle) {
-          this.triangle = triangle;
-          this.edge = Math.floor(p.random(3));
-          this.t = p.random();
-          this.speed = p.random(0.002, 0.01);
-        }
-
-        update() {
-          this.t += this.speed;
-          if (this.t > 1) {
-            this.t = 0;
-            this.edge = Math.floor(p.random(3));
-          }
-        }
-
-        display() {
-          const a = this.triangle[this.edge];
-          const b = this.triangle[(this.edge + 1) % 3];
-          const x = p.lerp(a.x, b.x, this.t);
-          const y = p.lerp(a.y, b.y, this.t);
-          p.noStroke();
-          p.fill(0);
-          p.ellipse(x, y, 6, 6);
-        }
+      display() {
+        const x = p.lerp(this.current.x, this.next.x, this.t);
+        const y = p.lerp(this.current.y, this.next.y, this.t);
+        p.noStroke();
+        p.fill(0);
+        p.ellipse(x, y, 6, 6);
       }
+    }
 
-      p.windowResized = () => {
-        const height = document.documentElement.scrollHeight;
-        p.resizeCanvas(p.windowWidth, height);
-      };
-    });
-  </script>
+    p.windowResized = () => {
+      const height = document.documentElement.scrollHeight;
+      p.resizeCanvas(p.windowWidth, height);
+    };
+  });
+</script>
 </body>
 </html>
