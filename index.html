@@ -84,82 +84,81 @@
         ));
       }
     }
+function draw() {
+  background(255);
 
-    function draw() {
-      background(255);
+  // 円と球
+  fill(0, 20);
+  noStroke();
+  for (let c of circles) {
+    ellipse(c.x, c.y, c.r * 2);
+  }
 
-      // 円と球
-      fill(0, 20);
-      for (let c of circles) {
-        ellipse(c.x, c.y, c.r * 2);
-      }
+  fill(0);
+  for (let c of circles) {
+    let bx = c.x + cos(c.angle) * c.r;
+    let by = c.y + sin(c.angle) * c.r;
+    ellipse(bx, by, 10, 10);
+    c.angle += c.speed;
+  }
 
-      fill(0);
-      for (let c of circles) {
-        let bx = c.x + cos(c.angle) * c.r;
-        let by = c.y + sin(c.angle) * c.r;
-        ellipse(bx, by, 10, 10);
-        c.angle += c.speed;
-      }
+  // 多角形と球
+  stroke(0, 60);
+  noFill(); // ←ここで多角形を透明に
+  for (let p of polygons) {
+    p.update();
+    p.draw();
+  }
+}
 
-      // 多角形と球
-      stroke(0, 60);
-      noFill();
-      for (let p of polygons) {
-        p.update();
-        p.draw();
-      }
+// --- 正多角形ウォーカー ---
+class PolygonWalker {
+  constructor(x, y, r, sides, speed) {
+    this.x = x;
+    this.y = y;
+    this.r = r;
+    this.sides = sides;
+    this.speed = speed;
+    this.points = [];
+
+    for (let i = 0; i < sides; i++) {
+      let angle = 360 / sides * i - 90;
+      let px = this.x + cos(angle) * r;
+      let py = this.y + sin(angle) * r;
+      this.points.push(createVector(px, py));
     }
 
-    function windowResized() {
-      resizeCanvas(windowWidth, windowHeight);
+    this.currentEdge = 0;
+    this.t = 0;
+  }
+
+  update() {
+    this.t += this.speed * 0.01;
+    if (this.t >= 1) {
+      this.t = 0;
+      this.currentEdge = (this.currentEdge + 1) % this.sides;
     }
+  }
 
-    // --- 正多角形ウォーカー ---
-    class PolygonWalker {
-      constructor(x, y, r, sides, speed) {
-        this.x = x;
-        this.y = y;
-        this.r = r;
-        this.sides = sides;
-        this.speed = speed;
-        this.points = [];
-
-        for (let i = 0; i < sides; i++) {
-          let angle = 360 / sides * i - 90;
-          let px = this.x + cos(angle) * r;
-          let py = this.y + sin(angle) * r;
-          this.points.push(createVector(px, py));
-        }
-
-        this.currentEdge = 0;
-        this.t = 0;
-      }
-
-      update() {
-        this.t += this.speed * 0.01;
-        if (this.t >= 1) {
-          this.t = 0;
-          this.currentEdge = (this.currentEdge + 1) % this.sides;
-        }
-      }
-
-      draw() {
-        beginShape();
-        for (let pt of this.points) {
-          vertex(pt.x, pt.y);
-        }
-        endShape(CLOSE);
-
-        let a = this.points[this.currentEdge];
-        let b = this.points[(this.currentEdge + 1) % this.sides];
-
-        let bx = lerp(a.x, b.x, this.t);
-        let by = lerp(a.y, b.y, this.t);
-        fill(0);
-        ellipse(bx, by, 10, 10);
-      }
+  draw() {
+    noFill(); // 多角形は塗りなしで
+    beginShape();
+    for (let pt of this.points) {
+      vertex(pt.x, pt.y);
     }
+    endShape(CLOSE);
+
+    // 線上を移動する球だけ塗りつぶし
+    let a = this.points[this.currentEdge];
+    let b = this.points[(this.currentEdge + 1) % this.sides];
+    let bx = lerp(a.x, b.x, this.t);
+    let by = lerp(a.y, b.y, this.t);
+
+    fill(0);
+    ellipse(bx, by, 10, 10);
+  }
+}
+   
   </script>
 </body>
 </html>
