@@ -23,7 +23,7 @@
     .equation {
       position: absolute;
       font-size: 28px;
-      opacity: 0.4; /* 少し濃く */
+      opacity: 0.4;
       z-index: 1;
       color: black;
     }
@@ -40,7 +40,7 @@
     <p>Welcome to the Math Club!</p>
   </div>
 
-  <!-- 数式を固定表示 -->
+  <!-- 背景数式 -->
   <div class="equation" style="top: 30%; left: 20%;">
     \[\frac{\partial^2 u}{\partial t^2} = c^2 \frac{\partial^2 u}{\partial x^2}\]
   </div>
@@ -51,18 +51,19 @@
     \[\lim_{n \to \infty} \left(1 + \frac{1}{n}\right)^n = e\]
   </div>
 
-  <!-- 幾何学アニメーション（回転球） -->
+  <!-- 幾何学模様 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
   <script>
     let circles = [];
+    let polygons = [];
 
     function setup() {
       createCanvas(windowWidth, windowHeight);
       angleMode(DEGREES);
       noStroke();
 
-      // 円を数個ランダム配置
-      for (let i = 0; i < 4; i++) {
+      // 円の設定（球が回転）
+      for (let i = 0; i < 3; i++) {
         circles.push({
           x: random(150, width - 150),
           y: random(150, height - 150),
@@ -71,27 +72,93 @@
           speed: random(0.5, 1.2)
         });
       }
+
+      // 正三角形～正六角形（辺をなぞる球）
+      for (let sides = 3; sides <= 6; sides++) {
+        polygons.push(new PolygonWalker(
+          random(150, width - 150),
+          random(150, height - 150),
+          random(60, 90),
+          sides,
+          random(1, 2)
+        ));
+      }
     }
 
     function draw() {
       background(255);
 
-      fill(0, 20); // 薄い円
+      // 円と球
+      fill(0, 20);
       for (let c of circles) {
         ellipse(c.x, c.y, c.r * 2);
       }
 
-      fill(0); // 小球（黒）
+      fill(0);
       for (let c of circles) {
         let bx = c.x + cos(c.angle) * c.r;
         let by = c.y + sin(c.angle) * c.r;
-        ellipse(bx, by, 10, 10); // 小さな球
+        ellipse(bx, by, 10, 10);
         c.angle += c.speed;
+      }
+
+      // 多角形と球
+      stroke(0, 60);
+      noFill();
+      for (let p of polygons) {
+        p.update();
+        p.draw();
       }
     }
 
     function windowResized() {
       resizeCanvas(windowWidth, windowHeight);
+    }
+
+    // --- 正多角形ウォーカー ---
+    class PolygonWalker {
+      constructor(x, y, r, sides, speed) {
+        this.x = x;
+        this.y = y;
+        this.r = r;
+        this.sides = sides;
+        this.speed = speed;
+        this.points = [];
+
+        for (let i = 0; i < sides; i++) {
+          let angle = 360 / sides * i - 90;
+          let px = this.x + cos(angle) * r;
+          let py = this.y + sin(angle) * r;
+          this.points.push(createVector(px, py));
+        }
+
+        this.currentEdge = 0;
+        this.t = 0;
+      }
+
+      update() {
+        this.t += this.speed * 0.01;
+        if (this.t >= 1) {
+          this.t = 0;
+          this.currentEdge = (this.currentEdge + 1) % this.sides;
+        }
+      }
+
+      draw() {
+        beginShape();
+        for (let pt of this.points) {
+          vertex(pt.x, pt.y);
+        }
+        endShape(CLOSE);
+
+        let a = this.points[this.currentEdge];
+        let b = this.points[(this.currentEdge + 1) % this.sides];
+
+        let bx = lerp(a.x, b.x, this.t);
+        let by = lerp(a.y, b.y, this.t);
+        fill(0);
+        ellipse(bx, by, 10, 10);
+      }
     }
   </script>
 </body>
