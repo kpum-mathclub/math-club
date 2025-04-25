@@ -111,18 +111,19 @@
       </p>
     </div>
   </div>
-  <script>
+<script>
   new p5(p => {
     const ballCount = 20;
     const balls = [];
 
     class Ball {
       constructor() {
-        this.r = p.random(10, 30); // 半径
+        this.r = p.random(10, 30);
         this.x = p.random(this.r, p.windowWidth - this.r);
         this.y = p.random(this.r, p.windowHeight - this.r);
         this.vx = p.random(-2, 2);
         this.vy = p.random(-2, 2);
+        this.color = p.color(30, 30, 30, 100); // 少し濃く
       }
 
       move() {
@@ -130,26 +131,26 @@
         this.y += this.vy;
 
         // 壁で反射
-        if (this.x - this.r < 0 || this.x + this.r > p.windowWidth) {
+        if (this.x - this.r < 0 || this.x + this.r > p.width) {
           this.vx *= -1;
         }
-        if (this.y - this.r < 0 || this.y + this.r > p.windowHeight) {
+        if (this.y - this.r < 0 || this.y + this.r > p.height) {
           this.vy *= -1;
         }
       }
 
       draw() {
         p.noStroke();
-        p.fill(0, 50);
+        p.fill(this.color);
         p.ellipse(this.x, this.y, this.r * 2);
       }
     }
 
     p.setup = () => {
-      const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+      const canvas = p.createCanvas(p.windowWidth, document.body.scrollHeight);
       canvas.position(0, 0);
-      canvas.style('z-index', '-5');
-
+      canvas.style('z-index', '-10');
+      canvas.style('pointer-events', 'none'); // 干渉しない
       for (let i = 0; i < ballCount; i++) {
         balls.push(new Ball());
       }
@@ -164,7 +165,7 @@
     };
 
     p.windowResized = () => {
-      p.resizeCanvas(p.windowWidth, p.windowHeight);
+      p.resizeCanvas(p.windowWidth, document.body.scrollHeight);
     };
   });
 </script>
