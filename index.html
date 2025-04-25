@@ -107,17 +107,27 @@
     let adjacency = new Map();
     let walkers = [];
 
-    p.setup = () => {
-      const height = document.documentElement.scrollHeight;
-      let cnv = p.createCanvas(p.windowWidth, height);
-      cnv.position(0, 0);
-      cnv.style('z-index', '-4');
+  p.setup = () => {
+  const height = Math.max(
+    document.body.scrollHeight,
+    document.documentElement.scrollHeight
+  );
+  const cnv = p.createCanvas(p.windowWidth, height);
+  cnv.position(0, 0);
+  cnv.style('z-index', '-10');
+  cnv.style('pointer-events', 'none');
 
-      generateTriangleGrid();
-      for (let i = 0; i < walkerCount; i++) {
-        walkers.push(new Walker());
-      }
-    };
+  // 必ずこの順番！
+  generateTriangleGrid();
+
+  if (points.length === 0) {
+    console.error("pointsが空です！");
+  }
+
+  for (let i = 0; i < walkerCount; i++) {
+    walkers.push(new Walker());
+  }
+};
 
     p.draw = () => {
       p.clear();
