@@ -87,21 +87,19 @@
   </div>
 
 <!-- 2D 幾何学模様スケッチ -->
+<!-- 修正版：三角タイル背景 -->
 <script>
   new p5(p => {
     let triangles = [];
     let walkers = [];
     const sideLength = 60;
-    const walkerCount = 10;
+    const walkerCount = 12;
 
     p.setup = () => {
       let cnv = p.createCanvas(p.windowWidth, p.windowHeight);
       cnv.position(0, 0);
       cnv.style('z-index', '-4');
-      p.noFill();
-      p.stroke(0, 30);
       generateTriangleGrid();
-
       for (let i = 0; i < walkerCount; i++) {
         walkers.push(new Walker(p.random(triangles)));
       }
@@ -110,7 +108,9 @@
     p.draw = () => {
       p.clear();
 
-      // draw triangle grid
+      // 三角形グリッド（透明）
+      p.noFill();
+      p.stroke(0, 40);
       for (let t of triangles) {
         p.beginShape();
         for (let pt of t) {
@@ -119,7 +119,7 @@
         p.endShape(p.CLOSE);
       }
 
-      // draw walkers
+      // 点の描画
       for (let w of walkers) {
         w.update();
         w.display();
@@ -156,12 +156,12 @@
       }
 
       display() {
-        let a = this.triangle[this.edge];
-        let b = this.triangle[(this.edge + 1) % 3];
-        let x = p.lerp(a.x, b.x, this.t);
-        let y = p.lerp(a.y, b.y, this.t);
-        p.fill(0);
+        const a = this.triangle[this.edge];
+        const b = this.triangle[(this.edge + 1) % 3];
+        const x = p.lerp(a.x, b.x, this.t);
+        const y = p.lerp(a.y, b.y, this.t);
         p.noStroke();
+        p.fill(0);
         p.ellipse(x, y, 6, 6);
       }
     }
