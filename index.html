@@ -24,7 +24,6 @@
       font-size: 18px;
       display: flex;
       gap: 20px;
-      font-family: "Noto Serif JP", serif;
     }
     nav a {
       color: white;
@@ -37,24 +36,18 @@
       position: fixed;
       top: 0;
       left: 0;
-      pointer-events: none;
       z-index: -10;
     }
   </style>
 </head>
 
 <body>
-
 <nav>
   <a href="index.html">Home</a>
   <a href="schedule.html">Schedule</a>
   <a href="contact.html">Contact</a>
   <a href="qa.html">Q&A</a>
 </nav>
-
-<div class="corner-message" style="position:fixed;top:72px;left:20px;font-size:20px;color:#111;font-weight:bold;z-index:10;pointer-events:none;font-family:'Noto Serif JP',serif;">
-  京都府立医科大学 数学研究部 公式HP
-</div>
 
 <script>
 new p5(p => {
@@ -65,8 +58,8 @@ new p5(p => {
   let adjacency = new Map();
   let walkers = [];
   let kpumWalkers = [];
-  let boosting = false;
   let kpumTrail;
+  let boosting = false;
 
   p.setup = () => {
     const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
@@ -88,7 +81,7 @@ new p5(p => {
   p.draw = () => {
     p.background(255);
 
-    // タイルを描く
+    // 三角タイルを描画
     p.noFill();
     p.stroke(0, 40);
     for (let t of triangles) {
@@ -99,27 +92,101 @@ new p5(p => {
       p.endShape(p.CLOSE);
     }
 
-    // 通常のWalker
+    // 通常のWalkerを描画
     for (let w of walkers) {
       w.update();
-      w.display(0);
+      w.display();
     }
 
-    // KPUM Trailに少しずつ白を重ねてフェードアウト
-    kpumTrail.fill(255, 255, 255, 3); // ほんの少し白で上書き（←これで7秒くらい残る）
+    // KPUMのTrail（フェード効果）
+    kpumTrail.fill(255, 255, 255, 4); // ゆっくり白を重ねる
     kpumTrail.noStroke();
     kpumTrail.rect(0, 0, p.width, p.height);
 
-    // KPUMのWalker
     for (let w of kpumWalkers) {
       w.update();
       w.displayTrail(kpumTrail);
     }
-
-    p.image(kpumTrail, 0, 0); // Trailを重ねる
+    p.image(kpumTrail, 0, 0);
   };
 
-  // ---- Walker, KPUMWalker, その他の関数はそのまま ----
+  function generateTriangleGrid() {
+    const h = sideLength * Math.sqrt(3) / 2;
+    triangles = [];
+    adjacency.clear();
+    for (let y = 0; y < p.height + h; y += h) {
+      for (let x = 0; x < p.width + sideLength; x += sideLength) {
+        const xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
+        const p1 = p.createVector(x + xOffset, y);
+        const p2 = p.createVector(x + sideLength / 2 + xOffset, y + h);
+        const p3 = p.createVector(x - sideLength / 2 + xOffset, y + h);
+        triangles.push([p1, p2, p3]);
+        registerEdge(p1, p2);
+        registerEdge(p2, p3);
+        registerEdge(p3, p1);
+      }
+    }
+    points = Array.from(adjacency.values()).map(obj => obj.vec);
+  }
+
+  function registerEdge(a, b) {
+    const keyA = a.x + ',' + a.y;
+    const keyB = b.x + ',' + b.y;
+    if (!adjacency.has(keyA)) adjacency.set(keyA, { vec: a, neighbors: [] });
+    if (!adjacency.has(keyB)) adjacency.set(keyB, { vec: b, neighbors: [] });
+    const neighborsA = adjacency.get(keyA).neighbors;
+    const neighborsB = adjacency.get(keyB).neighbors;
+    if (!neighborsA.some(n => n.x === b.x && n.y === b.y)) {
+      neighborsA.push(adjacency.get(keyB).vec);
+    }
+    if (!neighborsB.some(n => n.x === a.x && n.y === a.y)) {
+      neighborsB.push(adjacency.get(keyA).vec);
+    }
+  }
+
+  class Walker {
+    constructor() {
+      this.current = p.random(points);
+      this.next = this.chooseNext(this.current);
+      this.t = 0;
+      this.baseSpeed = p.random(0.003, 0.008);
+      this.phase = p.random(p.TWO_PI);
+    }
+
+    chooseNext(current) {
+      const key = current.x + ',' + current.y;
+      const options = adjacency.get(key)?.neighbors;
+      if (!options || options.length === 0) return current;
+      let next;
+      do {
+        next = p.random(options);
+      } while (next.x === current.x && next.y === current.y && options.length > 1);
+      return next;
+    }
+
+    update() {
+      const speedMultiplier = boosting ? 2.5 : 1;
+      this.t += this.baseSpeed * speedMultiplier;
+      if (this.t >= 1) {
+        this.current = this.next;
+        this.next = this.chooseNext(this.current);
+        this.t = 0;
+      }
+    }
+
+    display() {
+      const x = p.lerp(this.current.x, this.next.x, this.t);
+      const y = p.lerp(this.current.y, this.next.y, this.t);
+      const size = 6 + p.sin(p.frameCount * (boosting ? 0.15 : 0.05) + this.phase) * 2;
+      const glow = 20 + 10 * p.sin(p.frameCount * (boosting ? 0.24 : 0.08) + this.phase);
+
+      p.noStroke();
+      p.fill(0, 0, 0, 25);
+      p.ellipse(x, y, size + glow);
+      p.fill(0);
+      p.ellipse(x, y, size);
+    }
+  }
 
   class KPUMWalker {
     constructor(path) {
@@ -142,12 +209,28 @@ new p5(p => {
       const b = this.path[(this.index + 1) % this.path.length];
       const x = p.lerp(a.x, b.x, this.t);
       const y = p.lerp(a.y, b.y, this.t);
-
       const size = 8;
-
       pg.noStroke();
-      pg.fill(0, 180, 0, 200); // 緑色
+      pg.fill(0, 180, 0, 200); // 緑
       pg.ellipse(x, y, size);
+    }
+  }
+
+  function setupKPUM() {
+    if (points.length === 0) return;
+
+    let kpumPaths = [];
+    for (let i = 0; i < 4; i++) {
+      let path = [];
+      for (let j = 0; j < 5; j++) {
+        let pt = p.random(points);
+        path.push(pt);
+      }
+      kpumPaths.push(path);
+    }
+
+    for (let path of kpumPaths) {
+      kpumWalkers.push(new KPUMWalker(path));
     }
   }
 
