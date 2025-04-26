@@ -8,82 +8,71 @@
     html, body {
       margin: 0;
       padding: 0;
-      font-family: sans-serif;
+      overflow: hidden;
       background: white;
-      overflow-x: hidden;
-    }
-    nav {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      background: #111;
-      color: white;
-      padding: 12px 24px;
-      z-index: 999;
-      font-size: 18px;
-      display: flex;
-      gap: 20px;
-    }
-    nav a {
-      color: white;
-      text-decoration: none;
-    }
-    body {
-      padding-top: 70px;
     }
     canvas {
       position: fixed;
       top: 0;
       left: 0;
       z-index: -10;
+      pointer-events: none;
     }
   </style>
 </head>
-
 <body>
-<nav>
-  <a href="index.html">Home</a>
-  <a href="schedule.html">Schedule</a>
-  <a href="contact.html">Contact</a>
-  <a href="qa.html">Q&A</a>
-</nav>
 
 <script>
 new p5(p => {
   const sideLength = 60;
-  const walkerCount = 48;
   let triangles = [];
   let points = [];
-  let adjacency = new Map();
   let walkers = [];
-  let kpumWalkers = [];
-  let kpumTrail;
-  let boosting = false;
+  let greenWalkers = [];
+  let trailBuffer;
+
+  // KPUMのパス設定
+  const kpumPaths = [
+    // K
+    [{x: 100, y:100}, {x:100, y:300}, {x:100, y:200}, {x:150, y:100}, {x:100, y:200}, {x:150, y:300}],
+    // P
+    [{x:200, y:100}, {x:200, y:300}, {x:200, y:100}, {x:300, y:100}, {x:300, y:200}, {x:200, y:200}],
+    // U
+    [{x:350, y:100}, {x:350, y:300}, {x:450, y:300}, {x:450, y:100}],
+    // M
+    [{x:500, y:300}, {x:500, y:100}, {x:550, y:200}, {x:600, y:100}, {x:600, y:300}]
+  ];
 
   p.setup = () => {
-    const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
-    const cnv = p.createCanvas(p.windowWidth, height);
+    const cnv = p.createCanvas(p.windowWidth, p.windowHeight);
     cnv.position(0, 0);
-    cnv.style('z-index', '-10');
-    cnv.style('pointer-events', 'none');
+    p.background(255);
 
-    kpumTrail = p.createGraphics(p.width, p.height);
-    kpumTrail.clear();
+    trailBuffer = p.createGraphics(p.width, p.height);
+    trailBuffer.clear();
 
     generateTriangleGrid();
-    for (let i = 0; i < walkerCount; i++) {
-      walkers.push(new Walker());
+
+    // 通常点のWalker
+    for (let i = 0; i < 48; i++) {
+      walkers.push(new Walker(p.random(points)));
     }
-    setupKPUM();
+
+    // 緑点 (K, P, U, M)
+    for (let path of kpumPaths) {
+      greenWalkers.push(new GreenWalker(path));
+    }
   };
 
   p.draw = () => {
-    p.background(255);
+    // 残像効果をかけたtrailBuffer
+    trailBuffer.fill(255, 255, 255, 8);
+    trailBuffer.noStroke();
+    trailBuffer.rect(0, 0, p.width, p.height);
 
-    // 三角タイルを描画
+    // 三角タイル描画
     p.noFill();
-    p.stroke(0, 40);
+    p.stroke(0, 30);
     for (let t of triangles) {
       p.beginShape();
       for (let pt of t) {
@@ -92,28 +81,25 @@ new p5(p => {
       p.endShape(p.CLOSE);
     }
 
-    // 通常のWalkerを描画
+    // 黒点の描画
     for (let w of walkers) {
       w.update();
       w.display();
     }
 
-    // KPUMのTrail（フェード効果）
-    kpumTrail.fill(255, 255, 255, 4); // ゆっくり白を重ねる
-    kpumTrail.noStroke();
-    kpumTrail.rect(0, 0, p.width, p.height);
-
-    for (let w of kpumWalkers) {
-      w.update();
-      w.displayTrail(kpumTrail);
+    // 緑点の描画 (軌跡あり)
+    trailBuffer.fill(0, 200, 0);
+    for (let gw of greenWalkers) {
+      gw.update();
+      gw.display(trailBuffer);
     }
-    p.image(kpumTrail, 0, 0);
+
+    // 最後にバッファを上から重ねる
+    p.image(trailBuffer, 0, 0);
   };
 
   function generateTriangleGrid() {
     const h = sideLength * Math.sqrt(3) / 2;
-    triangles = [];
-    adjacency.clear();
     for (let y = 0; y < p.height + h; y += h) {
       for (let x = 0; x < p.width + sideLength; x += sideLength) {
         const xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
@@ -121,55 +107,24 @@ new p5(p => {
         const p2 = p.createVector(x + sideLength / 2 + xOffset, y + h);
         const p3 = p.createVector(x - sideLength / 2 + xOffset, y + h);
         triangles.push([p1, p2, p3]);
-        registerEdge(p1, p2);
-        registerEdge(p2, p3);
-        registerEdge(p3, p1);
+        points.push(p1, p2, p3);
       }
-    }
-    points = Array.from(adjacency.values()).map(obj => obj.vec);
-  }
-
-  function registerEdge(a, b) {
-    const keyA = a.x + ',' + a.y;
-    const keyB = b.x + ',' + b.y;
-    if (!adjacency.has(keyA)) adjacency.set(keyA, { vec: a, neighbors: [] });
-    if (!adjacency.has(keyB)) adjacency.set(keyB, { vec: b, neighbors: [] });
-    const neighborsA = adjacency.get(keyA).neighbors;
-    const neighborsB = adjacency.get(keyB).neighbors;
-    if (!neighborsA.some(n => n.x === b.x && n.y === b.y)) {
-      neighborsA.push(adjacency.get(keyB).vec);
-    }
-    if (!neighborsB.some(n => n.x === a.x && n.y === a.y)) {
-      neighborsB.push(adjacency.get(keyA).vec);
     }
   }
 
   class Walker {
-    constructor() {
-      this.current = p.random(points);
-      this.next = this.chooseNext(this.current);
+    constructor(start) {
+      this.current = start;
+      this.next = p.random(points);
       this.t = 0;
-      this.baseSpeed = p.random(0.003, 0.008);
-      this.phase = p.random(p.TWO_PI);
-    }
-
-    chooseNext(current) {
-      const key = current.x + ',' + current.y;
-      const options = adjacency.get(key)?.neighbors;
-      if (!options || options.length === 0) return current;
-      let next;
-      do {
-        next = p.random(options);
-      } while (next.x === current.x && next.y === current.y && options.length > 1);
-      return next;
+      this.speed = p.random(0.003, 0.007);
     }
 
     update() {
-      const speedMultiplier = boosting ? 2.5 : 1;
-      this.t += this.baseSpeed * speedMultiplier;
+      this.t += this.speed;
       if (this.t >= 1) {
         this.current = this.next;
-        this.next = this.chooseNext(this.current);
+        this.next = p.random(points);
         this.t = 0;
       }
     }
@@ -177,72 +132,53 @@ new p5(p => {
     display() {
       const x = p.lerp(this.current.x, this.next.x, this.t);
       const y = p.lerp(this.current.y, this.next.y, this.t);
-      const size = 6 + p.sin(p.frameCount * (boosting ? 0.15 : 0.05) + this.phase) * 2;
-      const glow = 20 + 10 * p.sin(p.frameCount * (boosting ? 0.24 : 0.08) + this.phase);
-
       p.noStroke();
-      p.fill(0, 0, 0, 25);
-      p.ellipse(x, y, size + glow);
       p.fill(0);
-      p.ellipse(x, y, size);
+      p.ellipse(x, y, 6, 6);
     }
   }
 
-  class KPUMWalker {
+  class GreenWalker {
     constructor(path) {
       this.path = path;
       this.index = 0;
       this.t = 0;
-      this.speed = 0.01;
+      this.speed = 0.008; // やや遅め
+      this.forward = true;
     }
 
     update() {
-      this.t += this.speed * (boosting ? 2.5 : 1);
+      this.t += this.speed;
       if (this.t >= 1) {
         this.t = 0;
-        this.index = (this.index + 1) % this.path.length;
+        if (this.forward) {
+          this.index++;
+          if (this.index >= this.path.length - 1) {
+            this.forward = false;
+          }
+        } else {
+          this.index--;
+          if (this.index <= 0) {
+            this.forward = true;
+          }
+        }
       }
     }
 
-    displayTrail(pg) {
+    display(buffer) {
       const a = this.path[this.index];
-      const b = this.path[(this.index + 1) % this.path.length];
+      const b = this.path[this.forward ? this.index + 1 : this.index - 1];
       const x = p.lerp(a.x, b.x, this.t);
       const y = p.lerp(a.y, b.y, this.t);
-      const size = 8;
-      pg.noStroke();
-      pg.fill(0, 180, 0, 200); // 緑
-      pg.ellipse(x, y, size);
+      buffer.noStroke();
+      buffer.ellipse(x, y, 8, 8);
     }
   }
-
-  function setupKPUM() {
-    if (points.length === 0) return;
-
-    let kpumPaths = [];
-    for (let i = 0; i < 4; i++) {
-      let path = [];
-      for (let j = 0; j < 5; j++) {
-        let pt = p.random(points);
-        path.push(pt);
-      }
-      kpumPaths.push(path);
-    }
-
-    for (let path of kpumPaths) {
-      kpumWalkers.push(new KPUMWalker(path));
-    }
-  }
-
-  p.touchStarted = () => { boosting = true; };
-  p.touchEnded = () => { boosting = false; };
-  p.mousePressed = () => { boosting = true; };
-  p.mouseReleased = () => { boosting = false; };
 
   p.windowResized = () => {
-    p.resizeCanvas(p.windowWidth, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight));
-    kpumTrail = p.createGraphics(p.width, p.height);
-    kpumTrail.clear();
+    p.resizeCanvas(p.windowWidth, p.windowHeight);
+    trailBuffer = p.createGraphics(p.width, p.height);
+    trailBuffer.clear();
   };
 });
 </script>
