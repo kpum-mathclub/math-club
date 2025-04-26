@@ -4,16 +4,14 @@
   <meta charset="UTF-8">
   <title>数学研究部 | Math Club</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP&display=swap" rel="stylesheet">
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      font-family: "Noto Serif JP", serif;
+      font-family: sans-serif;
       background: white;
       overflow-x: hidden;
     }
-
     nav {
       position: fixed;
       top: 0;
@@ -26,74 +24,53 @@
       font-size: 18px;
       display: flex;
       gap: 20px;
+      font-family: "Noto Serif JP", serif;
     }
-
     nav a {
       color: white;
       text-decoration: none;
     }
-
     body {
       padding-top: 70px;
     }
-
-    .corner-message {
-      position: fixed;
-      top: 72px;
-      left: 20px;
-      font-size: 20px;
-      color: #111;
-      font-weight: bold;
-      z-index: 10;
-      pointer-events: none;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    #kpum-canvas {
-      width: 120px;
-      height: 40px;
-    }
-
     canvas {
       position: fixed;
       top: 0;
       left: 0;
+      pointer-events: none;
+      z-index: -10;
     }
   </style>
 </head>
 
 <body>
 
-  <nav>
-    <a href="index.html">Home</a>
-    <a href="schedule.html">Schedule</a>
-    <a href="contact.html">Contact</a>
-    <a href="qa.html">Q&A</a>
-  </nav>
+<nav>
+  <a href="index.html">Home</a>
+  <a href="schedule.html">Schedule</a>
+  <a href="contact.html">Contact</a>
+  <a href="qa.html">Q&A</a>
+</nav>
 
-  <div class="corner-message">
-    京都府立医科大学 数学研究部 公式HP
-    <div id="kpum-canvas"></div>
-  </div>
+<div class="corner-message" style="position:fixed;top:72px;left:20px;font-size:20px;color:#111;font-weight:bold;z-index:10;pointer-events:none;font-family:'Noto Serif JP',serif;">
+  京都府立医科大学 数学研究部 公式HP
+</div>
 
-<!-- ▼ 三角タイル＆通常点（白）＋発光 -->
 <script>
 new p5(p => {
   const sideLength = 60;
-  const walkerCount = 48;
+  const walkerCount = 100;
   let triangles = [];
   let points = [];
   let adjacency = new Map();
   let walkers = [];
+  let boosting = false;
 
   p.setup = () => {
     const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
     const cnv = p.createCanvas(p.windowWidth, height);
     cnv.position(0, 0);
-    cnv.style('z-index', '-10');
-    cnv.style('pointer-events', 'none');
+
     generateTriangleGrid();
 
     for (let i = 0; i < walkerCount; i++) {
@@ -104,9 +81,9 @@ new p5(p => {
   p.draw = () => {
     p.background(255);
 
-    // タイル描画
+    // タイルを描画
     p.noFill();
-    p.stroke(0, 80); // タイルを少し濃く
+    p.stroke(0, 40);
     for (let t of triangles) {
       p.beginShape();
       for (let pt of t) {
@@ -115,6 +92,7 @@ new p5(p => {
       p.endShape(p.CLOSE);
     }
 
+    // 点を描画
     for (let w of walkers) {
       w.update();
       w.display();
@@ -183,7 +161,8 @@ new p5(p => {
     }
 
     update() {
-      this.t += this.baseSpeed;
+      const speedMultiplier = boosting ? 2.5 : 1;
+      this.t += this.baseSpeed * speedMultiplier;
       if (this.t >= 1) {
         this.current = this.next;
         this.next = this.chooseNext(this.current);
@@ -195,8 +174,8 @@ new p5(p => {
       const x = p.lerp(this.current.x, this.next.x, this.t);
       const y = p.lerp(this.current.y, this.next.y, this.t);
 
-      const size = 6 + p.sin(p.frameCount * 0.05 + this.phase) * 2;
-      const glow = 20 + 10 * p.sin(p.frameCount * 0.08 + this.phase);
+      const size = 6 + p.sin(p.frameCount * (boosting ? 0.15 : 0.05) + this.phase) * 2;
+      const glow = 20 + 10 * p.sin(p.frameCount * (boosting ? 0.24 : 0.08) + this.phase);
 
       p.noStroke();
       p.fill(0, 0, 0, 25);
@@ -208,82 +187,14 @@ new p5(p => {
   }
 
   p.windowResized = () => {
-    const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
-    p.resizeCanvas(p.windowWidth, height);
-  };
-});
-</script>
-
-<!-- ▼ KPUMを描く緑の点 -->
-<script>
-new p5(p => {
-  let trails = [];
-  let letters = [
-    [0,30, 10,0, 20,30], // K
-    [25,0, 25,30],       // P
-    [40,0, 40,30],       // U
-    [50,0, 60,0, 60,30, 70,30] // M
-  ];
-  let points = [];
-  let progress = [];
-  let speeds = [];
-  let directions = [];
-
-  p.setup = () => {
-    const cnv = p.createCanvas(120, 40);
-    cnv.parent('kpum-canvas');
-    p.background(255);
-    p.frameRate(60);
-
-    for (let i = 0; i < 4; i++) {
-      points.push([]);
-      progress.push(0);
-      speeds.push(0.01);
-      directions.push(1);
-      for (let j = 0; j < letters[i].length; j += 2) {
-        points[i].push(p.createVector(letters[i][j], letters[i][j+1]));
-      }
-    }
+    p.resizeCanvas(p.windowWidth, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight));
+    generateTriangleGrid();
   };
 
-  p.draw = () => {
-    p.clear();
-
-    // 緑の軌跡
-    for (let tr of trails) {
-      p.stroke(0, 150, 0, 100);
-      p.strokeWeight(2);
-      p.point(tr.x, tr.y);
-    }
-
-    for (let i = 0; i < 4; i++) {
-      let idx = Math.floor(progress[i]);
-      let nextIdx = (idx + 1) % points[i].length;
-
-      let pos1 = points[i][idx];
-      let pos2 = points[i][nextIdx];
-
-      let t = progress[i] % 1;
-      let x = p.lerp(pos1.x, pos2.x, t);
-      let y = p.lerp(pos1.y, pos2.y, t);
-
-      p.noStroke();
-      p.fill(0, 200, 0);
-      p.ellipse(x, y, 5);
-
-      trails.push(p.createVector(x, y));
-
-      progress[i] += speeds[i] * directions[i];
-      if (progress[i] >= points[i].length - 1 || progress[i] <= 0) {
-        directions[i] *= -1;
-      }
-    }
-
-    // 古い軌跡を削除（7秒くらい残す）
-    if (trails.length > 60 * 7) {
-      trails.splice(0, trails.length - 60 * 7);
-    }
-  };
+  p.touchStarted = () => { boosting = true; };
+  p.touchEnded = () => { boosting = false; };
+  p.mousePressed = () => { boosting = true; };
+  p.mouseReleased = () => { boosting = false; };
 });
 </script>
 
