@@ -2,8 +2,9 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>京都府立医科大学　数学研究部 |KPUM Math Club</title>
+  <title>数学研究部 | Math Club</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP&display=swap" rel="stylesheet">
   <style>
     html, body {
       margin: 0;
@@ -12,6 +13,7 @@
       background: white;
       overflow-x: hidden;
     }
+
     nav {
       position: fixed;
       top: 0;
@@ -25,13 +27,16 @@
       display: flex;
       gap: 20px;
     }
+
     nav a {
       color: white;
       text-decoration: none;
     }
+
     body {
       padding-top: 70px;
     }
+
     .corner-message {
       position: fixed;
       top: 72px;
@@ -43,11 +48,14 @@
       pointer-events: none;
       display: flex;
       align-items: center;
-      font-family: "Noto Serif JP", serif;
+      gap: 10px;
     }
+
     #kpum-canvas {
-      margin-left: 20px;
+      width: 120px;
+      height: 40px;
     }
+
     canvas {
       position: fixed;
       top: 0;
@@ -57,6 +65,7 @@
 </head>
 
 <body>
+
   <nav>
     <a href="index.html">Home</a>
     <a href="schedule.html">Schedule</a>
@@ -65,21 +74,19 @@
   </nav>
 
   <div class="corner-message">
-    京都府立医科大学 数学研究部
+    京都府立医科大学 数学研究部 公式HP
     <div id="kpum-canvas"></div>
   </div>
 
-<!-- メイン背景 -->
-<!-- 三角タイル背景 -->
+<!-- ▼ 三角タイル＆通常点（白）＋発光 -->
 <script>
-let mainSketch = (p) => {
+new p5(p => {
   const sideLength = 60;
-  const walkerCount = 100;
+  const walkerCount = 48;
   let triangles = [];
   let points = [];
   let adjacency = new Map();
   let walkers = [];
-  let boosting = false;
 
   p.setup = () => {
     const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
@@ -97,8 +104,9 @@ let mainSketch = (p) => {
   p.draw = () => {
     p.background(255);
 
+    // タイル描画
     p.noFill();
-    p.stroke(0, 80);
+    p.stroke(0, 80); // タイルを少し濃く
     for (let t of triangles) {
       p.beginShape();
       for (let pt of t) {
@@ -117,28 +125,34 @@ let mainSketch = (p) => {
     const h = sideLength * Math.sqrt(3) / 2;
     triangles = [];
     adjacency.clear();
+
     for (let y = 0; y < p.height + h; y += h) {
       for (let x = 0; x < p.width + sideLength; x += sideLength) {
         const xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
         const p1 = p.createVector(x + xOffset, y);
-        const p2 = p.createVector(x + sideLength/2 + xOffset, y + h);
-        const p3 = p.createVector(x - sideLength/2 + xOffset, y + h);
+        const p2 = p.createVector(x + sideLength / 2 + xOffset, y + h);
+        const p3 = p.createVector(x - sideLength / 2 + xOffset, y + h);
         triangles.push([p1, p2, p3]);
+
         registerEdge(p1, p2);
         registerEdge(p2, p3);
         registerEdge(p3, p1);
       }
     }
+
     points = Array.from(adjacency.values()).map(obj => obj.vec);
   }
 
   function registerEdge(a, b) {
     const keyA = a.x + ',' + a.y;
     const keyB = b.x + ',' + b.y;
+
     if (!adjacency.has(keyA)) adjacency.set(keyA, { vec: a, neighbors: [] });
     if (!adjacency.has(keyB)) adjacency.set(keyB, { vec: b, neighbors: [] });
+
     const neighborsA = adjacency.get(keyA).neighbors;
     const neighborsB = adjacency.get(keyB).neighbors;
+
     if (!neighborsA.some(n => n.x === b.x && n.y === b.y)) {
       neighborsA.push(adjacency.get(keyB).vec);
     }
@@ -160,6 +174,7 @@ let mainSketch = (p) => {
       const key = current.x + ',' + current.y;
       const options = adjacency.get(key)?.neighbors;
       if (!options || options.length === 0) return current;
+
       let next;
       do {
         next = p.random(options);
@@ -168,8 +183,7 @@ let mainSketch = (p) => {
     }
 
     update() {
-      const speedMultiplier = boosting ? 2.5 : 1;
-      this.t += this.baseSpeed * speedMultiplier;
+      this.t += this.baseSpeed;
       if (this.t >= 1) {
         this.current = this.next;
         this.next = this.chooseNext(this.current);
@@ -180,111 +194,97 @@ let mainSketch = (p) => {
     display() {
       const x = p.lerp(this.current.x, this.next.x, this.t);
       const y = p.lerp(this.current.y, this.next.y, this.t);
-      const size = 6 + p.sin(p.frameCount * (boosting ? 0.15 : 0.05) + this.phase) * 2;
-      const glow = 20 + 10 * p.sin(p.frameCount * (boosting ? 0.24 : 0.08) + this.phase);
+
+      const size = 6 + p.sin(p.frameCount * 0.05 + this.phase) * 2;
+      const glow = 20 + 10 * p.sin(p.frameCount * 0.08 + this.phase);
 
       p.noStroke();
       p.fill(0, 0, 0, 25);
       p.ellipse(x, y, size + glow);
+
       p.fill(0);
       p.ellipse(x, y, size);
     }
   }
 
   p.windowResized = () => {
-    const height = document.documentElement.scrollHeight;
+    const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
     p.resizeCanvas(p.windowWidth, height);
   };
-
-  p.touchStarted = () => { boosting = true; };
-  p.touchEnded = () => { boosting = false; };
-  p.mousePressed = () => { boosting = true; };
-  p.mouseReleased = () => { boosting = false; };
-};
-new p5(mainSketch);
+});
 </script>
 
-<!-- KPUM軌跡 -->
+<!-- ▼ KPUMを描く緑の点 -->
 <script>
-let kpumSketch = (p) => {
-  let paths = [];
-  let trailBuffer;
-  let boosting = false;
+new p5(p => {
+  let trails = [];
+  let letters = [
+    [0,30, 10,0, 20,30], // K
+    [25,0, 25,30],       // P
+    [40,0, 40,30],       // U
+    [50,0, 60,0, 60,30, 70,30] // M
+  ];
+  let points = [];
+  let progress = [];
+  let speeds = [];
+  let directions = [];
 
   p.setup = () => {
-    const cnv = p.createCanvas(300, 50);
+    const cnv = p.createCanvas(120, 40);
     cnv.parent('kpum-canvas');
+    p.background(255);
     p.frameRate(60);
-    trailBuffer = p.createGraphics(p.width, p.height);
-    trailBuffer.clear();
 
-    paths = [
-      makePath('K'), makePath('P'), makePath('U'), makePath('M')
-    ];
+    for (let i = 0; i < 4; i++) {
+      points.push([]);
+      progress.push(0);
+      speeds.push(0.01);
+      directions.push(1);
+      for (let j = 0; j < letters[i].length; j += 2) {
+        points[i].push(p.createVector(letters[i][j], letters[i][j+1]));
+      }
+    }
   };
 
   p.draw = () => {
-    trailBuffer.fill(255, 255, 255, 20);
-    trailBuffer.noStroke();
-    trailBuffer.rect(0, 0, p.width, p.height);
+    p.clear();
 
-    trailBuffer.stroke(0, 180);
-    trailBuffer.strokeWeight(2);
-    trailBuffer.noFill();
-
-    for (let path of paths) {
-      path.update();
-      path.display();
+    // 緑の軌跡
+    for (let tr of trails) {
+      p.stroke(0, 150, 0, 100);
+      p.strokeWeight(2);
+      p.point(tr.x, tr.y);
     }
 
-    p.image(trailBuffer, 0, 0);
-  };
+    for (let i = 0; i < 4; i++) {
+      let idx = Math.floor(progress[i]);
+      let nextIdx = (idx + 1) % points[i].length;
 
-  class Path {
-    constructor(points) {
-      this.points = points;
-      this.index = 0;
-      this.dir = 1;
-      this.pos = p.createVector(points[0].x, points[0].y);
-    }
+      let pos1 = points[i][idx];
+      let pos2 = points[i][nextIdx];
 
-    update() {
-      const target = this.points[this.index];
-      this.pos.lerp(target, 0.1);
-      if (p.dist(this.pos.x, this.pos.y, target.x, target.y) < 1) {
-        this.index += this.dir;
-        if (this.index >= this.points.length || this.index < 0) {
-          this.dir *= -1;
-          this.index += this.dir;
-        }
+      let t = progress[i] % 1;
+      let x = p.lerp(pos1.x, pos2.x, t);
+      let y = p.lerp(pos1.y, pos2.y, t);
+
+      p.noStroke();
+      p.fill(0, 200, 0);
+      p.ellipse(x, y, 5);
+
+      trails.push(p.createVector(x, y));
+
+      progress[i] += speeds[i] * directions[i];
+      if (progress[i] >= points[i].length - 1 || progress[i] <= 0) {
+        directions[i] *= -1;
       }
     }
 
-    display() {
-      trailBuffer.fill(0, 200, 0, 150);
-      trailBuffer.noStroke();
-      trailBuffer.ellipse(this.pos.x, this.pos.y, 6);
+    // 古い軌跡を削除（7秒くらい残す）
+    if (trails.length > 60 * 7) {
+      trails.splice(0, trails.length - 60 * 7);
     }
-  }
-
-  function makePath(letter) {
-    let pts = [];
-    if (letter === 'K') {
-      pts = [p.createVector(10,40), p.createVector(10,10), p.createVector(30,25), p.createVector(10,40)];
-    }
-    if (letter === 'P') {
-      pts = [p.createVector(40,40), p.createVector(40,10), p.createVector(60,10), p.createVector(60,25), p.createVector(40,25)];
-    }
-    if (letter === 'U') {
-      pts = [p.createVector(70,10), p.createVector(70,40), p.createVector(90,40), p.createVector(90,10)];
-    }
-    if (letter === 'M') {
-      pts = [p.createVector(100,40), p.createVector(100,10), p.createVector(110,25), p.createVector(120,10), p.createVector(120,40)];
-    }
-    return new Path(pts);
-  }
-};
-new p5(kpumSketch);
+  };
+});
 </script>
 
 </body>
