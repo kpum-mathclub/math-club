@@ -240,5 +240,93 @@
     p.mouseReleased = () => { boosting = false; };
   });
 </script>
+  <script>
+new p5(p => {
+  let trailBuffer;
+  let points = [];
+  let boosting = false;
+  let timer = 0;
+  let intervalNormal = 60; // 通常時 60フレームごとに心電図
+  let intervalBoost = 30;  // 長押し時 30フレームごと
+
+  p.setup = () => {
+    const cnv = p.createCanvas(p.windowWidth, p.windowHeight);
+    cnv.position(0, 0);
+    cnv.style('z-index', '-8');
+    cnv.style('pointer-events', 'none');
+    p.frameRate(60);
+
+    trailBuffer = p.createGraphics(p.width, p.height);
+    trailBuffer.clear();
+  };
+
+  p.draw = () => {
+    // 背景にフェードをかける（残像）
+    trailBuffer.fill(255, 255, 255, 20);
+    trailBuffer.noStroke();
+    trailBuffer.rect(0, 0, p.width, p.height);
+
+    let interval = boosting ? intervalBoost : intervalNormal;
+    timer++;
+    if (timer >= interval) {
+      addECGWave();
+      timer = 0;
+    }
+
+    // 心電図線を描く
+    trailBuffer.stroke(0, 150);
+    trailBuffer.strokeWeight(2);
+    trailBuffer.noFill();
+    trailBuffer.beginShape();
+    for (let i = 0; i < points.length; i++) {
+      trailBuffer.vertex(points[i].x, points[i].y);
+    }
+    trailBuffer.endShape();
+
+    // ポイントを左に流す
+    for (let pt of points) {
+      pt.x -= 2; // 移動速度
+    }
+
+    // 画面外のポイントを削除
+    points = points.filter(pt => pt.x > -50);
+
+    // 描画
+    p.image(trailBuffer, 0, 0);
+  };
+
+  function addECGWave() {
+    let baseY = p.height / 2 + p.random(-30, 30); // ベースの高さ
+    let wave = [
+      {dx: 10, dy: 0},
+      {dx: 10, dy: -30},
+      {dx: 10, dy: 60},
+      {dx: 10, dy: -40},
+      {dx: 10, dy: 20},
+      {dx: 10, dy: 0},
+      {dx: 20, dy: 0}
+    ];
+
+    let startX = p.width;
+    let lastY = baseY;
+    for (let step of wave) {
+      startX += step.dx;
+      lastY += step.dy;
+      points.push(p.createVector(startX, lastY));
+    }
+  }
+
+  p.touchStarted = () => { boosting = true; };
+  p.touchEnded = () => { boosting = false; };
+  p.mousePressed = () => { boosting = true; };
+  p.mouseReleased = () => { boosting = false; };
+
+  p.windowResized = () => {
+    p.resizeCanvas(p.windowWidth, p.windowHeight);
+    trailBuffer = p.createGraphics(p.width, p.height);
+    trailBuffer.clear();
+  };
+});
+</script>
 </body>
 </html>
