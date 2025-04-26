@@ -37,9 +37,12 @@
       position: fixed;
       top: 0;
       left: 0;
+      pointer-events: none;
+      z-index: -10;
     }
   </style>
 </head>
+
 <body>
 
 <nav>
@@ -63,37 +66,22 @@ new p5(p => {
   let walkers = [];
   let boosting = false;
 
-  // 心電図パーツ
-  let ecgPath = [];
-  let ecgIndex = 0;
-  let trailBuffer;
-  let ecgSpeedNormal = 2;
-  let ecgSpeedBoost = 5;
-  let ecgSpeed = ecgSpeedNormal;
-
   p.setup = () => {
     const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
     const cnv = p.createCanvas(p.windowWidth, height);
     cnv.position(0, 0);
-    cnv.style('z-index', '-10');
-    cnv.style('pointer-events', 'none');
-
-    trailBuffer = p.createGraphics(p.width, p.height);
-    trailBuffer.clear();
 
     generateTriangleGrid();
 
     for (let i = 0; i < walkerCount; i++) {
       walkers.push(new Walker());
     }
-
-    generateECGPath();
   };
 
   p.draw = () => {
     p.background(255);
 
-    // --- 三角タイル ---
+    // タイルを描画
     p.noFill();
     p.stroke(0, 40);
     for (let t of triangles) {
@@ -104,42 +92,11 @@ new p5(p => {
       p.endShape(p.CLOSE);
     }
 
-    // --- 点 ---
+    // 点を描画
     for (let w of walkers) {
       w.update();
       w.display();
     }
-
-    // --- 心電図軌跡 ---
-    p.image(trailBuffer, 0, 0);
-
-    ecgSpeed = boosting ? ecgSpeedBoost : ecgSpeedNormal;
-
-    if (ecgPath.length > 1) {
-      const current = ecgPath[ecgIndex];
-      const next = ecgPath[(ecgIndex + 1) % ecgPath.length];
-
-      let dx = (next.x - current.x) / ecgSpeed;
-      let dy = (next.y - current.y) / ecgSpeed;
-
-      for (let i = 0; i < ecgSpeed; i++) {
-        trailBuffer.stroke(0, 100);
-        trailBuffer.strokeWeight(2);
-        trailBuffer.point(current.x + dx * i, current.y + dy * i);
-      }
-
-      ecgPath[ecgIndex].x += dx;
-      ecgPath[ecgIndex].y += dy;
-
-      if (p.dist(ecgPath[ecgIndex].x, ecgPath[ecgIndex].y, next.x, next.y) < 1) {
-        ecgIndex = (ecgIndex + 1) % ecgPath.length;
-      }
-    }
-
-    // --- 軌跡フェードアウト ---
-    trailBuffer.fill(255, 255, 255, 15);
-    trailBuffer.noStroke();
-    trailBuffer.rect(0, 0, p.width, p.height);
   };
 
   function generateTriangleGrid() {
@@ -229,33 +186,15 @@ new p5(p => {
     }
   }
 
-  function generateECGPath() {
-    const midY = p.height * 0.3;
+  p.windowResized = () => {
+    p.resizeCanvas(p.windowWidth, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight));
+    generateTriangleGrid();
+  };
 
-    ecgPath = [
-      p.createVector(0, midY),
-      p.createVector(30, midY),
-      p.createVector(40, midY - 50),
-      p.createVector(50, midY + 80),
-      p.createVector(60, midY - 30),
-      p.createVector(90, midY),
-      p.createVector(p.width, midY)
-    ];
-  }
-
-  // 長押しでboost
   p.touchStarted = () => { boosting = true; };
   p.touchEnded = () => { boosting = false; };
   p.mousePressed = () => { boosting = true; };
   p.mouseReleased = () => { boosting = false; };
-
-  p.windowResized = () => {
-    p.resizeCanvas(p.windowWidth, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight));
-    trailBuffer = p.createGraphics(p.width, p.height);
-    trailBuffer.clear();
-    generateTriangleGrid();
-    generateECGPath();
-  };
 });
 </script>
 
