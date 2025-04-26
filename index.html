@@ -12,7 +12,6 @@
       background: white;
       overflow-x: hidden;
     }
-
     nav {
       position: fixed;
       top: 0;
@@ -25,25 +24,15 @@
       font-size: 18px;
       display: flex;
       gap: 20px;
-      font-family:  "Noto Serif JP", serif; /* ← ここ追加！ */
+      font-family: "Noto Serif JP", serif;
     }
-
     nav a {
       color: white;
       text-decoration: none;
     }
-
     body {
       padding-top: 70px;
     }
-
-    #content {
-      position: relative;
-      z-index: 1;
-      background: transparent;
-      padding: 40px;
-    }
-
     canvas {
       position: fixed;
       top: 0;
@@ -52,248 +41,223 @@
   </style>
 </head>
 <body>
-  <nav>
-    <a href="index.html">Home</a>
-    <a href="schedule.html">Schedule</a>
-    <a href="contact.html">Contact</a>
-    <a href="qa.html">Q&A</a>
-  </nav>
-<!-- Google Fonts 読み込み -->
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP&display=swap" rel="stylesheet">
 
-<!-- 明朝体のテキスト -->
-<style>
-  .corner-message {
-    position: fixed;
-    top: 72px;
-    left: 20px;
-    font-size: 20px;
-    color: #111;
-    font-weight: normal;
-    z-index: 10;
-    pointer-events: none;
-    font-family: "Noto Serif JP", serif;
-  }
-</style>
+<nav>
+  <a href="index.html">Home</a>
+  <a href="schedule.html">Schedule</a>
+  <a href="contact.html">Contact</a>
+  <a href="qa.html">Q&A</a>
+</nav>
 
-<div class="corner-message">京都府立医科大学 数学研究部 公式HP</div>
-  <style>
-  .corner-message {
-    position: fixed;
-    top: 72px; /* ナビバー下に配置 */
-    left: 20px;
-    font-size: 20px;
-    color: #111;
-    font-weight: bold;
-    z-index: 10;
-    pointer-events: none;
-  }
-</style>
-
-<div class="corner-message">京都府立医科大学 数学研究部 公式HP</div>
-<!--
-<div id="content">
-  <h1>数学研究部</h1>
-  <p>Welcome to the Math Club!</p>
+<div class="corner-message" style="position:fixed;top:72px;left:20px;font-size:20px;color:#111;font-weight:bold;z-index:10;pointer-events:none;font-family:'Noto Serif JP',serif;">
+  京都府立医科大学 数学研究部 公式HP
 </div>
--->
-  <!-- 三角タイル背景 -->
-<!-- 三角タイルと点のアニメ -->
+
 <script>
-  new p5(p => {
-    const sideLength = 60;
-    const walkerCount = 48;
-    let triangles = [];
-    let points = [];
-    let adjacency = new Map();
-    let walkers = [];
-    let boosting = false;
-    let trailBuffer;
-    let ecgPoints = [];
-    let ecgTimer = 0;
-    let intervalNormal = 60;
-    let intervalBoost = 30;
+new p5(p => {
+  const sideLength = 60;
+  const walkerCount = 48;
+  let triangles = [];
+  let points = [];
+  let adjacency = new Map();
+  let walkers = [];
+  let boosting = false;
 
-    p.setup = () => {
-      const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
-      const cnv = p.createCanvas(p.windowWidth, height);
-      cnv.position(0, 0);
-      cnv.style('z-index', '-10');
-      cnv.style('pointer-events', 'none');
+  // 心電図パーツ
+  let ecgPath = [];
+  let ecgIndex = 0;
+  let trailBuffer;
+  let ecgSpeedNormal = 2;
+  let ecgSpeedBoost = 5;
+  let ecgSpeed = ecgSpeedNormal;
 
-      trailBuffer = p.createGraphics(p.width, p.height);
-      trailBuffer.clear();
+  p.setup = () => {
+    const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+    const cnv = p.createCanvas(p.windowWidth, height);
+    cnv.position(0, 0);
+    cnv.style('z-index', '-10');
+    cnv.style('pointer-events', 'none');
 
-      generateTriangleGrid();
+    trailBuffer = p.createGraphics(p.width, p.height);
+    trailBuffer.clear();
 
-      for (let i = 0; i < walkerCount; i++) {
-        walkers.push(new Walker());
-      }
-    };
+    generateTriangleGrid();
 
-    p.draw = () => {
-      p.background(255);
-
-      // タイル描画
-      p.noFill();
-      p.stroke(0, 40);
-      for (let t of triangles) {
-        p.beginShape();
-        for (let pt of t) {
-          p.vertex(pt.x, pt.y);
-        }
-        p.endShape(p.CLOSE);
-      }
-
-      for (let w of walkers) {
-        w.update();
-        w.display();
-      }
-
-      // ECGの軌跡を trailBuffer に描画
-      trailBuffer.fill(255, 255, 255, 10);
-      trailBuffer.noStroke();
-      trailBuffer.rect(0, 0, p.width, p.height);
-
-      let interval = boosting ? intervalBoost : intervalNormal;
-      ecgTimer++;
-      if (ecgTimer >= interval) {
-        addECGWave();
-        ecgTimer = 0;
-      }
-
-      // 点で描画
-      for (let i = 0; i < ecgPoints.length; i++) {
-        trailBuffer.noStroke();
-        trailBuffer.fill(0, 30 + i); // 古い点は薄く
-        trailBuffer.ellipse(ecgPoints[i].x, ecgPoints[i].y, 4);
-        ecgPoints[i].x += 2; // 右に流す
-      }
-      ecgPoints = ecgPoints.filter(pt => pt.x < p.width + 50);
-
-      p.image(trailBuffer, 0, 0);
-    };
-
-    function generateTriangleGrid() {
-      const h = sideLength * Math.sqrt(3) / 2;
-      triangles = [];
-      adjacency.clear();
-
-      for (let y = 0; y < p.height + h; y += h) {
-        for (let x = 0; x < p.width + sideLength; x += sideLength) {
-          const xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
-          const p1 = p.createVector(x + xOffset, y);
-          const p2 = p.createVector(x + sideLength / 2 + xOffset, y + h);
-          const p3 = p.createVector(x - sideLength / 2 + xOffset, y + h);
-          triangles.push([p1, p2, p3]);
-
-          registerEdge(p1, p2);
-          registerEdge(p2, p3);
-          registerEdge(p3, p1);
-        }
-      }
-
-      points = Array.from(adjacency.values()).map(obj => obj.vec);
+    for (let i = 0; i < walkerCount; i++) {
+      walkers.push(new Walker());
     }
 
-    function registerEdge(a, b) {
-      const keyA = a.x + ',' + a.y;
-      const keyB = b.x + ',' + b.y;
+    generateECGPath();
+  };
 
-      if (!adjacency.has(keyA)) adjacency.set(keyA, { vec: a, neighbors: [] });
-      if (!adjacency.has(keyB)) adjacency.set(keyB, { vec: b, neighbors: [] });
+  p.draw = () => {
+    p.background(255);
 
-      const neighborsA = adjacency.get(keyA).neighbors;
-      const neighborsB = adjacency.get(keyB).neighbors;
-
-      if (!neighborsA.some(n => n.x === b.x && n.y === b.y)) {
-        neighborsA.push(adjacency.get(keyB).vec);
+    // --- 三角タイル ---
+    p.noFill();
+    p.stroke(0, 40);
+    for (let t of triangles) {
+      p.beginShape();
+      for (let pt of t) {
+        p.vertex(pt.x, pt.y);
       }
-      if (!neighborsB.some(n => n.x === a.x && n.y === a.y)) {
-        neighborsB.push(adjacency.get(keyA).vec);
+      p.endShape(p.CLOSE);
+    }
+
+    // --- 点 ---
+    for (let w of walkers) {
+      w.update();
+      w.display();
+    }
+
+    // --- 心電図軌跡 ---
+    p.image(trailBuffer, 0, 0);
+
+    ecgSpeed = boosting ? ecgSpeedBoost : ecgSpeedNormal;
+
+    if (ecgPath.length > 1) {
+      const current = ecgPath[ecgIndex];
+      const next = ecgPath[(ecgIndex + 1) % ecgPath.length];
+
+      let dx = (next.x - current.x) / ecgSpeed;
+      let dy = (next.y - current.y) / ecgSpeed;
+
+      for (let i = 0; i < ecgSpeed; i++) {
+        trailBuffer.stroke(0, 100);
+        trailBuffer.strokeWeight(2);
+        trailBuffer.point(current.x + dx * i, current.y + dy * i);
+      }
+
+      ecgPath[ecgIndex].x += dx;
+      ecgPath[ecgIndex].y += dy;
+
+      if (p.dist(ecgPath[ecgIndex].x, ecgPath[ecgIndex].y, next.x, next.y) < 1) {
+        ecgIndex = (ecgIndex + 1) % ecgPath.length;
       }
     }
 
-    class Walker {
-      constructor() {
-        this.current = p.random(points);
+    // --- 軌跡フェードアウト ---
+    trailBuffer.fill(255, 255, 255, 15);
+    trailBuffer.noStroke();
+    trailBuffer.rect(0, 0, p.width, p.height);
+  };
+
+  function generateTriangleGrid() {
+    const h = sideLength * Math.sqrt(3) / 2;
+    triangles = [];
+    adjacency.clear();
+
+    for (let y = 0; y < p.height + h; y += h) {
+      for (let x = 0; x < p.width + sideLength; x += sideLength) {
+        const xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
+        const p1 = p.createVector(x + xOffset, y);
+        const p2 = p.createVector(x + sideLength / 2 + xOffset, y + h);
+        const p3 = p.createVector(x - sideLength / 2 + xOffset, y + h);
+        triangles.push([p1, p2, p3]);
+
+        registerEdge(p1, p2);
+        registerEdge(p2, p3);
+        registerEdge(p3, p1);
+      }
+    }
+
+    points = Array.from(adjacency.values()).map(obj => obj.vec);
+  }
+
+  function registerEdge(a, b) {
+    const keyA = a.x + ',' + a.y;
+    const keyB = b.x + ',' + b.y;
+
+    if (!adjacency.has(keyA)) adjacency.set(keyA, { vec: a, neighbors: [] });
+    if (!adjacency.has(keyB)) adjacency.set(keyB, { vec: b, neighbors: [] });
+
+    const neighborsA = adjacency.get(keyA).neighbors;
+    const neighborsB = adjacency.get(keyB).neighbors;
+
+    if (!neighborsA.some(n => n.x === b.x && n.y === b.y)) {
+      neighborsA.push(adjacency.get(keyB).vec);
+    }
+    if (!neighborsB.some(n => n.x === a.x && n.y === a.y)) {
+      neighborsB.push(adjacency.get(keyA).vec);
+    }
+  }
+
+  class Walker {
+    constructor() {
+      this.current = p.random(points);
+      this.next = this.chooseNext(this.current);
+      this.t = 0;
+      this.baseSpeed = p.random(0.003, 0.008);
+      this.phase = p.random(p.TWO_PI);
+    }
+
+    chooseNext(current) {
+      const key = current.x + ',' + current.y;
+      const options = adjacency.get(key)?.neighbors;
+      if (!options || options.length === 0) return current;
+
+      let next;
+      do {
+        next = p.random(options);
+      } while (next.x === current.x && next.y === current.y && options.length > 1);
+      return next;
+    }
+
+    update() {
+      const speedMultiplier = boosting ? 2.5 : 1;
+      this.t += this.baseSpeed * speedMultiplier;
+      if (this.t >= 1) {
+        this.current = this.next;
         this.next = this.chooseNext(this.current);
         this.t = 0;
-        this.baseSpeed = p.random(0.003, 0.008);
-        this.phase = p.random(p.TWO_PI);
-      }
-
-      chooseNext(current) {
-        const key = current.x + ',' + current.y;
-        const options = adjacency.get(key)?.neighbors;
-        if (!options || options.length === 0) return current;
-
-        let next;
-        do {
-          next = p.random(options);
-        } while (next.x === current.x && next.y === current.y && options.length > 1);
-        return next;
-      }
-
-      update() {
-        const speedMultiplier = boosting ? 2.5 : 1;
-        this.t += this.baseSpeed * speedMultiplier;
-        if (this.t >= 1) {
-          this.current = this.next;
-          this.next = this.chooseNext(this.current);
-          this.t = 0;
-        }
-      }
-
-      display() {
-        const x = p.lerp(this.current.x, this.next.x, this.t);
-        const y = p.lerp(this.current.y, this.next.y, this.t);
-
-        const size = 6 + p.sin(p.frameCount * (boosting ? 0.15 : 0.05) + this.phase) * 2;
-        const glow = 20 + 10 * p.sin(p.frameCount * (boosting ? 0.24 : 0.08) + this.phase);
-
-        p.noStroke();
-        p.fill(0, 0, 0, 25);
-        p.ellipse(x, y, size + glow);
-
-        p.fill(0);
-        p.ellipse(x, y, size);
       }
     }
 
-    function addECGWave() {
-      let baseY = p.height * 0.2 + p.random(-10, 10); // 高さ調整
-      let wave = [
-        {dx: 10, dy: 0},
-        {dx: 10, dy: -30},
-        {dx: 10, dy: 60},
-        {dx: 10, dy: -40},
-        {dx: 10, dy: 20},
-        {dx: 10, dy: 0},
-        {dx: 20, dy: 0}
-      ];
+    display() {
+      const x = p.lerp(this.current.x, this.next.x, this.t);
+      const y = p.lerp(this.current.y, this.next.y, this.t);
 
-      let startX = 0;
-      let lastY = baseY;
-      for (let step of wave) {
-        startX += step.dx;
-        lastY += step.dy;
-        ecgPoints.push(p.createVector(startX, lastY));
-      }
+      const size = 6 + p.sin(p.frameCount * (boosting ? 0.15 : 0.05) + this.phase) * 2;
+      const glow = 20 + 10 * p.sin(p.frameCount * (boosting ? 0.24 : 0.08) + this.phase);
+
+      p.noStroke();
+      p.fill(0, 0, 0, 25);
+      p.ellipse(x, y, size + glow);
+
+      p.fill(0);
+      p.ellipse(x, y, size);
     }
+  }
 
-    p.touchStarted = () => { boosting = true; };
-    p.touchEnded = () => { boosting = false; };
-    p.mousePressed = () => { boosting = true; };
-    p.mouseReleased = () => { boosting = false; };
+  function generateECGPath() {
+    const midY = p.height * 0.3;
 
-    p.windowResized = () => {
-      const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
-      p.resizeCanvas(p.windowWidth, height);
-      trailBuffer = p.createGraphics(p.width, p.height);
-      trailBuffer.clear();
-    };
-  });
+    ecgPath = [
+      p.createVector(0, midY),
+      p.createVector(30, midY),
+      p.createVector(40, midY - 50),
+      p.createVector(50, midY + 80),
+      p.createVector(60, midY - 30),
+      p.createVector(90, midY),
+      p.createVector(p.width, midY)
+    ];
+  }
+
+  // 長押しでboost
+  p.touchStarted = () => { boosting = true; };
+  p.touchEnded = () => { boosting = false; };
+  p.mousePressed = () => { boosting = true; };
+  p.mouseReleased = () => { boosting = false; };
+
+  p.windowResized = () => {
+    p.resizeCanvas(p.windowWidth, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight));
+    trailBuffer = p.createGraphics(p.width, p.height);
+    trailBuffer.clear();
+    generateTriangleGrid();
+    generateECGPath();
+  };
+});
 </script>
+
 </body>
 </html>
