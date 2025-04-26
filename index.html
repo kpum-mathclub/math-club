@@ -70,8 +70,9 @@
   </div>
 
 <!-- メイン背景 -->
+<!-- 三角タイル背景 -->
 <script>
-new p5(p => {
+let mainSketch = (p) => {
   const sideLength = 60;
   const walkerCount = 48;
   let triangles = [];
@@ -96,7 +97,6 @@ new p5(p => {
   p.draw = () => {
     p.background(255);
 
-    // 三角タイル描画（濃いめ）
     p.noFill();
     p.stroke(0, 80);
     for (let t of triangles) {
@@ -200,12 +200,13 @@ new p5(p => {
   p.touchEnded = () => { boosting = false; };
   p.mousePressed = () => { boosting = true; };
   p.mouseReleased = () => { boosting = false; };
-});
+};
+new p5(mainSketch);
 </script>
 
 <!-- KPUM軌跡 -->
 <script>
-new p5(p => {
+let kpumSketch = (p) => {
   let paths = [];
   let trailBuffer;
   let boosting = false;
@@ -250,7 +251,6 @@ new p5(p => {
     update() {
       const target = this.points[this.index];
       this.pos.lerp(target, 0.1);
-
       if (p.dist(this.pos.x, this.pos.y, target.x, target.y) < 1) {
         this.index += this.dir;
         if (this.index >= this.points.length || this.index < 0) {
@@ -261,7 +261,7 @@ new p5(p => {
     }
 
     display() {
-      trailBuffer.fill(0, 200, 0, 150); 
+      trailBuffer.fill(0, 200, 0, 150);
       trailBuffer.noStroke();
       trailBuffer.ellipse(this.pos.x, this.pos.y, 6);
     }
@@ -283,8 +283,8 @@ new p5(p => {
     }
     return new Path(pts);
   }
-
-});
+};
+new p5(kpumSketch);
 </script>
 
 </body>
