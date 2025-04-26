@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>数学研究部 | Math Club</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
   <style>
@@ -10,8 +10,9 @@
       padding: 0;
       font-family: "Noto Serif JP", serif;
       background: white;
-      overflow: hidden;
+      overflow-x: hidden;
     }
+
     nav {
       position: fixed;
       top: 0;
@@ -25,10 +26,16 @@
       display: flex;
       gap: 20px;
     }
+
     nav a {
       color: white;
       text-decoration: none;
     }
+
+    body {
+      padding-top: 70px;
+    }
+
     .corner-message {
       position: fixed;
       top: 72px;
@@ -39,12 +46,11 @@
       z-index: 10;
       pointer-events: none;
     }
+
     canvas {
       position: fixed;
       top: 0;
       left: 0;
-      z-index: -1;
-      pointer-events: none;
     }
   </style>
 </head>
@@ -55,103 +61,66 @@
     <a href="contact.html">Contact</a>
     <a href="qa.html">Q&A</a>
   </nav>
+
   <div class="corner-message">京都府立医科大学 数学研究部 公式HP</div>
 
   <script>
     new p5(p => {
       const sideLength = 60;
-      const walkerCount = 30;
-      let triangles = [], points = [], adjacency = new Map();
-      let walkers = [], kpumWalkers = [];
-      let boosting = false;
-
-      const kpumPaths = [
-        [[100,100],[100,300],[100,200],[160,100],[100,200],[160,300]],
-        [[200,100],[200,300],[280,100],[280,200],[200,200]],
-        [[320,100],[320,300],[400,300],[400,100]],
-        [[440,300],[440,100],[490,200],[540,100],[540,300]]
+      let triangles = [];
+      let points = [];
+      let adjacency = new Map();
+      let walkers = [];
+      let trailBuffer;
+      let greenDots = [];
+      let greenTrails = [];
+      const greenPaths = [
+        // K
+        [[100, 100], [100, 300], [100, 200], [150, 300], [100, 200], [150, 100]],
+        // P
+        [[200, 300], [200, 100], [300, 100], [300, 200], [200, 200]],
+        // U
+        [[350, 100], [350, 300], [450, 300], [450, 100]],
+        // M
+        [[500, 300], [500, 100], [550, 200], [600, 100], [600, 300]]
       ];
-
-      p.setup = () => {
-        const cnv = p.createCanvas(p.windowWidth, document.documentElement.scrollHeight);
-        cnv.position(0, 0);
-        p.angleMode(p.DEGREES);
-        generateTriangleGrid();
-        for (let i = 0; i < walkerCount; i++) walkers.push(new Walker());
-        for (let path of kpumPaths) kpumWalkers.push(new PathWalker(path));
-      };
-
-      p.draw = () => {
-        p.background(255);
-
-        // タイル
-        p.noFill();
-        p.stroke(0, 80);
-        for (let t of triangles) {
-          p.beginShape();
-          for (let pt of t) p.vertex(pt.x, pt.y);
-          p.endShape(p.CLOSE);
-        }
-
-        for (let w of walkers) { w.update(); w.display(); }
-        for (let w of kpumWalkers) { w.update(); w.display(); }
-      };
-
-      function generateTriangleGrid() {
-        const h = sideLength * Math.sqrt(3) / 2;
-        for (let y = 0; y < p.height + h; y += h) {
-          for (let x = 0; x < p.width + sideLength; x += sideLength) {
-            const xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
-            const p1 = p.createVector(x + xOffset, y);
-            const p2 = p.createVector(x + sideLength / 2 + xOffset, y + h);
-            const p3 = p.createVector(x - sideLength / 2 + xOffset, y + h);
-            triangles.push([p1, p2, p3]);
-            registerEdge(p1, p2); registerEdge(p2, p3); registerEdge(p3, p1);
-          }
-        }
-        points = Array.from(adjacency.values()).map(obj => obj.vec);
-      }
-
-      function registerEdge(a, b) {
-        const keyA = a.x + ',' + a.y;
-        const keyB = b.x + ',' + b.y;
-        if (!adjacency.has(keyA)) adjacency.set(keyA, { vec: a, neighbors: [] });
-        if (!adjacency.has(keyB)) adjacency.set(keyB, { vec: b, neighbors: [] });
-        if (!adjacency.get(keyA).neighbors.some(n => n.x === b.x && n.y === b.y)) adjacency.get(keyA).neighbors.push(b);
-        if (!adjacency.get(keyB).neighbors.some(n => n.x === a.x && n.y === a.y)) adjacency.get(keyB).neighbors.push(a);
-      }
 
       class Walker {
         constructor() {
           this.current = p.random(points);
           this.next = this.chooseNext(this.current);
           this.t = 0;
-          this.baseSpeed = p.random(0.002, 0.004);
+          this.baseSpeed = p.random(0.003, 0.007);
           this.phase = p.random(p.TWO_PI);
         }
+
         chooseNext(current) {
           const key = current.x + ',' + current.y;
-          const options = adjacency.get(key)?.neighbors;
-          if (!options || options.length === 0) return current;
+          const options = adjacency.get(key)?.neighbors || [];
+          if (options.length === 0) return current;
+
           let next;
-          do { next = p.random(options); }
-          while (next.x === current.x && next.y === current.y && options.length > 1);
+          do {
+            next = p.random(options);
+          } while (next.x === current.x && next.y === current.y && options.length > 1);
           return next;
         }
+
         update() {
-          const speedMultiplier = boosting ? 2.5 : 1;
-          this.t += this.baseSpeed * speedMultiplier;
+          this.t += this.baseSpeed;
           if (this.t >= 1) {
             this.current = this.next;
             this.next = this.chooseNext(this.current);
             this.t = 0;
           }
         }
+
         display() {
           const x = p.lerp(this.current.x, this.next.x, this.t);
           const y = p.lerp(this.current.y, this.next.y, this.t);
           const size = 6 + p.sin(p.frameCount * 0.05 + this.phase) * 2;
           const glow = 20 + 10 * p.sin(p.frameCount * 0.08 + this.phase);
+
           p.noStroke();
           p.fill(0, 0, 0, 25);
           p.ellipse(x, y, size + glow);
@@ -160,55 +129,144 @@
         }
       }
 
-      class PathWalker {
+      class GreenDot {
         constructor(path) {
-          this.path = path.map(p => p5.Vector.fromArray(p));
+          this.path = path.map(([x, y]) => p.createVector(x, y));
           this.index = 0;
           this.t = 0;
-          this.forward = true;
-          this.trail = [];
+          this.dir = 1; // 1: forward, -1: backward
+          this.speed = 0.01;
         }
+
         update() {
-          this.t += boosting ? 0.02 : 0.008;
+          this.t += this.speed;
           if (this.t >= 1) {
             this.t = 0;
-            if (this.forward) {
-              this.index++;
-              if (this.index >= this.path.length - 1) {
-                this.index = this.path.length - 2;
-                this.forward = false;
-              }
-            } else {
-              this.index--;
-              if (this.index <= 0) {
-                this.index = 0;
-                this.forward = true;
-              }
+            this.index += this.dir;
+            if (this.index >= this.path.length - 1 || this.index <= 0) {
+              this.dir *= -1;
             }
           }
+        }
+
+        display() {
           const a = this.path[this.index];
-          const b = this.path[this.index + 1];
+          const b = this.path[this.index + this.dir];
           const x = p.lerp(a.x, b.x, this.t);
           const y = p.lerp(a.y, b.y, this.t);
-          this.trail.push({ x, y, life: 420 });
-          for (let pt of this.trail) pt.life--;
-          this.trail = this.trail.filter(pt => pt.life > 0);
-        }
-        display() {
-          for (let pt of this.trail) {
-            p.noStroke();
-            p.fill(0, 255, 0, pt.life * 0.6);
-            p.ellipse(pt.x, pt.y, 6);
-          }
+          greenTrails.push({x, y, life: 420}); // 約7秒 @60fps
+
+          p.fill(0, 255, 0);
+          p.noStroke();
+          p.ellipse(x, y, 8);
         }
       }
 
-      p.touchStarted = () => { boosting = true; };
-      p.touchEnded = () => { boosting = false; };
-      p.mousePressed = () => { boosting = true; };
-      p.mouseReleased = () => { boosting = false; };
+      p.setup = () => {
+        const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+        const cnv = p.createCanvas(p.windowWidth, height);
+        cnv.position(0, 0);
+        cnv.style('z-index', '-10');
+        cnv.style('pointer-events', 'none');
+
+        trailBuffer = p.createGraphics(p.width, p.height);
+        trailBuffer.clear();
+
+        generateTriangleGrid();
+        for (let i = 0; i < 48; i++) {
+          walkers.push(new Walker());
+        }
+        for (let path of greenPaths) {
+          greenDots.push(new GreenDot(path));
+        }
+      };
+
+      p.draw = () => {
+        p.background(255);
+
+        // 三角形
+        p.noFill();
+        p.stroke(0, 40);
+        for (let t of triangles) {
+          p.beginShape();
+          for (let pt of t) {
+            p.vertex(pt.x, pt.y);
+          }
+          p.endShape(p.CLOSE);
+        }
+
+        // 通常の点
+        for (let w of walkers) {
+          w.update();
+          w.display();
+        }
+
+        // 緑の残像
+        trailBuffer.fill(255, 20);
+        trailBuffer.noStroke();
+        trailBuffer.rect(0, 0, p.width, p.height);
+
+        trailBuffer.noStroke();
+        for (let i = greenTrails.length - 1; i >= 0; i--) {
+          let pt = greenTrails[i];
+          let alpha = p.map(pt.life, 0, 420, 0, 255);
+          trailBuffer.fill(0, 255, 0, alpha);
+          trailBuffer.ellipse(pt.x, pt.y, 6);
+          pt.life--;
+          if (pt.life <= 0) greenTrails.splice(i, 1);
+        }
+
+        p.image(trailBuffer, 0, 0);
+
+        // 緑点
+        for (let d of greenDots) {
+          d.update();
+          d.display();
+        }
+      };
+
+      function generateTriangleGrid() {
+        const h = sideLength * Math.sqrt(3) / 2;
+        triangles = [];
+        adjacency.clear();
+
+        for (let y = 0; y < p.height + h; y += h) {
+          for (let x = 0; x < p.width + sideLength; x += sideLength) {
+            const xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
+            const p1 = p.createVector(x + xOffset, y);
+            const p2 = p.createVector(x + sideLength / 2 + xOffset, y + h);
+            const p3 = p.createVector(x - sideLength / 2 + xOffset, y + h);
+            triangles.push([p1, p2, p3]);
+            registerEdge(p1, p2);
+            registerEdge(p2, p3);
+            registerEdge(p3, p1);
+          }
+        }
+        points = Array.from(adjacency.values()).map(obj => obj.vec);
+      }
+
+      function registerEdge(a, b) {
+        const keyA = a.x + ',' + a.y;
+        const keyB = b.x + ',' + b.y;
+
+        if (!adjacency.has(keyA)) adjacency.set(keyA, { vec: a, neighbors: [] });
+        if (!adjacency.has(keyB)) adjacency.set(keyB, { vec: b, neighbors: [] });
+
+        const neighborsA = adjacency.get(keyA).neighbors;
+        const neighborsB = adjacency.get(keyB).neighbors;
+
+        if (!neighborsA.some(n => n.x === b.x && n.y === b.y)) {
+          neighborsA.push(adjacency.get(keyB).vec);
+        }
+        if (!neighborsB.some(n => n.x === a.x && n.y === a.y)) {
+          neighborsB.push(adjacency.get(keyA).vec);
+        }
+      }
+
       p.windowResized = () => {
-        p.resizeCanvas(p.windowWidth, document.documentElement.scrollHeight);
+        p.resizeCanvas(p.windowWidth, document.body.scrollHeight);
+        trailBuffer = p.createGraphics(p.width, p.height);
+        trailBuffer.clear();
       };
     });
   </script>
