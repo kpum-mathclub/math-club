@@ -43,7 +43,8 @@
       position: fixed;
       top: 0;
       left: 0;
-      z-index: -10;
+      z-index: -1;
+      pointer-events: none;
     }
   </style>
 </head>
@@ -61,21 +62,19 @@
       const sideLength = 60;
       const walkerCount = 30;
       let triangles = [], points = [], adjacency = new Map();
-      let walkers = [], boosting = false;
-      let kpumWalkers = [];
+      let walkers = [], kpumWalkers = [];
+      let boosting = false;
 
       const kpumPaths = [
-        [[100,100],[100,300],[100,200],[160,100],[100,200],[160,300]], // K
-        [[200,100],[200,300],[280,100],[280,200],[200,200]],           // P
-        [[320,100],[320,300],[400,300],[400,100]],                     // U
-        [[440,300],[440,100],[490,200],[540,100],[540,300]]            // M
+        [[100,100],[100,300],[100,200],[160,100],[100,200],[160,300]],
+        [[200,100],[200,300],[280,100],[280,200],[200,200]],
+        [[320,100],[320,300],[400,300],[400,100]],
+        [[440,300],[440,100],[490,200],[540,100],[540,300]]
       ];
 
       p.setup = () => {
-        const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
-        const cnv = p.createCanvas(p.windowWidth, height);
+        const cnv = p.createCanvas(p.windowWidth, document.documentElement.scrollHeight);
         cnv.position(0, 0);
-        cnv.style('pointer-events', 'none');
         p.angleMode(p.DEGREES);
         generateTriangleGrid();
         for (let i = 0; i < walkerCount; i++) walkers.push(new Walker());
@@ -85,6 +84,7 @@
       p.draw = () => {
         p.background(255);
 
+        // タイル
         p.noFill();
         p.stroke(0, 80);
         for (let t of triangles) {
@@ -99,8 +99,6 @@
 
       function generateTriangleGrid() {
         const h = sideLength * Math.sqrt(3) / 2;
-        triangles = [];
-        adjacency.clear();
         for (let y = 0; y < p.height + h; y += h) {
           for (let x = 0; x < p.width + sideLength; x += sideLength) {
             const xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
@@ -119,10 +117,8 @@
         const keyB = b.x + ',' + b.y;
         if (!adjacency.has(keyA)) adjacency.set(keyA, { vec: a, neighbors: [] });
         if (!adjacency.has(keyB)) adjacency.set(keyB, { vec: b, neighbors: [] });
-        const neighborsA = adjacency.get(keyA).neighbors;
-        const neighborsB = adjacency.get(keyB).neighbors;
-        if (!neighborsA.some(n => n.x === b.x && n.y === b.y)) neighborsA.push(b);
-        if (!neighborsB.some(n => n.x === a.x && n.y === a.y)) neighborsB.push(a);
+        if (!adjacency.get(keyA).neighbors.some(n => n.x === b.x && n.y === b.y)) adjacency.get(keyA).neighbors.push(b);
+        if (!adjacency.get(keyB).neighbors.some(n => n.x === a.x && n.y === a.y)) adjacency.get(keyB).neighbors.push(a);
       }
 
       class Walker {
@@ -138,9 +134,8 @@
           const options = adjacency.get(key)?.neighbors;
           if (!options || options.length === 0) return current;
           let next;
-          do {
-            next = p.random(options);
-          } while (next.x === current.x && next.y === current.y && options.length > 1);
+          do { next = p.random(options); }
+          while (next.x === current.x && next.y === current.y && options.length > 1);
           return next;
         }
         update() {
@@ -155,8 +150,8 @@
         display() {
           const x = p.lerp(this.current.x, this.next.x, this.t);
           const y = p.lerp(this.current.y, this.next.y, this.t);
-          const size = 6 + p.sin(p.frameCount * (boosting ? 0.15 : 0.05) + this.phase) * 2;
-          const glow = 20 + 10 * p.sin(p.frameCount * (boosting ? 0.24 : 0.08) + this.phase);
+          const size = 6 + p.sin(p.frameCount * 0.05 + this.phase) * 2;
+          const glow = 20 + 10 * p.sin(p.frameCount * 0.08 + this.phase);
           p.noStroke();
           p.fill(0, 0, 0, 25);
           p.ellipse(x, y, size + glow);
@@ -195,7 +190,7 @@
           const b = this.path[this.index + 1];
           const x = p.lerp(a.x, b.x, this.t);
           const y = p.lerp(a.y, b.y, this.t);
-          this.trail.push({ x, y, life: 420 }); // 約7秒残す
+          this.trail.push({ x, y, life: 420 });
           for (let pt of this.trail) pt.life--;
           this.trail = this.trail.filter(pt => pt.life > 0);
         }
@@ -213,8 +208,7 @@
       p.mousePressed = () => { boosting = true; };
       p.mouseReleased = () => { boosting = false; };
       p.windowResized = () => {
-        const height = document.documentElement.scrollHeight;
-        p.resizeCanvas(p.windowWidth, height);
+        p.resizeCanvas(p.windowWidth, document.documentElement.scrollHeight);
       };
     });
   </script>
