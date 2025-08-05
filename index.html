@@ -49,12 +49,20 @@
       position: fixed;
       bottom: 20px;
       right: 20px;
+      width: 400px;
+      height: 600px;
+      z-index: 100;
       border: 2px solid #333;
       border-radius: 12px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.3);
       overflow: hidden;
-      z-index: 100;
       background: white;
+    }
+
+    .twitter-window iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
     }
   </style>
 </head>
@@ -72,18 +80,16 @@
   京都府立医科大学 数学研究部 公式HP
 </div>
 
-<!-- Twitter タイムライン（窓枠風） -->
+<!-- ✅ Twitterタイムライン埋め込み（iframeで安定表示） -->
 <div class="twitter-window">
-  <a class="twitter-timeline"
-     data-width="400"
-     data-height="600"
-     data-theme="light"
-     href="https://twitter.com/kpum_mathclub?ref_src=twsrc%5Etfw">
-    Tweets by @kpum_mathclub
-  </a>
+  <iframe
+    src="https://twitframe.com/show?url=https://twitter.com/kpum_mathclub"
+    allowtransparency="true"
+    scrolling="no">
+  </iframe>
 </div>
-<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 
+<!-- ✅ 背景アニメーション：p5.js -->
 <script>
 new p5(p => {
   const sideLength = 60;
@@ -98,9 +104,7 @@ new p5(p => {
     const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
     const cnv = p.createCanvas(p.windowWidth, height);
     cnv.position(0, 0);
-
     generateTriangleGrid();
-
     for (let i = 0; i < walkerCount; i++) {
       walkers.push(new Walker());
     }
@@ -108,7 +112,6 @@ new p5(p => {
 
   p.draw = () => {
     p.background(255);
-
     p.noFill();
     p.stroke(0, 40);
     for (let t of triangles) {
@@ -118,7 +121,6 @@ new p5(p => {
       }
       p.endShape(p.CLOSE);
     }
-
     for (let w of walkers) {
       w.update();
       w.display();
