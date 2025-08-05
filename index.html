@@ -12,6 +12,7 @@
       background: white;
       overflow-x: hidden;
     }
+
     nav {
       position: fixed;
       top: 0;
@@ -26,13 +27,16 @@
       gap: 20px;
       font-family: "Noto Serif JP", serif;
     }
+
     nav a {
       color: white;
       text-decoration: none;
     }
+
     body {
       padding-top: 70px;
     }
+
     canvas {
       position: fixed;
       top: 0;
@@ -40,9 +44,22 @@
       pointer-events: none;
       z-index: -10;
     }
+
+    .twitter-window {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      border: 2px solid #333;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      overflow: hidden;
+      z-index: 100;
+      background: white;
+    }
   </style>
 </head>
 
+<body>
 
 <nav>
   <a href="index.html">Home</a>
@@ -54,13 +71,19 @@
 <div class="corner-message" style="position:fixed;top:72px;left:20px;font-size:20px;color:#111;font-weight:bold;z-index:10;pointer-events:none;font-family:'Noto Serif JP',serif;">
   京都府立医科大学 数学研究部 公式HP
 </div>
-<!-- Twitter タイムライン -->
 
+<!-- Twitter タイムライン（窓枠風） -->
+<div class="twitter-window">
+  <a class="twitter-timeline"
+     data-width="400"
+     data-height="600"
+     data-theme="light"
+     href="https://twitter.com/kpum_mathclub?ref_src=twsrc%5Etfw">
+    Tweets by @kpum_mathclub
+  </a>
 </div>
 <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-<body>
-</div>
-<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
 <script>
 new p5(p => {
   const sideLength = 60;
@@ -86,7 +109,6 @@ new p5(p => {
   p.draw = () => {
     p.background(255);
 
-    // タイルを描画
     p.noFill();
     p.stroke(0, 40);
     for (let t of triangles) {
@@ -97,7 +119,6 @@ new p5(p => {
       p.endShape(p.CLOSE);
     }
 
-    // 点を描画
     for (let w of walkers) {
       w.update();
       w.display();
