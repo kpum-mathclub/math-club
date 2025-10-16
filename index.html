@@ -40,7 +40,7 @@
       z-index: -10;
     }
 
-    /* 右下の大きめ六角D-Pad（SVG） */
+    /* 右下の大きめ 六角D-Pad（30°回転版） */
     .dpad {
       position: fixed;
       right: 20px;
@@ -87,23 +87,38 @@
   京都府立医科大学 数学研究部 公式HP
 </div>
 
-<!-- 右下ヘックスD-Pad（SVG） -->
+<!-- 右下：30°回転の六角D-Pad（各ウェッジは center→頂点→隣頂点の三角形） -->
 <div class="dpad" id="dpad">
   <svg viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
-    <!-- 6ウェッジ（三角形）で六角パッドを構成 -->
-    <polygon class="wedge" data-dir="r"  points="130,130 240,130 185,34.74" />
-    <polygon class="wedge" data-dir="ur" points="130,130 185,225.26 240,130" />
-    <polygon class="wedge" data-dir="ul" points="130,130 75,225.26 185,225.26" />
-    <polygon class="wedge" data-dir="l"  points="130,130 20,130 75,225.26" />
-    <polygon class="wedge" data-dir="dl" points="130,130 75,34.74 20,130" />
-    <polygon class="wedge" data-dir="dr" points="130,130 185,34.74 75,34.74" />
-    <!-- 矢印ラベル -->
+    <!-- 正六角形（中心 130,130 / 半径 110）頂点（30°, 90°, 150°, 210°, 270°, 330°） -->
+    <!-- ウェッジの“狙い角”は中間角（0°, 60°, 120°, 180°, 240°, 300°） -->
+    <!-- data-aim は度数（クリック時にその方向へ最も近い隣接点を選択） -->
+    <!-- 0°（→） -->
+    <polygon class="wedge" data-aim="0"
+      points="130,130 225.2628,75 225.2628,185" />
+    <!-- 60°（↗） -->
+    <polygon class="wedge" data-aim="60"
+      points="130,130 130,20 225.2628,75" />
+    <!-- 120°（↖） ← 左上タップでULへ動く -->
+    <polygon class="wedge" data-aim="120"
+      points="130,130 34.7372,75 130,20" />
+    <!-- 180°（←） -->
+    <polygon class="wedge" data-aim="180"
+      points="130,130 34.7372,185 34.7372,75" />
+    <!-- 240°（↙） -->
+    <polygon class="wedge" data-aim="240"
+      points="130,130 130,240 34.7372,185" />
+    <!-- 300°（↘） -->
+    <polygon class="wedge" data-aim="300"
+      points="130,130 225.2628,185 130,240" />
+
+    <!-- 矢印ラベル（だいたい各ウェッジ中央付近） -->
     <text x="205" y="135">→</text>
-    <text x="168" y="195">↗</text>
-    <text x="92"  y="195">↖</text>
-    <text x="55"  y="135">←</text>
-    <text x="92"  y="65">↙</text>
-    <text x="168" y="65">↘</text>
+    <text x="175" y="80">↗</text>
+    <text x="80"  y="80">↖</text>
+    <text x="45"  y="135">←</text>
+    <text x="80"  y="195">↙</text>
+    <text x="175" y="195">↘</text>
   </svg>
 </div>
 
@@ -117,7 +132,7 @@ new p5(p => {
   let walkers = [];
   let boosting = false; // 既存は温存（未使用）
 
-  // ===== Safety Areas: 左上(START用)と右下(GOAL用) =====
+  // ===== Safety Areas: 左上(START) と 右下(GOAL) =====
   let safetyStart = {x:0,y:0,w:0,h:0};
   let safetyGoal  = {x:0,y:0,w:0,h:0};
 
@@ -131,7 +146,7 @@ new p5(p => {
     const sy = 110;
     safetyStart = {x:sx, y:sy, w:sw, h:sh};
 
-    // GOAL側（右下）…D-Pad(260x260 @ 20px余白)と干渉しないようにマージン
+    // GOAL側（右下）…D-Padと干渉しないようマージン
     const dpadW = 260, dpadH = 260, dpadM = 20;
     const gw = Math.min(440, Math.max(240, W * 0.34));
     const gh = Math.min(380, Math.max(220, H * 0.28));
@@ -148,7 +163,7 @@ new p5(p => {
     return insideRect(pt, safetyStart) || insideRect(pt, safetyGoal);
   }
 
-  // ===== START / GOAL：各Safety内で固定（頂点スナップ） =====
+  // ===== START / GOAL（各Safety内で固定） =====
   let startPoint = null, goalPoint = null;
 
   function nearestVertexInRect(x, y, rect){
@@ -162,23 +177,11 @@ new p5(p => {
   }
 
   function pickStartGoalFixed(){
-    // 左上Safetyの左上隅寄り → START
     startPoint = nearestVertexInRect(safetyStart.x + 16, safetyStart.y + 16, safetyStart);
-    // 右下Safetyの右下隅寄り → GOAL
-    goalPoint  = nearestVertexInRect(safetyGoal.x + safetyGoal.w - 16, safetyGoal.y + safetyGoal.h - 16, safetyGoal);
+    goalPoint  = nearestVertexInRect(safetyGoal.x  + safetyGoal.w - 16, safetyGoal.y + safetyGoal.h - 16, safetyGoal);
   }
 
   // ===== 緑の手動Walker（辺上のみ） =====
-  const SQ3 = Math.sqrt(3);
-  const DIR = {
-    r:  {x:  1.0, y:  0.0},
-    ur: {x:  0.5, y: -SQ3/2},
-    dr: {x:  0.5, y:  SQ3/2},
-    l:  {x: -1.0, y:  0.0},
-    ul: {x: -0.5, y: -SQ3/2},
-    dl: {x: -0.5, y:  SQ3/2},
-  };
-
   let manualWalker;
   let gameOver = false;
   let gameClear = false;
@@ -190,19 +193,26 @@ new p5(p => {
       this.t = 0;
     }
     isMoving(){ return !!this.next; }
-    stepByDirection(dirKey){
+
+    // 目標ベクトル（deg）で隣接点を選ぶ：角度は画面座標系 y下向きを考慮
+    stepByAim(angleDeg){
       if (this.isMoving() || gameOver || gameClear) return;
-      const d = DIR[dirKey];
+      const rad = angleDeg * Math.PI / 180;
+      const aim = { x: Math.cos(rad), y: -Math.sin(rad) }; // 上がマイナス
+
       const key = this.current.x + "," + this.current.y;
       const nbrs = adjacency.get(key)?.neighbors || [];
       let best = null, bestDot = 0.1;
       for (const n of nbrs){
-        const vx = n.x - this.current.x, vy = n.y - this.current.y;
-        const dot = vx*d.x + vy*d.y;
+        const vx = n.x - this.current.x;
+        const vy = n.y - this.current.y;
+        const len = Math.hypot(vx, vy) || 1;
+        const dot = (vx/len)*aim.x + (vy/len)*aim.y;
         if (dot > bestDot){ bestDot = dot; best = n; }
       }
       if (best){ this.next = best; this.t = 0; }
     }
+
     update(){
       if (this.next){
         this.t += 0.08;
@@ -210,7 +220,7 @@ new p5(p => {
           this.current = this.next;
           this.next = null;
           this.t = 0;
-          // GOAL判定（頂点一致）
+          // GOAL判定
           if (goalPoint && this.current.x === goalPoint.x && this.current.y === goalPoint.y){
             gameClear = true;
             p.noLoop();
@@ -237,7 +247,7 @@ new p5(p => {
     }
   }
 
-  // ===== 既存の黒Walker（Safety両方に侵入禁止） =====
+  // ===== 黒い自動Walker（Safety両方に侵入禁止） =====
   class Walker {
     constructor() {
       let pt;
@@ -260,8 +270,7 @@ new p5(p => {
       return next;
     }
     update() {
-      const speedMultiplier = 1;
-      this.t += this.baseSpeed * speedMultiplier;
+      this.t += this.baseSpeed;
       if (this.t >= 1) {
         this.current = this.next;
         this.next = this.chooseNext(this.current);
@@ -293,8 +302,8 @@ new p5(p => {
     cnv.position(0, 0);
 
     generateTriangleGrid();
-    computeSafetyRects();     // 2つのSafetyを計算
-    pickStartGoalFixed();     // 各Safety内の固定位置を選ぶ
+    computeSafetyRects();     // 2つのSafety
+    pickStartGoalFixed();     // 固定START/GOAL
 
     walkers = [];
     for (let i = 0; i < walkerCount; i++) walkers.push(new Walker());
@@ -316,7 +325,7 @@ new p5(p => {
       p.endShape(p.CLOSE);
     }
 
-    // Safety Areas（START/GOAL）
+    // Safety Areas
     drawSafetyAreas();
 
     // START / GOAL
@@ -337,7 +346,6 @@ new p5(p => {
       return;
     }
 
-    // CLEARバナー（noLoop後も保持）
     if (gameClear){
       drawBanner("CLEAR!", "#00b86b");
     }
@@ -469,15 +477,17 @@ new p5(p => {
     if (!neighborsB.some(n => n.x === a.x && n.y === a.y)) neighborsB.push(adjacency.get(keyA).vec);
   }
 
-  // ===== D-Padイベント =====
+  // ===== D-Padイベント（data-aim を角度として使う） =====
   function setupDpad(){
     const dpad = document.getElementById('dpad');
-    const bind = dir => e => { e.preventDefault(); manualWalker.stepByDirection(dir); };
-    ['ul','ur','l','r','dl','dr'].forEach(dir=>{
-      const el = dpad.querySelector(`.wedge[data-dir="${dir}"]`);
-      if (!el) return;
-      el.addEventListener('click',      bind(dir), {passive:false});
-      el.addEventListener('touchstart', bind(dir), {passive:false});
+    const handler = e => {
+      e.preventDefault();
+      const aim = parseFloat(e.currentTarget.getAttribute('data-aim'));
+      if (!isNaN(aim)) manualWalker.stepByAim(aim);
+    };
+    dpad.querySelectorAll('.wedge').forEach(el => {
+      el.addEventListener('click', handler, {passive:false});
+      el.addEventListener('touchstart', handler, {passive:false});
     });
   }
 
