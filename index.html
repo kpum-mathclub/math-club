@@ -40,7 +40,7 @@
       z-index: -10;
     }
 
-    /* 右下のヘックスD-Pad */
+    /* 右下の大きめ六角D-Pad（SVG） */
     .dpad {
       position: fixed;
       right: 20px;
@@ -56,11 +56,11 @@
       filter: drop-shadow(0 4px 10px rgba(0,0,0,0.25));
     }
     .dpad .wedge {
-      fill: #ffffff;
+      fill: #fff;
       stroke: #333;
       stroke-width: 2;
       cursor: pointer;
-      transition: fill 0.1s ease;
+      transition: fill 0.08s ease;
     }
     .dpad .wedge:hover { fill: #f3f7ff; }
     .dpad .wedge:active { fill: #e8f0ff; }
@@ -90,43 +90,20 @@
 <!-- 右下ヘックスD-Pad（SVG） -->
 <div class="dpad" id="dpad">
   <svg viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
-    <!-- 中心 -->
-    <defs>
-      <g id="wedge-shape">
-        <!-- 正六角形中心(130,130), 半径110。中心+隣接頂点2つの三角形で1ウェッジ -->
-      </g>
-    </defs>
-    <!-- 頂点（事前計算） -->
-    <!-- 角度: 0, 60, 120, 180, 240, 300 度 -->
-    <!-- 中心 -->
-    <g id="wedge-group">
-      <!-- r (0°) : center -> v300 -> v0 -->
-      <polygon class="wedge" data-dir="r"
-        points="130,130 185,34.74 240,130" />
-      <!-- ur (60°): center -> v0 -> v60 -->
-      <polygon class="wedge" data-dir="ur"
-        points="130,130 240,130 185,225.26" />
-      <!-- ul (120°): center -> v60 -> v120 -->
-      <polygon class="wedge" data-dir="ul"
-        points="130,130 185,225.26 75,225.26" />
-      <!-- l (180°): center -> v120 -> v180 -->
-      <polygon class="wedge" data-dir="l"
-        points="130,130 75,225.26 20,130" />
-      <!-- dl (240°): center -> v180 -> v240 -->
-      <polygon class="wedge" data-dir="dl"
-        points="130,130 20,130 75,34.74" />
-      <!-- dr (300°): center -> v240 -> v300 -->
-      <polygon class="wedge" data-dir="dr"
-        points="130,130 75,34.74 185,34.74" />
-    </g>
-
-    <!-- 矢印ラベル（中心から半径75付近） -->
-    <text x="205" y="135">→</text>     <!-- r -->
-    <text x="168" y="195">↗</text>     <!-- ur -->
-    <text x="92"  y="195">↖</text>     <!-- ul -->
-    <text x="55"  y="135">←</text>     <!-- l -->
-    <text x="92"  y="65">↙</text>      <!-- dl -->
-    <text x="168" y="65">↘</text>      <!-- dr -->
+    <!-- 6ウェッジ（三角形）で六角パッドを構成 -->
+    <polygon class="wedge" data-dir="r"  points="130,130 240,130 185,34.74" />
+    <polygon class="wedge" data-dir="ur" points="130,130 185,225.26 240,130" />
+    <polygon class="wedge" data-dir="ul" points="130,130 75,225.26 185,225.26" />
+    <polygon class="wedge" data-dir="l"  points="130,130 20,130 75,225.26" />
+    <polygon class="wedge" data-dir="dl" points="130,130 75,34.74 20,130" />
+    <polygon class="wedge" data-dir="dr" points="130,130 185,34.74 75,34.74" />
+    <!-- 矢印ラベル -->
+    <text x="205" y="135">→</text>
+    <text x="168" y="195">↗</text>
+    <text x="92"  y="195">↖</text>
+    <text x="55"  y="135">←</text>
+    <text x="92"  y="65">↙</text>
+    <text x="168" y="65">↘</text>
   </svg>
 </div>
 
@@ -138,18 +115,60 @@ new p5(p => {
   let points = [];
   let adjacency = new Map();
   let walkers = [];
-  let boosting = false; // 既存変数は温存
+  let boosting = false; // 既存は温存（未使用）
 
-  // ====== 追加: 安全ゾーンとゲーム状態 ======
-  let safetyRect = {x:0, y:0, w:0, h:0}; // 黒は侵入不可
-  let startPoint = null;
-  let goalPoint  = null;
-  let gameOver = false;
-  let gameClear = false;
+  // ===== Safety Areas: 左上(START用)と右下(GOAL用) =====
+  let safetyStart = {x:0,y:0,w:0,h:0};
+  let safetyGoal  = {x:0,y:0,w:0,h:0};
 
-  // ====== 手動の緑点 ======
-  let manualWalker;
+  function computeSafetyRects(){
+    const W = p.width, H = p.height;
 
+    // START側（左上）
+    const sw = Math.min(440, Math.max(240, W * 0.34));
+    const sh = Math.min(380, Math.max(220, H * 0.28));
+    const sx = 24;
+    const sy = 110;
+    safetyStart = {x:sx, y:sy, w:sw, h:sh};
+
+    // GOAL側（右下）…D-Pad(260x260 @ 20px余白)と干渉しないようにマージン
+    const dpadW = 260, dpadH = 260, dpadM = 20;
+    const gw = Math.min(440, Math.max(240, W * 0.34));
+    const gh = Math.min(380, Math.max(220, H * 0.28));
+    const gx = Math.max(20, W - gw - dpadW - dpadM - 20);
+    const gy = Math.max(100, H - gh - dpadH - dpadM - 20);
+    safetyGoal = {x:gx, y:gy, w:gw, h:gh};
+  }
+
+  function insideRect(pt, r){
+    return (pt.x >= r.x && pt.x <= r.x + r.w &&
+            pt.y >= r.y && pt.y <= r.y + r.h);
+  }
+  function insideAnySafety(pt){
+    return insideRect(pt, safetyStart) || insideRect(pt, safetyGoal);
+  }
+
+  // ===== START / GOAL：各Safety内で固定（頂点スナップ） =====
+  let startPoint = null, goalPoint = null;
+
+  function nearestVertexInRect(x, y, rect){
+    let best = null, bestD = Infinity;
+    for (const pt of points){
+      if (!insideRect(pt, rect)) continue;
+      const d = p.dist(x, y, pt.x, pt.y);
+      if (d < bestD){ bestD = d; best = pt; }
+    }
+    return best;
+  }
+
+  function pickStartGoalFixed(){
+    // 左上Safetyの左上隅寄り → START
+    startPoint = nearestVertexInRect(safetyStart.x + 16, safetyStart.y + 16, safetyStart);
+    // 右下Safetyの右下隅寄り → GOAL
+    goalPoint  = nearestVertexInRect(safetyGoal.x + safetyGoal.w - 16, safetyGoal.y + safetyGoal.h - 16, safetyGoal);
+  }
+
+  // ===== 緑の手動Walker（辺上のみ） =====
   const SQ3 = Math.sqrt(3);
   const DIR = {
     r:  {x:  1.0, y:  0.0},
@@ -160,6 +179,10 @@ new p5(p => {
     dl: {x: -0.5, y:  SQ3/2},
   };
 
+  let manualWalker;
+  let gameOver = false;
+  let gameClear = false;
+
   class ManualWalker {
     constructor(startVec) {
       this.current = startVec;
@@ -167,29 +190,19 @@ new p5(p => {
       this.t = 0;
     }
     isMoving(){ return !!this.next; }
-
     stepByDirection(dirKey){
       if (this.isMoving() || gameOver || gameClear) return;
       const d = DIR[dirKey];
       const key = this.current.x + "," + this.current.y;
       const nbrs = adjacency.get(key)?.neighbors || [];
-      let best = null;
-      let bestDot = 0.1;
+      let best = null, bestDot = 0.1;
       for (const n of nbrs){
-        const vx = n.x - this.current.x;
-        const vy = n.y - this.current.y;
+        const vx = n.x - this.current.x, vy = n.y - this.current.y;
         const dot = vx*d.x + vy*d.y;
-        if (dot > bestDot){
-          bestDot = dot;
-          best = n;
-        }
+        if (dot > bestDot){ bestDot = dot; best = n; }
       }
-      if (best){
-        this.next = best;
-        this.t = 0;
-      }
+      if (best){ this.next = best; this.t = 0; }
     }
-
     update(){
       if (this.next){
         this.t += 0.08;
@@ -197,7 +210,7 @@ new p5(p => {
           this.current = this.next;
           this.next = null;
           this.t = 0;
-          // GOAL判定（頂点一致でOK）
+          // GOAL判定（頂点一致）
           if (goalPoint && this.current.x === goalPoint.x && this.current.y === goalPoint.y){
             gameClear = true;
             p.noLoop();
@@ -205,7 +218,6 @@ new p5(p => {
         }
       }
     }
-
     getPosition(){
       if (this.next){
         return p.createVector(
@@ -215,7 +227,6 @@ new p5(p => {
       }
       return this.current.copy();
     }
-
     display(){
       const pos = this.getPosition();
       p.noStroke();
@@ -226,11 +237,11 @@ new p5(p => {
     }
   }
 
+  // ===== 既存の黒Walker（Safety両方に侵入禁止） =====
   class Walker {
     constructor() {
-      // 安全ゾーン外から開始
       let pt;
-      do { pt = p.random(points); } while (insideSafety(pt));
+      do { pt = p.random(points); } while (insideAnySafety(pt));
       this.current = pt;
       this.next = this.chooseNext(this.current);
       this.t = 0;
@@ -240,8 +251,7 @@ new p5(p => {
     chooseNext(current) {
       const key = current.x + ',' + current.y;
       let options = adjacency.get(key)?.neighbors || [];
-      // 安全ゾーン内には入らない
-      options = options.filter(n => !insideSafety(n));
+      options = options.filter(n => !insideAnySafety(n));
       if (!options.length) return current;
       let next;
       do {
@@ -276,27 +286,24 @@ new p5(p => {
     }
   }
 
+  // ===== p5: setup =====
   p.setup = () => {
     const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
     const cnv = p.createCanvas(p.windowWidth, height);
     cnv.position(0, 0);
 
     generateTriangleGrid();
-    computeSafetyRect();     // 安全ゾーン決定
-    pickStartAndGoalFixed(); // 安全ゾーン内で固定配置
+    computeSafetyRects();     // 2つのSafetyを計算
+    pickStartGoalFixed();     // 各Safety内の固定位置を選ぶ
 
-    // 黒ウォーカー
-    for (let i = 0; i < walkerCount; i++) {
-      walkers.push(new Walker());
-    }
+    walkers = [];
+    for (let i = 0; i < walkerCount; i++) walkers.push(new Walker());
 
-    // 緑ウォーカー（STARTへ）
     manualWalker = new ManualWalker(startPoint);
-
-    // D-Padにイベント付与
     setupDpad();
   };
 
+  // ===== p5: draw =====
   p.draw = () => {
     p.background(255);
 
@@ -309,23 +316,20 @@ new p5(p => {
       p.endShape(p.CLOSE);
     }
 
-    // Safety Area（薄緑）
-    drawSafety();
+    // Safety Areas（START/GOAL）
+    drawSafetyAreas();
 
-    // START/GOAL
+    // START / GOAL
     drawStartGoal();
 
     // 黒ウォーカー
-    for (let w of walkers) {
-      w.update();
-      w.display();
-    }
+    for (let w of walkers) { w.update(); w.display(); }
 
     // 緑ウォーカー
     manualWalker.update();
     manualWalker.display();
 
-    // 当たり判定（ゲームオーバー）
+    // 当たり判定
     if (!gameOver && !gameClear && checkCollision()){
       gameOver = true;
       drawBanner("GAME OVER", "#ff2d2d");
@@ -333,13 +337,13 @@ new p5(p => {
       return;
     }
 
-    // クリア時のバナー（noLoop後も一応表示維持のため）
+    // CLEARバナー（noLoop後も保持）
     if (gameClear){
       drawBanner("CLEAR!", "#00b86b");
     }
   };
 
-  // ====== 当たり判定 ======
+  // ===== 当たり判定 =====
   function checkCollision(){
     const mp = manualWalker.getPosition();
     const threshold = 12;
@@ -352,57 +356,44 @@ new p5(p => {
     return false;
   }
 
-  // ====== Safety Area ======
-  function computeSafetyRect(){
-    // 画面に対して適度なサイズ（中央やや左寄り）
-    const W = p.width, H = p.height;
-    const w = Math.min(500, Math.max(260, W * 0.42));
-    const h = Math.min(500, Math.max(260, H * 0.42));
-    const x = Math.max(20, W * 0.12);
-    const y = Math.max(100, H * 0.2);
-    safetyRect = {x, y, w, h};
-  }
-  function insideSafety(vec){
-    return (vec.x >= safetyRect.x && vec.x <= safetyRect.x + safetyRect.w &&
-            vec.y >= safetyRect.y && vec.y <= safetyRect.y + safetyRect.h);
-  }
-  function drawSafety(){
+  // ===== Safety描画（2つ） =====
+  function drawSafetyAreas(){
+    // START側：薄い緑
     p.push();
       p.noStroke();
       p.fill(0, 200, 120, 18);
-      p.rect(safetyRect.x, safetyRect.y, safetyRect.w, safetyRect.h, 10);
+      p.rect(safetyStart.x, safetyStart.y, safetyStart.w, safetyStart.h, 10);
       p.stroke(0, 160, 110, 120);
       p.noFill();
       p.strokeWeight(1.5);
-      p.rect(safetyRect.x, safetyRect.y, safetyRect.w, safetyRect.h, 10);
+      p.rect(safetyStart.x, safetyStart.y, safetyStart.w, safetyStart.h, 10);
       p.noStroke();
       p.fill(0,120,80,160);
       p.textSize(12);
-      p.text("SAFETY", safetyRect.x + 8, safetyRect.y + 16);
+      p.text("SAFETY (START)", safetyStart.x + 8, safetyStart.y + 16);
+    p.pop();
+
+    // GOAL側：薄い青緑
+    p.push();
+      p.noStroke();
+      p.fill(0, 160, 255, 14);
+      p.rect(safetyGoal.x, safetyGoal.y, safetyGoal.w, safetyGoal.h, 10);
+      p.stroke(0, 120, 220, 120);
+      p.noFill();
+      p.strokeWeight(1.5);
+      p.rect(safetyGoal.x, safetyGoal.y, safetyGoal.w, safetyGoal.h, 10);
+      p.noStroke();
+      p.fill(0,120,220,160);
+      p.textSize(12);
+      p.text("SAFETY (GOAL)", safetyGoal.x + 8, safetyGoal.y + 16);
     p.pop();
   }
 
-  // ====== START / GOAL ======
-  function pickStartAndGoalFixed(){
-    // ゾーン左上寄り→START, 右下寄り→GOAL に最も近い頂点を選ぶ
-    const sx = safetyRect.x + 16, sy = safetyRect.y + 16;
-    const gx = safetyRect.x + safetyRect.w - 16, gy = safetyRect.y + safetyRect.h - 16;
-    startPoint = nearestVertexWithin(sx, sy, true);
-    goalPoint  = nearestVertexWithin(gx, gy, true);
-  }
-  function nearestVertexWithin(x, y, enforceInside){
-    let best = null, bestD = Infinity;
-    for (const pt of points){
-      if (enforceInside && !insideSafety(pt)) continue;
-      const d = p.dist(x, y, pt.x, pt.y);
-      if (d < bestD){ bestD = d; best = pt; }
-    }
-    return best;
-  }
+  // ===== START / GOAL描画 =====
   function drawStartGoal(){
     if (!startPoint || !goalPoint) return;
 
-    // START（緑）
+    // START（緑リング）
     p.push();
       p.noFill();
       p.stroke(0,180,0,220);
@@ -432,7 +423,7 @@ new p5(p => {
     p.pop();
   }
 
-  // ====== バナー（GAME OVER / CLEAR） ======
+  // ===== バナー（GAME OVER / CLEAR） =====
   function drawBanner(text, color){
     p.push();
       p.textAlign(p.CENTER, p.CENTER);
@@ -443,7 +434,7 @@ new p5(p => {
     p.pop();
   }
 
-  // ====== 三角タイル生成（既存） ======
+  // ===== 格子生成（既存） =====
   function generateTriangleGrid() {
     const h = sideLength * Math.sqrt(3) / 2;
     triangles = [];
@@ -478,13 +469,10 @@ new p5(p => {
     if (!neighborsB.some(n => n.x === a.x && n.y === a.y)) neighborsB.push(adjacency.get(keyA).vec);
   }
 
-  // ====== D-Padイベント ======
+  // ===== D-Padイベント =====
   function setupDpad(){
     const dpad = document.getElementById('dpad');
-    const bind = dir => e => {
-      e.preventDefault();
-      manualWalker.stepByDirection(dir);
-    };
+    const bind = dir => e => { e.preventDefault(); manualWalker.stepByDirection(dir); };
     ['ul','ur','l','r','dl','dr'].forEach(dir=>{
       const el = dpad.querySelector(`.wedge[data-dir="${dir}"]`);
       if (!el) return;
@@ -493,19 +481,17 @@ new p5(p => {
     });
   }
 
-  // ====== リサイズ ======
+  // ===== リサイズ =====
   p.windowResized = () => {
     p.resizeCanvas(
       p.windowWidth,
       Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)
     );
-    // 再生成
     generateTriangleGrid();
-    computeSafetyRect();
-    pickStartAndGoalFixed();
+    computeSafetyRects();
+    pickStartGoalFixed();
     manualWalker = new ManualWalker(startPoint);
-    gameOver = false;
-    gameClear = false;
+    gameOver = false; gameClear = false;
     walkers = [];
     for (let i = 0; i < walkerCount; i++) walkers.push(new Walker());
     p.loop();
