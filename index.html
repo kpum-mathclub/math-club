@@ -46,6 +46,7 @@
     }
   </style>
 </head>
+
 <body>
 
 <nav>
@@ -59,16 +60,73 @@
   京都府立医科大学 数学研究部 公式HP
 </div>
 
-<!-- ✅ 背景アニメーション：p5.js -->
 <script>
 new p5(p => {
   const sideLength = 60;
+  const walkerCount = 300;
   let triangles = [];
   let points = [];
   let adjacency = new Map();
-  let autoWalkers = [];
+  let walkers = [];
+  let boosting = false;
+
+  // manual walker
   let manualWalker;
-  let gameOver = false;
+  let dragging = false;
+
+  class ManualWalker {
+    constructor(startVec) {
+      this.current = startVec;
+      this.next = null;
+      this.t = 0;
+    }
+
+    update(targetVec = null) {
+      if (dragging && targetVec) {
+        const key = this.current.x + "," + this.current.y;
+        const neighbors = adjacency.get(key)?.neighbors ?? [];
+
+        let nearest = null;
+        let minDist = Infinity;
+        for (let n of neighbors) {
+          const d = p.dist(n.x, n.y, targetVec.x, targetVec.y);
+          if (d < minDist) {
+            minDist = d;
+            nearest = n;
+          }
+        }
+
+        if (nearest) {
+          this.next = nearest;
+        }
+      }
+
+      if (this.next && (this.next.x !== this.current.x || this.next.y !== this.current.y)) {
+        this.t += 0.08;
+        if (this.t >= 1) {
+          this.current = this.next;
+          this.t = 0;
+          this.next = null;
+        }
+      }
+    }
+
+    display() {
+      let x = this.current.x;
+      let y = this.current.y;
+
+      if (this.next) {
+        x = p.lerp(this.current.x, this.next.x, this.t);
+        y = p.lerp(this.current.y, this.next.y, this.t);
+      }
+
+      p.noStroke();
+      p.fill(0, 255, 0, 60);
+      p.ellipse(x, y, 24);
+      p.fill(0, 180, 0);
+      p.ellipse(x, y, 8);
+    }
+  }
 
   p.setup = () => {
     const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
@@ -76,17 +134,18 @@ new p5(p => {
     cnv.position(0, 0);
     generateTriangleGrid();
 
-    // 自動的に動く点（赤）は生成しない
+    // 自動walkers
+    for (let i = 0; i < walkerCount; i++) {
+      walkers.push(new Walker());
+    }
 
-    // 緑の手動点を初期化（左上）
+    // manual walker初期化
     const start = getNearestVertex(50, 50);
     manualWalker = new ManualWalker(start);
   };
 
   p.draw = () => {
     p.background(255);
-
-    // タイル描画
     p.noFill();
     p.stroke(0, 40);
     for (let t of triangles) {
@@ -97,28 +156,14 @@ new p5(p => {
       p.endShape(p.CLOSE);
     }
 
-    if (gameOver) {
-      p.fill(255, 0, 0);
-      p.textSize(60);
-      p.textAlign(p.CENTER, p.CENTER);
-      p.text("GAME OVER", p.width / 2, p.height / 2);
-      return;
+    for (let w of walkers) {
+      w.update();
+      w.display();
     }
 
-    // manualWalker描画
-    if (manualWalker.dragging) {
-      manualWalker.update(p.createVector(p.mouseX, p.mouseY));
-    } else {
-      manualWalker.update();
-    }
+    // manual walker update & display
+    manualWalker.update(p.createVector(p.mouseX, p.mouseY));
     manualWalker.display();
-
-    // 当たり判定（仮に今後オート点復活したらここに追加）
-    // autoWalkers.forEach(w => {
-    //   if (p.dist(w.x, w.y, manualWalker.x, manualWalker.y) < 10) {
-    //     gameOver = true;
-    //   }
-    // });
   };
 
   function generateTriangleGrid() {
@@ -162,8 +207,8 @@ new p5(p => {
   }
 
   function getNearestVertex(x, y) {
-    let minDist = Infinity;
     let nearest = null;
+    let minDist = Infinity;
     for (let pt of points) {
       const d = p.dist(x, y, pt.x, pt.y);
       if (d < minDist) {
@@ -174,96 +219,64 @@ new p5(p => {
     return nearest;
   }
 
-  class ManualWalker {
-    constructor(startVec) {
-      this.current = startVec;
-      this.next = null;
+  class Walker {
+    constructor() {
+      this.current = p.random(points);
+      this.next = this.chooseNext(this.current);
       this.t = 0;
-      this.dragging = false;
+      this.baseSpeed = p.random(0.003, 0.008);
+      this.phase = p.random(p.TWO_PI);
     }
 
-    startDrag(targetVec) {
-      this.dragging = true;
-      this.tryMoveTo(targetVec);
+    chooseNext(current) {
+      const key = current.x + ',' + current.y;
+      const options = adjacency.get(key)?.neighbors;
+      if (!options || options.length === 0) return current;
+
+      let next;
+      do {
+        next = p.random(options);
+      } while (next.x === current.x && next.y === current.y && options.length > 1);
+      return next;
     }
 
-    update(targetVec = null) {
-      if (this.dragging && targetVec) {
-        const key = this.current.x + "," + this.current.y;
-        const neighbors = adjacency.get(key)?.neighbors ?? [];
-
-        let nearest = null;
-        let minDist = Infinity;
-        for (let n of neighbors) {
-          const d = p.dist(n.x, n.y, targetVec.x, targetVec.y);
-          if (d < minDist) {
-            minDist = d;
-            nearest = n;
-          }
-        }
-
-        if (nearest) {
-          this.next = nearest;
-        }
-      }
-
-      if (this.next && (this.next.x !== this.current.x || this.next.y !== this.current.y)) {
-        this.t += 0.08;
-        if (this.t >= 1) {
-          this.current = this.next;
-          this.t = 0;
-          this.next = null;
-        }
+    update() {
+      const speedMultiplier = boosting ? 2.5 : 1;
+      this.t += this.baseSpeed * speedMultiplier;
+      if (this.t >= 1) {
+        this.current = this.next;
+        this.next = this.chooseNext(this.current);
+        this.t = 0;
       }
     }
 
     display() {
-      let x = this.current.x;
-      let y = this.current.y;
+      const x = p.lerp(this.current.x, this.next.x, this.t);
+      const y = p.lerp(this.current.y, this.next.y, this.t);
 
-      if (this.next) {
-        x = p.lerp(this.current.x, this.next.x, this.t);
-        y = p.lerp(this.current.y, this.next.y, this.t);
-      }
+      const size = 6 + p.sin(p.frameCount * (boosting ? 0.15 : 0.05) + this.phase) * 2;
+      const glow = 20 + 10 * p.sin(p.frameCount * (boosting ? 0.24 : 0.08) + this.phase);
 
       p.noStroke();
-      p.fill(0, 255, 0, 60); // 緑発光
-      p.ellipse(x, y, 24);
-      p.fill(0, 180, 0);
-      p.ellipse(x, y, 8);
-    }
+      p.fill(0, 0, 0, 25);
+      p.ellipse(x, y, size + glow);
 
-    tryMoveTo(targetVec) {
-      const key = this.current.x + "," + this.current.y;
-      const neighbors = adjacency.get(key)?.neighbors ?? [];
-
-      for (let n of neighbors) {
-        if (p.dist(n.x, n.y, targetVec.x, targetVec.y) < 1) {
-          this.next = n;
-          this.t = 0;
-          return;
-        }
-      }
-    }
-
-    stopDrag() {
-      this.dragging = false;
-      this.next = null;
+      p.fill(0);
+      p.ellipse(x, y, size);
     }
   }
-
-  p.mousePressed = () => {
-    const start = getNearestVertex(p.mouseX, p.mouseY);
-    if (start) manualWalker.startDrag(start);
-  };
-
-  p.mouseReleased = () => {
-    manualWalker.stopDrag();
-  };
 
   p.windowResized = () => {
     p.resizeCanvas(p.windowWidth, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight));
     generateTriangleGrid();
+  };
+
+  p.mousePressed = () => {
+    dragging = true;
+  };
+
+  p.mouseReleased = () => {
+    dragging = false;
   };
 });
 </script>
