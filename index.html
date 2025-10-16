@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>京都府立医科大学数学研究部 | Math Club</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
   <style>
@@ -27,304 +27,320 @@
     .dpad text { font-family:system-ui,sans-serif; font-size:24px; fill:#111; pointer-events:none; font-weight:700; }
   </style>
 </head>
-
 <body>
-<nav>
-  <a href="index.html">Home</a>
-  <a href="schedule.html">Schedule</a>
-  <a href="contact.html">Contact</a>
-  <a href="qa.html">Q&A</a>
-</nav>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="schedule.html">Schedule</a>
+    <a href="contact.html">Contact</a>
+    <a href="qa.html">Q&A</a>
+  </nav>
 
-<div class="corner-message" style="position:fixed;top:72px;left:20px;font-size:20px;color:#111;font-weight:bold;z-index:10;pointer-events:none;font-family:'Noto Serif JP',serif;">
-  京都府立医科大学 数学研究部 公式HP
-</div>
+  <div class="corner-message" style="position:fixed;top:72px;left:20px;font-size:20px;color:#111;font-weight:bold;z-index:10;pointer-events:none;font-family:'Noto Serif JP',serif;">
+    京都府立医科大学 数学研究部 公式HP
+  </div>
 
-<!-- 右下：30°回転 六角D-Pad（各ウェッジの data-aim が狙い角度） -->
-<div class="dpad" id="dpad">
-  <svg viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
-    <!-- 半径110 / 中心(130,130)。頂点角度 30,90,150,210,270,330 度 -->
-    <!-- ウェッジ中心角: 0,60,120,180,240,300 度（左上=120°） -->
-    <polygon class="wedge" data-aim="0"   points="130,130 225.2628,75 225.2628,185"/>
-    <polygon class="wedge" data-aim="60"  points="130,130 130,20     225.2628,75"/>
-    <polygon class="wedge" data-aim="120" points="130,130 34.7372,75 130,20"/>       <!-- 左上 -->
-    <polygon class="wedge" data-aim="180" points="130,130 34.7372,185 34.7372,75"/>
-    <polygon class="wedge" data-aim="240" points="130,130 130,240    34.7372,185"/>
-    <polygon class="wedge" data-aim="300" points="130,130 225.2628,185 130,240"/>
-    <text x="205" y="135">→</text>
-    <text x="175" y="80">↗</text>
-    <text x="80"  y="80">↖</text>
-    <text x="45"  y="135">←</text>
-    <text x="80"  y="195">↙</text>
-    <text x="175" y="195">↘</text>
-  </svg>
-</div>
+  <!-- 右下：30°回転 六角D-Pad（各ウェッジの data-aim が狙い角度。左上=120°） -->
+  <div class="dpad" id="dpad">
+    <svg viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
+      <!-- 半径110 / 中心(130,130)。頂点角度 30,90,150,210,270,330 度 -->
+      <!-- ウェッジ中心角: 0,60,120,180,240,300 度（左上=120°） -->
+      <polygon class="wedge" data-aim="0"   points="130,130 225.2628,75 225.2628,185"/>
+      <polygon class="wedge" data-aim="60"  points="130,130 130,20     225.2628,75"/>
+      <polygon class="wedge" data-aim="120" points="130,130 34.7372,75 130,20"/>       <!-- 左上 -->
+      <polygon class="wedge" data-aim="180" points="130,130 34.7372,185 34.7372,75"/>
+      <polygon class="wedge" data-aim="240" points="130,130 130,240    34.7372,185"/>
+      <polygon class="wedge" data-aim="300" points="130,130 225.2628,185 130,240"/>
+      <text x="205" y="135">→</text>
+      <text x="175" y="80">↗</text>
+      <text x="80"  y="80">↖</text>
+      <text x="45"  y="135">←</text>
+      <text x="80"  y="195">↙</text>
+      <text x="175" y="195">↘</text>
+    </svg>
+  </div>
 
-<script>
-new p5(p => {
-  const sideLength = 60;
-  const walkerCount = 300;
-  const SAFE_RADIUS = 20;        // ← 各点を覆うだけの小さな安全半径（見せない）
-  const SHOW_SAFE   = false;     // ← デバッグ用表示をしたい時は true
+  <script>
+  new p5(p => {
+    // ===== 基本設定 =====
+    const sideLength = 60;
+    const walkerCount = 300;
 
-  let triangles = [];
-  let points = [];
-  let adjacency = new Map();
-  let walkers = [];
-  let boosting = false; // 既存変数は温存（未使用）
+    // Safety（点だけ守る小さな非表示円）
+    const SAFE_RADIUS = 20;    // 点の周囲だけ保護
+    const SHOW_SAFE   = false; // デバッグ表示したい時だけ true
 
-  // START / GOAL（左上 / 右下の頂点に固定）
-  let startPoint = null, goalPoint = null;
+    // D-Pad配置とGOALの避難用マージン
+    const DPAD_SIZE = 260;
+    const DPAD_MARGIN = 20;
+    const GOAL_MARGIN = 60;  // ← D-Pad 左上からこれだけ内側（左上方向）に寄せる
 
-  // 手動の緑点
-  let manualWalker;
-  let gameOver = false, gameClear = false;
+    let triangles = [];
+    let points = [];
+    let adjacency = new Map();
+    let walkers = [];
 
-  // ===== 手動Walker =====
-  class ManualWalker {
-    constructor(startVec){ this.current = startVec; this.next = null; this.t = 0; }
-    isMoving(){ return !!this.next; }
+    // START / GOAL
+    let startPoint = null, goalPoint = null;
 
-    // data-aim の角度（deg）に一番合う隣接頂点へ1ステップ
-    stepByAim(angleDeg){
-      if (this.isMoving() || gameOver || gameClear) return;
-      const rad = angleDeg * Math.PI/180;
-      const aim = { x: Math.cos(rad), y: -Math.sin(rad) }; // y下向きを考慮
-      const key = this.current.x + "," + this.current.y;
-      const nbrs = adjacency.get(key)?.neighbors || [];
-      let best = null, bestDot = 0.1;
-      for (const n of nbrs){
-        const vx = n.x - this.current.x, vy = n.y - this.current.y;
-        const len = Math.hypot(vx, vy) || 1;
-        const dot = (vx/len)*aim.x + (vy/len)*aim.y;
-        if (dot > bestDot){ bestDot = dot; best = n; }
+    // 手動の緑点
+    let manualWalker;
+    let gameOver = false, gameClear = false;
+
+    // ===== 手動Walker（辺上のみ） =====
+    class ManualWalker {
+      constructor(startVec){ this.current = startVec; this.next = null; this.t = 0; }
+      isMoving(){ return !!this.next; }
+
+      // data-aim の角度（deg）に一番合う隣接頂点へ1ステップ
+      stepByAim(angleDeg){
+        if (this.isMoving() || gameOver || gameClear) return;
+        const rad = angleDeg * Math.PI/180;
+        const aim = { x: Math.cos(rad), y: -Math.sin(rad) }; // 画面Y軸は下向きなので -sin
+        const key = this.current.x + "," + this.current.y;
+        const nbrs = adjacency.get(key)?.neighbors || [];
+        let best = null, bestDot = 0.1;
+        for (const n of nbrs){
+          const vx = n.x - this.current.x, vy = n.y - this.current.y;
+          const len = Math.hypot(vx, vy) || 1;
+          const dot = (vx/len)*aim.x + (vy/len)*aim.y;
+          if (dot > bestDot){ bestDot = dot; best = n; }
+        }
+        if (best){ this.next = best; this.t = 0; }
       }
-      if (best){ this.next = best; this.t = 0; }
-    }
 
-    update(){
-      if (this.next){
-        this.t += 0.08;
-        if (this.t >= 1){
-          this.current = this.next; this.next = null; this.t = 0;
-          // GOAL到達（頂点一致）
-          if (goalPoint && this.current.x === goalPoint.x && this.current.y === goalPoint.y){
-            gameClear = true; p.noLoop();
+      update(){
+        if (this.next){
+          this.t += 0.08;
+          if (this.t >= 1){
+            this.current = this.next; this.next = null; this.t = 0;
+            // GOAL到達（頂点一致）
+            if (goalPoint && this.current.x === goalPoint.x && this.current.y === goalPoint.y){
+              gameClear = true; p.noLoop();
+            }
           }
         }
       }
-    }
 
-    getPosition(){
-      if (this.next){
-        return p.createVector(
-          p.lerp(this.current.x, this.next.x, this.t),
-          p.lerp(this.current.y, this.next.y, this.t)
-        );
+      getPosition(){
+        if (this.next){
+          return p.createVector(
+            p.lerp(this.current.x, this.next.x, this.t),
+            p.lerp(this.current.y, this.next.y, this.t)
+          );
+        }
+        return this.current.copy();
       }
-      return this.current.copy();
-    }
 
-    display(){
-      const pos = this.getPosition();
-      p.noStroke();
-      p.fill(0,255,0,60); p.ellipse(pos.x,pos.y,24);
-      p.fill(0,180,0);    p.ellipse(pos.x,pos.y,8);
-    }
-  }
-
-  // ===== 自動Walker（黒）：Safety円に侵入・スポーン禁止 =====
-  class Walker {
-    constructor() {
-      let pt;
-      do { pt = p.random(points); } while (insideAnySafety(pt));
-      this.current = pt;
-      this.next = this.chooseNext(this.current);
-      this.t = 0;
-      this.baseSpeed = p.random(0.003, 0.008);
-      this.phase = p.random(p.TWO_PI);
-    }
-    chooseNext(current) {
-      const key = current.x + ',' + current.y;
-      let options = adjacency.get(key)?.neighbors || [];
-      options = options.filter(n => !insideAnySafety(n));
-      if (!options.length) return current;
-      let next;
-      do { next = p.random(options); }
-      while (next.x===current.x && next.y===current.y && options.length>1);
-      return next;
-    }
-    update() {
-      this.t += this.baseSpeed;
-      if (this.t >= 1) { this.current = this.next; this.next = this.chooseNext(this.current); this.t = 0; }
-    }
-    getPosition(){ return {
-      x: p.lerp(this.current.x, this.next.x, this.t),
-      y: p.lerp(this.current.y, this.next.y, this.t)
-    }; }
-    display() {
-      const pos = this.getPosition();
-      const size = 6 + p.sin(p.frameCount*0.05 + this.phase)*2;
-      const glow = 20 + 10 * p.sin(p.frameCount*0.08 + this.phase);
-      p.noStroke(); p.fill(0,0,0,25); p.ellipse(pos.x,pos.y,size+glow);
-      p.fill(0); p.ellipse(pos.x,pos.y,size);
-    }
-  }
-
-  // ====== p5 setup ======
-  p.setup = () => {
-    const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
-    const cnv = p.createCanvas(p.windowWidth, height); cnv.position(0,0);
-
-    generateTriangleGrid();
-    pickStartGoalFixed();           // 左上/右下へ固定
-    // 黒を配置
-    walkers = []; for (let i=0;i<walkerCount;i++) walkers.push(new Walker());
-    // 緑をSTARTへ
-    manualWalker = new ManualWalker(startPoint);
-    // D-Padイベント
-    setupDpad();
-  };
-
-  // ====== p5 draw ======
-  p.draw = () => {
-    p.background(255);
-
-    // タイル
-    p.noFill(); p.stroke(0,40);
-    for (let t of triangles){ p.beginShape(); for (let pt of t){ p.vertex(pt.x,pt.y);} p.endShape(p.CLOSE); }
-
-    // （非表示）Safety円：必要ならデバッグ表示
-    if (SHOW_SAFE){ drawSafetyDisks(); }
-
-    // START/GOAL マーカー
-    drawStartGoal();
-
-    // 黒
-    for (let w of walkers){ w.update(); w.display(); }
-
-    // 緑
-    manualWalker.update();
-    manualWalker.display();
-
-    // 当たり判定
-    if (!gameOver && !gameClear && checkCollision()){
-      gameOver = true; drawBanner("GAME OVER", "#ff2d2d"); p.noLoop(); return;
-    }
-    if (gameClear){ drawBanner("CLEAR!", "#00b86b"); }
-  };
-
-  // ====== START/GOAL の決め方（左上/右下） ======
-  function pickStartGoalFixed(){
-    // 左上寄り／右下寄りのスクリーン座標に最も近い頂点へスナップ
-    startPoint = nearestVertex(p.width*0.08,  120);
-    goalPoint  = nearestVertex(p.width*0.88,  p.height - 140);
-  }
-
-  function nearestVertex(x,y){
-    let best=null, bestD=Infinity;
-    for (const pt of points){
-      const d = p.dist(x,y,pt.x,pt.y);
-      if (d < bestD){ bestD = d; best = pt; }
-    }
-    return best;
-  }
-
-  // ====== Safety 円（小さく・非表示） ======
-  function insideAnySafety(pt){
-    if (!startPoint || !goalPoint) return false;
-    return (p.dist(pt.x,pt.y,startPoint.x,startPoint.y) <= SAFE_RADIUS) ||
-           (p.dist(pt.x,pt.y,goalPoint.x, goalPoint.y)  <= SAFE_RADIUS);
-  }
-  function drawSafetyDisks(){ // デバッグ可視化
-    p.push();
-      p.noFill(); p.stroke(0,160,110,140); p.ellipse(startPoint.x,startPoint.y, SAFE_RADIUS*2);
-      p.stroke(0,120,220,140); p.ellipse(goalPoint.x,goalPoint.y, SAFE_RADIUS*2);
-    p.pop();
-  }
-
-  // ====== START / GOAL 表示 ======
-  function drawStartGoal(){
-    if (!startPoint || !goalPoint) return;
-    // START（緑リング）
-    p.push();
-      p.noFill(); p.stroke(0,180,0,220); p.strokeWeight(2); p.ellipse(startPoint.x,startPoint.y,18);
-      p.noStroke(); p.fill(0,180,0,120); p.ellipse(startPoint.x,startPoint.y,6);
-      p.fill(0,150,0); p.textSize(12); p.text("START", startPoint.x+12, startPoint.y-10);
-    p.pop();
-    // GOAL（青パルス）
-    const pulse = 22 + 6*Math.sin(p.frameCount*0.07);
-    p.push();
-      p.noFill(); p.stroke(0,120,255,220); p.strokeWeight(2); p.ellipse(goalPoint.x,goalPoint.y,pulse);
-      p.noStroke(); p.fill(0,120,255); p.ellipse(goalPoint.x,goalPoint.y,6);
-      p.fill(0,120,255); p.textSize(12); p.text("GOAL", goalPoint.x+12, goalPoint.y-10);
-    p.pop();
-  }
-
-  // ====== 当たり判定 ======
-  function checkCollision(){
-    const mp = manualWalker.getPosition();
-    const threshold = 12;
-    for (const w of walkers){
-      const pos = w.getPosition();
-      if (p.dist(mp.x,mp.y,pos.x,pos.y) < threshold) return true;
-    }
-    return false;
-  }
-
-  // ====== バナー ======
-  function drawBanner(txt,color){
-    p.push(); p.textAlign(p.CENTER,p.CENTER); p.textSize(64); p.fill(color); p.noStroke();
-    p.text(txt, p.width/2, p.height/2); p.pop();
-  }
-
-  // ====== グリッド生成（既存） ======
-  function generateTriangleGrid() {
-    const h = sideLength * Math.sqrt(3) / 2;
-    triangles = []; adjacency.clear();
-    for (let y = 0; y < p.height + h; y += h) {
-      for (let x = 0; x < p.width + sideLength; x += sideLength) {
-        const xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
-        const p1 = p.createVector(x + xOffset, y);
-        const p2 = p.createVector(x + sideLength/2 + xOffset, y + h);
-        const p3 = p.createVector(x - sideLength/2 + xOffset, y + h);
-        triangles.push([p1,p2,p3]);
-        registerEdge(p1,p2); registerEdge(p2,p3); registerEdge(p3,p1);
+      display(){
+        const pos = this.getPosition();
+        p.noStroke();
+        p.fill(0,255,0,60); p.ellipse(pos.x,pos.y,24);
+        p.fill(0,180,0);    p.ellipse(pos.x,pos.y,8);
       }
     }
-    points = Array.from(adjacency.values()).map(o => o.vec);
-  }
-  function registerEdge(a,b){
-    const keyA = a.x+','+a.y, keyB = b.x+','+b.y;
-    if(!adjacency.has(keyA)) adjacency.set(keyA,{vec:a,neighbors:[]});
-    if(!adjacency.has(keyB)) adjacency.set(keyB,{vec:b,neighbors:[]});
-    const A = adjacency.get(keyA).neighbors, B = adjacency.get(keyB).neighbors;
-    if(!A.some(n=>n.x===b.x && n.y===b.y)) A.push(adjacency.get(keyB).vec);
-    if(!B.some(n=>n.x===a.x && n.y===a.y)) B.push(adjacency.get(keyA).vec);
-  }
 
-  // ====== D-Pad イベント（aim角どおりに進む） ======
-  function setupDpad(){
-    const dpad = document.getElementById('dpad');
-    const handler = e => { e.preventDefault(); const aim = parseFloat(e.currentTarget.getAttribute('data-aim')); if(!isNaN(aim)) manualWalker.stepByAim(aim); };
-    dpad.querySelectorAll('.wedge').forEach(el=>{
-      el.addEventListener('click',handler,{passive:false});
-      el.addEventListener('touchstart',handler,{passive:false});
-    });
-  }
+    // ===== 自動Walker（黒）：Safety円に侵入・スポーン禁止 =====
+    class Walker {
+      constructor() {
+        let pt;
+        do { pt = p.random(points); } while (insideAnySafety(pt));
+        this.current = pt;
+        this.next = this.chooseNext(this.current);
+        this.t = 0;
+        this.baseSpeed = p.random(0.003, 0.008);
+        this.phase = p.random(p.TWO_PI);
+      }
+      chooseNext(current) {
+        const key = current.x + ',' + current.y;
+        let options = adjacency.get(key)?.neighbors || [];
+        options = options.filter(n => !insideAnySafety(n));
+        if (!options.length) return current;
+        let next;
+        do { next = p.random(options); }
+        while (next.x===current.x && next.y===current.y && options.length>1);
+        return next;
+      }
+      update() {
+        this.t += this.baseSpeed;
+        if (this.t >= 1) { this.current = this.next; this.next = this.chooseNext(this.current); this.t = 0; }
+      }
+      getPosition(){ return {
+        x: p.lerp(this.current.x, this.next.x, this.t),
+        y: p.lerp(this.current.y, this.next.y, this.t)
+      }; }
+      display() {
+        const pos = this.getPosition();
+        const size = 6 + p.sin(p.frameCount*0.05 + this.phase)*2;
+        const glow = 20 + 10 * p.sin(p.frameCount*0.08 + this.phase);
+        p.noStroke(); p.fill(0,0,0,25); p.ellipse(pos.x,pos.y,size+glow);
+        p.fill(0); p.ellipse(pos.x,pos.y,size);
+      }
+    }
 
-  // ====== リサイズ ======
-  p.windowResized = () => {
-    p.resizeCanvas(p.windowWidth, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight));
-    generateTriangleGrid();
-    pickStartGoalFixed();
-    manualWalker = new ManualWalker(startPoint);
-    gameOver=false; gameClear=false;
-    walkers = []; for (let i=0;i<walkerCount;i++) walkers.push(new Walker());
-    p.loop();
-  };
-});
-</script>
+    // ===== p5 setup =====
+    p.setup = () => {
+      const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+      const cnv = p.createCanvas(p.windowWidth, height); cnv.position(0,0);
 
+      generateTriangleGrid();
+      pickStartGoalFixed();           // STARTとGOALを見やすい位置に固定（GOALはD-Pad左上）
+
+      walkers = []; for (let i=0;i<walkerCount;i++) walkers.push(new Walker());
+      manualWalker = new ManualWalker(startPoint);
+      setupDpad();
+    };
+
+    // ===== p5 draw =====
+    p.draw = () => {
+      p.background(255);
+
+      // タイル
+      p.noFill(); p.stroke(0,40);
+      for (let t of triangles){ p.beginShape(); for (let pt of t){ p.vertex(pt.x,pt.y);} p.endShape(p.CLOSE); }
+
+      // （非表示）Safety円：デバッグ時のみ
+      if (SHOW_SAFE){ drawSafetyDisks(); }
+
+      // START/GOAL
+      drawStartGoal();
+
+      // 黒
+      for (let w of walkers){ w.update(); w.display(); }
+
+      // 緑
+      manualWalker.update();
+      manualWalker.display();
+
+      // 当たり判定
+      if (!gameOver && !gameClear && checkCollision()){
+        gameOver = true; drawBanner("GAME OVER", "#ff2d2d"); p.noLoop(); return;
+      }
+      if (gameClear){ drawBanner("CLEAR!", "#00b86b"); }
+    };
+
+    // ===== START/GOAL の決め方 =====
+    function pickStartGoalFixed(){
+      // START: 画面左上寄りの安定した位置
+      startPoint = nearestVertex(60, 120);
+
+      // D-Padの実座標（右下固定）
+      const dpadX = p.width  - DPAD_MARGIN - DPAD_SIZE;
+      const dpadY = p.height - DPAD_MARGIN - DPAD_SIZE;
+
+      // GOAL: D-Padの左上に GOAL_MARGIN だけオフセットしてスナップ
+      const gxTarget = Math.max(40, dpadX - GOAL_MARGIN);
+      const gyTarget = Math.max(100, dpadY - GOAL_MARGIN);
+      goalPoint = nearestVertex(gxTarget, gyTarget);
+    }
+
+    function nearestVertex(x,y){
+      let best=null, bestD=Infinity;
+      for (const pt of points){
+        const d = p.dist(x,y,pt.x,pt.y);
+        if (d < bestD){ bestD = d; best = pt; }
+      }
+      return best;
+    }
+
+    // ===== Safety 円（小さく・非表示） =====
+    function insideAnySafety(pt){
+      if (!startPoint || !goalPoint) return false;
+      return (p.dist(pt.x,pt.y,startPoint.x,startPoint.y) <= SAFE_RADIUS) ||
+             (p.dist(pt.x,pt.y,goalPoint.x, goalPoint.y)  <= SAFE_RADIUS);
+    }
+    function drawSafetyDisks(){ // デバッグ可視化
+      p.push();
+        p.noFill(); p.stroke(0,160,110,140); p.ellipse(startPoint.x,startPoint.y, SAFE_RADIUS*2);
+        p.stroke(0,120,220,140); p.ellipse(goalPoint.x,goalPoint.y, SAFE_RADIUS*2);
+      p.pop();
+    }
+
+    // ===== START / GOAL 表示 =====
+    function drawStartGoal(){
+      if (!startPoint || !goalPoint) return;
+      // START（緑リング）
+      p.push();
+        p.noFill(); p.stroke(0,180,0,220); p.strokeWeight(2); p.ellipse(startPoint.x,startPoint.y,18);
+        p.noStroke(); p.fill(0,180,0,120); p.ellipse(startPoint.x,startPoint.y,6);
+        p.fill(0,150,0); p.textSize(12); p.text("START", startPoint.x+12, startPoint.y-10);
+      p.pop();
+      // GOAL（青パルス）
+      const pulse = 22 + 6*Math.sin(p.frameCount*0.07);
+      p.push();
+        p.noFill(); p.stroke(0,120,255,220); p.strokeWeight(2); p.ellipse(goalPoint.x,goalPoint.y,pulse);
+        p.noStroke(); p.fill(0,120,255); p.ellipse(goalPoint.x,goalPoint.y,6);
+        p.fill(0,120,255); p.textSize(12); p.text("GOAL", goalPoint.x+12, goalPoint.y-10);
+      p.pop();
+    }
+
+    // ===== 当たり判定 =====
+    function checkCollision(){
+      const mp = manualWalker.getPosition();
+      const threshold = 12;
+      for (const w of walkers){
+        const pos = w.getPosition();
+        if (p.dist(mp.x,mp.y,pos.x,pos.y) < threshold) return true;
+      }
+      return false;
+    }
+
+    // ===== バナー =====
+    function drawBanner(txt,color){
+      p.push(); p.textAlign(p.CENTER,p.CENTER); p.textSize(64); p.fill(color); p.noStroke();
+      p.text(txt, p.width/2, p.height/2); p.pop();
+    }
+
+    // ===== グリッド生成（既存） =====
+    function generateTriangleGrid() {
+      const h = sideLength * Math.sqrt(3) / 2;
+      triangles = []; adjacency.clear();
+      for (let y = 0; y < p.height + h; y += h) {
+        for (let x = 0; x < p.width + sideLength; x += sideLength) {
+          const xOffset = (Math.floor(y / h) % 2) * (sideLength / 2);
+          const p1 = p.createVector(x + xOffset, y);
+          const p2 = p.createVector(x + sideLength/2 + xOffset, y + h);
+          const p3 = p.createVector(x - sideLength/2 + xOffset, y + h);
+          triangles.push([p1,p2,p3]);
+          registerEdge(p1,p2); registerEdge(p2,p3); registerEdge(p3,p1);
+        }
+      }
+      points = Array.from(adjacency.values()).map(o => o.vec);
+    }
+    function registerEdge(a,b){
+      const keyA = a.x+','+a.y, keyB = b.x+','+a.y? null : b.y; // NOTE: avoid typo
+    }
+    // Correct registerEdge (typo-safe):
+    function registerEdge(a, b) {
+      const keyA = a.x + ',' + a.y;
+      const keyB = b.x + ',' + b.y;
+      if (!adjacency.has(keyA)) adjacency.set(keyA, { vec: a, neighbors: [] });
+      if (!adjacency.has(keyB)) adjacency.set(keyB, { vec: b, neighbors: [] });
+      const A = adjacency.get(keyA).neighbors, B = adjacency.get(keyB).neighbors;
+      if (!A.some(n => n.x===b.x && n.y===b.y)) A.push(adjacency.get(keyB).vec);
+      if (!B.some(n => n.x===a.x && n.y===a.y)) B.push(adjacency.get(keyA).vec);
+    }
+
+    // ===== D-Pad イベント（aim角どおりに進む） =====
+    function setupDpad(){
+      const dpad = document.getElementById('dpad');
+      const handler = e => { e.preventDefault(); const aim = parseFloat(e.currentTarget.getAttribute('data-aim')); if(!isNaN(aim)) manualWalker.stepByAim(aim); };
+      dpad.querySelectorAll('.wedge').forEach(el=>{
+        el.addEventListener('click',handler,{passive:false});
+        el.addEventListener('touchstart',handler,{passive:false});
+      });
+    }
+
+    // ===== リサイズ =====
+    p.windowResized = () => {
+      p.resizeCanvas(p.windowWidth, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight));
+      generateTriangleGrid();
+      pickStartGoalFixed();                         // ← 画面サイズによってGOALを再配置
+      manualWalker = new ManualWalker(startPoint);  // STARTへ戻す
+      gameOver=false; gameClear=false;
+      walkers = []; for (let i=0;i<walkerCount;i++) walkers.push(new Walker());
+      p.loop();
+    };
+  });
+  </script>
 </body>
 </html>
