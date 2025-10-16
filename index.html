@@ -44,11 +44,8 @@
       pointer-events: none;
       z-index: -10;
     }
-
- 
   </style>
 </head>
-
 <body>
 
 <nav>
@@ -62,31 +59,34 @@
   京都府立医科大学 数学研究部 公式HP
 </div>
 
-<!-- ✅ Twitterタイムライン埋め込み（iframeで安定表示） -->
-
 <!-- ✅ 背景アニメーション：p5.js -->
 <script>
 new p5(p => {
   const sideLength = 60;
-  const walkerCount = 300;
   let triangles = [];
   let points = [];
   let adjacency = new Map();
-  let walkers = [];
-  let boosting = false;
+  let autoWalkers = [];
+  let manualWalker;
+  let gameOver = false;
 
   p.setup = () => {
     const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
     const cnv = p.createCanvas(p.windowWidth, height);
     cnv.position(0, 0);
     generateTriangleGrid();
-    for (let i = 0; i < walkerCount; i++) {
-      walkers.push(new Walker());
-    }
+
+    // 自動的に動く点（赤）は生成しない
+
+    // 緑の手動点を初期化（左上）
+    const start = getNearestVertex(50, 50);
+    manualWalker = new ManualWalker(start);
   };
 
   p.draw = () => {
     p.background(255);
+
+    // タイル描画
     p.noFill();
     p.stroke(0, 40);
     for (let t of triangles) {
@@ -96,10 +96,29 @@ new p5(p => {
       }
       p.endShape(p.CLOSE);
     }
-    for (let w of walkers) {
-      w.update();
-      w.display();
+
+    if (gameOver) {
+      p.fill(255, 0, 0);
+      p.textSize(60);
+      p.textAlign(p.CENTER, p.CENTER);
+      p.text("GAME OVER", p.width / 2, p.height / 2);
+      return;
     }
+
+    // manualWalker描画
+    if (manualWalker.dragging) {
+      manualWalker.update(p.createVector(p.mouseX, p.mouseY));
+    } else {
+      manualWalker.update();
+    }
+    manualWalker.display();
+
+    // 当たり判定（仮に今後オート点復活したらここに追加）
+    // autoWalkers.forEach(w => {
+    //   if (p.dist(w.x, w.y, manualWalker.x, manualWalker.y) < 10) {
+    //     gameOver = true;
+    //   }
+    // });
   };
 
   function generateTriangleGrid() {
@@ -142,62 +161,110 @@ new p5(p => {
     }
   }
 
-  class Walker {
-    constructor() {
-      this.current = p.random(points);
-      this.next = this.chooseNext(this.current);
+  function getNearestVertex(x, y) {
+    let minDist = Infinity;
+    let nearest = null;
+    for (let pt of points) {
+      const d = p.dist(x, y, pt.x, pt.y);
+      if (d < minDist) {
+        minDist = d;
+        nearest = pt;
+      }
+    }
+    return nearest;
+  }
+
+  class ManualWalker {
+    constructor(startVec) {
+      this.current = startVec;
+      this.next = null;
       this.t = 0;
-      this.baseSpeed = p.random(0.003, 0.008);
-      this.phase = p.random(p.TWO_PI);
+      this.dragging = false;
     }
 
-    chooseNext(current) {
-      const key = current.x + ',' + current.y;
-      const options = adjacency.get(key)?.neighbors;
-      if (!options || options.length === 0) return current;
-
-      let next;
-      do {
-        next = p.random(options);
-      } while (next.x === current.x && next.y === current.y && options.length > 1);
-      return next;
+    startDrag(targetVec) {
+      this.dragging = true;
+      this.tryMoveTo(targetVec);
     }
 
-    update() {
-      const speedMultiplier = boosting ? 2.5 : 1;
-      this.t += this.baseSpeed * speedMultiplier;
-      if (this.t >= 1) {
-        this.current = this.next;
-        this.next = this.chooseNext(this.current);
-        this.t = 0;
+    update(targetVec = null) {
+      if (this.dragging && targetVec) {
+        const key = this.current.x + "," + this.current.y;
+        const neighbors = adjacency.get(key)?.neighbors ?? [];
+
+        let nearest = null;
+        let minDist = Infinity;
+        for (let n of neighbors) {
+          const d = p.dist(n.x, n.y, targetVec.x, targetVec.y);
+          if (d < minDist) {
+            minDist = d;
+            nearest = n;
+          }
+        }
+
+        if (nearest) {
+          this.next = nearest;
+        }
+      }
+
+      if (this.next && (this.next.x !== this.current.x || this.next.y !== this.current.y)) {
+        this.t += 0.08;
+        if (this.t >= 1) {
+          this.current = this.next;
+          this.t = 0;
+          this.next = null;
+        }
       }
     }
 
     display() {
-      const x = p.lerp(this.current.x, this.next.x, this.t);
-      const y = p.lerp(this.current.y, this.next.y, this.t);
+      let x = this.current.x;
+      let y = this.current.y;
 
-      const size = 6 + p.sin(p.frameCount * (boosting ? 0.15 : 0.05) + this.phase) * 2;
-      const glow = 20 + 10 * p.sin(p.frameCount * (boosting ? 0.24 : 0.08) + this.phase);
+      if (this.next) {
+        x = p.lerp(this.current.x, this.next.x, this.t);
+        y = p.lerp(this.current.y, this.next.y, this.t);
+      }
 
       p.noStroke();
-      p.fill(0, 0, 0, 25);
-      p.ellipse(x, y, size + glow);
+      p.fill(0, 255, 0, 60); // 緑発光
+      p.ellipse(x, y, 24);
+      p.fill(0, 180, 0);
+      p.ellipse(x, y, 8);
+    }
 
-      p.fill(0);
-      p.ellipse(x, y, size);
+    tryMoveTo(targetVec) {
+      const key = this.current.x + "," + this.current.y;
+      const neighbors = adjacency.get(key)?.neighbors ?? [];
+
+      for (let n of neighbors) {
+        if (p.dist(n.x, n.y, targetVec.x, targetVec.y) < 1) {
+          this.next = n;
+          this.t = 0;
+          return;
+        }
+      }
+    }
+
+    stopDrag() {
+      this.dragging = false;
+      this.next = null;
     }
   }
+
+  p.mousePressed = () => {
+    const start = getNearestVertex(p.mouseX, p.mouseY);
+    if (start) manualWalker.startDrag(start);
+  };
+
+  p.mouseReleased = () => {
+    manualWalker.stopDrag();
+  };
 
   p.windowResized = () => {
     p.resizeCanvas(p.windowWidth, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight));
     generateTriangleGrid();
   };
-
-  p.touchStarted = () => { boosting = true; };
-  p.touchEnded = () => { boosting = false; };
-  p.mousePressed = () => { boosting = true; };
-  p.mouseReleased = () => { boosting = false; };
 });
 </script>
 
