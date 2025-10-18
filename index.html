@@ -34,47 +34,26 @@
     let triangles=[], points=[], adjacency=new Map(), walkers=[];
     let startPoint=null, goalPoint=null, manualWalker;
     let gameOver=false, gameClear=false;
-    let trails=[]; // ← 軌跡リスト
-    let waveAnim=null; // ← CLEAR用光波
+    let waveAnim=null;
 
-    // --- Trail（軌跡オブジェクト） ---
-    class Trail {
-      constructor(x,y){
-        this.x=x; this.y=y;
-        this.life=255; // フェード時間
-      }
-      update(){ this.life-=4; }
-      isAlive(){ return this.life>0; }
-      display(){
-        p.noStroke();
-        p.fill(0,255,100,this.life*0.4);
-        p.ellipse(this.x,this.y,8);
-      }
-    }
-
-    // --- CLEAR Wave（波紋アニメーション） ---
+    // === Clear Wave ===
     class Wave {
-      constructor(x,y){
-        this.x=x; this.y=y;
-        this.radius=0;
-        this.life=255;
-      }
-      update(){
-        this.radius+=12;
-        this.life-=4;
-      }
+      constructor(x,y){ this.x=x; this.y=y; this.radius=0; this.life=255; }
+      update(){ this.radius+=12; this.life-=4; }
       isAlive(){ return this.life>0; }
       display(){
-        p.noFill();
-        p.stroke(0,180,255,this.life);
-        p.strokeWeight(2);
+        p.noFill(); p.stroke(0,180,255,this.life); p.strokeWeight(2);
         p.ellipse(this.x,this.y,this.radius*2);
       }
     }
 
-    // --- Manual Walker ---
+    // === Manual Walker ===
     class ManualWalker{
-      constructor(v){ this.current=v; this.next=null; this.t=0; }
+      constructor(v){
+        this.current=v; this.next=null; this.t=0;
+        this.trail=[];       // ← comet tail points
+        this.maxTrail=30;    // ← 尾の長さ
+      }
       isMoving(){ return !!this.next; }
       stepByAim(a){
         if(this.isMoving()||gameOver||gameClear)return;
@@ -90,21 +69,23 @@
         if(best){ this.next=best; this.t=0; }
       }
       update(){
+        // move
         if(this.next){
           this.t+=0.08;
           if(this.t>=1){
             this.current=this.next;
             this.next=null;
             this.t=0;
-            // 軌跡追加
-            trails.push(new Trail(this.current.x,this.current.y));
-            // GOAL判定
             if(goalPoint && this.current.x===goalPoint.x && this.current.y===goalPoint.y){
               gameClear=true;
               waveAnim=new Wave(goalPoint.x,goalPoint.y);
             }
           }
         }
+        // add current position to trail
+        const pos=this.getPosition();
+        this.trail.push({x:pos.x,y:pos.y});
+        if(this.trail.length>this.maxTrail)this.trail.shift();
       }
       getPosition(){
         if(this.next)
@@ -112,13 +93,25 @@
         return this.current.copy();
       }
       display(){
+        // --- comet tail ---
+        if(this.trail.length>1){
+          for(let i=0;i<this.trail.length-1;i++){
+            const a=this.trail[i], b=this.trail[i+1];
+            const alpha=p.map(i,0,this.trail.length-1,40,180);
+            const w=p.map(i,0,this.trail.length-1,1,6);
+            p.stroke(0,255,120,alpha);
+            p.strokeWeight(w);
+            p.line(a.x,a.y,b.x,b.y);
+          }
+        }
+        // --- head ---
         const pos=this.getPosition();
-        p.noStroke(); p.fill(0,255,0,80); p.ellipse(pos.x,pos.y,24);
-        p.fill(0,180,0); p.ellipse(pos.x,pos.y,8);
+        p.noStroke(); p.fill(0,255,0); p.ellipse(pos.x,pos.y,10);
+        p.fill(0,255,120,60); p.ellipse(pos.x,pos.y,20);
       }
     }
 
-    // --- Auto walkers ---
+    // === Auto walkers ===
     class Walker{
       constructor(){
         let pt; do{ pt=p.random(points);}while(insideAnySafety(pt));
@@ -162,11 +155,6 @@
       drawStartGoal();
       for(const w of walkers){ w.update(); w.display(); }
 
-      // --- Trail update ---
-      trails.forEach(t=>t.update());
-      trails=trails.filter(t=>t.isAlive());
-      trails.forEach(t=>t.display());
-
       manualWalker.update();
       manualWalker.display();
 
@@ -175,11 +163,8 @@
       }
 
       if(gameClear && waveAnim){
-        waveAnim.update();
-        waveAnim.display();
-        if(!waveAnim.isAlive()){
-          drawBanner("CLEAR!","#00b86b");
-        }
+        waveAnim.update(); waveAnim.display();
+        if(!waveAnim.isAlive()){ drawBanner("CLEAR!","#00b86b"); }
       }
     };
 
@@ -187,7 +172,6 @@
       startPoint=nearestVertex(60,250);
       goalPoint=nearestVertex(p.width-300,p.height-300);
     }
-
     function nearestVertex(x,y){ let best=null,bestD=1e9; for(const pt of points){ const d=p.dist(x,y,pt.x,pt.y); if(d<bestD){bestD=d;best=pt;} } return best; }
     function insideAnySafety(pt){ return (p.dist(pt.x,pt.y,startPoint.x,startPoint.y)<=SAFE_RADIUS)||(p.dist(pt.x,pt.y,goalPoint.x,goalPoint.y)<=SAFE_RADIUS); }
     function drawStartGoal(){
