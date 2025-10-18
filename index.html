@@ -38,7 +38,7 @@
       background:var(--bg); color:var(--fg);
       font-family:"Inter", system-ui, -apple-system, "Noto Serif JP", serif;
       -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-      overscroll-behavior: none;
+      overscroll-behavior: none; /* ビヨン防止 */
     }
     a{color:inherit; text-decoration:none}
     a:focus-visible, button:focus-visible{outline:none; box-shadow:var(--focus); border-radius:10px}
@@ -57,7 +57,7 @@
         radial-gradient(900px 700px at 85% 70%, rgba(93,168,255,.22), transparent 55%),
         linear-gradient(180deg, var(--bg) 0%, var(--bg) 100%);
     }
-    canvas{ position:fixed; inset:0; pointer-events:none; z-index:1; } /* ゲーム */
+    canvas{ position:fixed; inset:0; pointer-events:none; z-index:1; } /* ゲーム面 */
 
     /* ===== UI LAYER ===== */
     #ui-layer{ position:relative; z-index:10; }
@@ -124,8 +124,9 @@
     }
     .start-btn:active{ transform:translateY(1px); }
 
-    /* ===== GAME-ONLY: UIレイヤーだけ隠す（キャンバスは残す） ===== */
+    /* ===== GAME-ONLY: UIレイヤーだけ隠す（キャンバスは常時表示） ===== */
     body.game-only #ui-layer { display:none !important; }
+    body.game-only { overflow:hidden; } /* 念のためスクロールロック */
   </style>
 </head>
 <body>
@@ -195,7 +196,7 @@
 
   <!-- ===== Theme, Start Button Hook & p5.js ===== -->
   <script>
-    // 文字非表示フラグ（キャンバス上テキスト抑制用）
+    // 文字非表示フラグ（キャンバス内テキスト抑止）
     window.hideCanvasText = false;
 
     // テーマ切替
@@ -217,12 +218,12 @@
       btn.addEventListener('click', ()=>{
         document.body.classList.add('game-only');  // UIを丸ごと非表示
         overlay.style.display = 'none';            // スタート画面も消す
-        window.hideCanvasText = true;              // キャンバス上のテキストも非表示
+        window.hideCanvasText = true;              // キャンバス上のテキストも非表示（START/GOAL/CLEARなど）
         // キャンバスの高さをビューポートに合わせ直す
         window.dispatchEvent(new Event('resize'));
       });
 
-      // もし戻したくなったら ESC でUI復活（任意）
+      // デバッグ/復帰用：Esc でUI復活
       window.addEventListener('keydown', (e)=>{
         if(e.key === 'Escape'){
           document.body.classList.remove('game-only');
@@ -346,7 +347,7 @@
         // 三角タイル：テーマで線色切替
         p.noFill(); p.strokeWeight(1);
         if (isDark()) { p.stroke(255,28); } else { p.stroke(0,40); }
-        for(const t of triangles){ p.beginShape(); for(const pt of t)p.vertex(pt.x,p t.y); p.endShape(p.CLOSE); }
+        for(const t of triangles){ p.beginShape(); for(const pt of t) p.vertex(pt.x, pt.y); p.endShape(p.CLOSE); } /* ← typo修正済み */
 
         drawStartGoal();
 
@@ -393,7 +394,9 @@
         for(let y=0;y<p.height+h;y+=h){
           for(let x=0;x<p.width+sideLength;x+=sideLength){
             const xOffset=(Math.floor(y/h)%2)*(sideLength/2);
-            const p1=p.createVector(x+xOffset,y), p2=p.createVector(x+sideLength/2+xOffset,y+h), p3=p.createVector(x-sideLength/2+xOffset,y+h);
+            const p1=p.createVector(x+xOffset,y),
+                  p2=p.createVector(x+sideLength/2+xOffset,y+h),
+                  p3=p.createVector(x-sideLength/2+xOffset,y+h);
             triangles.push([p1,p2,p3]); registerEdge(p1,p2); registerEdge(p2,p3); registerEdge(p3,p1);
           }
         }
@@ -403,7 +406,7 @@
         const ka=a.x+","+a.y,kb=b.x+","+b.y;
         if(!adjacency.has(ka))adjacency.set(ka,{vec:a,neighbors:[]});
         if(!adjacency.has(kb))adjacency.set(kb,{vec:b,neighbors:[]});
-        const A=adjacency.get(ka).neighbors,B=adjacency.get(kb).neighbors;
+        const A=adjacency.get(ka).neighbors, B=adjacency.get(kb).neighbors;
         if(!A.some(n=>n.x===b.x&&n.y===b.y))A.push(adjacency.get(kb).vec);
         if(!B.some(n=>n.x===a.x&&n.y===a.y))B.push(adjacency.get(ka).vec);
       }
@@ -419,7 +422,7 @@
         window.addEventListener("touchmove",e=>{
           const t=e.touches[0]; const dx=t.clientX-startX, dy=t.clientY-startY;
           if(!dragging && Math.hypot(dx,dy)>=blockThreshold){ dragging=true; document.body.classList.add('dragging'); }
-          if(dragging){ e.preventDefault(); }
+          if(dragging){ e.preventDefault(); } // スクロール抑止
         },{passive:false});
         window.addEventListener("touchend",e=>{
           const t=e.changedTouches[0]; endX=t.clientX; endY=t.clientY;
@@ -434,7 +437,7 @@
           if(!mouseDown) return;
           const dx=e.clientX-startX, dy=e.clientY-startY;
           if(!dragging && Math.hypot(dx,dy)>=blockThreshold){ dragging=true; document.body.classList.add('dragging'); }
-          if(dragging){ e.preventDefault(); }
+          if(dragging){ e.preventDefault(); } // テキスト選択やドラッグスクロール抑止
         });
         window.addEventListener("mouseup",e=>{
           if(!mouseDown) return; mouseDown=false;
