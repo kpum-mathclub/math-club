@@ -217,7 +217,7 @@
       <section class="section" aria-label="about">
         <div class="panel">
           <h3 style="margin:0 0 8px;font-family:'Noto Serif JP',serif;">活動の目的</h3>
-          <p style="margin:0;color:var(--muted);">数学力や基本的なサイエンス力をの底上げしつつ、医学という科目を多角的に学び、優秀な医師を輩出する。　</p>
+          <p style="margin:0;color:var(--muted);">数学力や基本的なサイエンス力をの底上げしつつ、医学という科目を多角的に学び、優秀な医師を輩出する。</p>
         </div>
         <div class="panel">
           <h3 style="margin:0 0 8px;font-family:'Noto Serif JP',serif;">Works</h3>
@@ -287,7 +287,7 @@
         }
       }
 
-      // --- Manual Walker ---
+      // --- Manual Walker（緑） ---
       class ManualWalker{
         constructor(v){ this.current=v; this.next=null; this.t=0; }
         isMoving(){ return !!this.next; }
@@ -331,7 +331,7 @@
         }
       }
 
-      // --- Auto walkers ---
+      // --- Auto walkers（白に変更） ---
       class Walker{
         constructor(){
           let pt; do{ pt=p.random(points);}while(insideAnySafety(pt));
@@ -349,12 +349,31 @@
         }
         update(){ this.t+=this.baseSpeed; if(this.t>=1){ this.current=this.next; this.next=this.chooseNext(this.current); this.t=0; } }
         getPosition(){ return{x:p.lerp(this.current.x,this.next.x,this.t),y:p.lerp(this.current.y,this.next.y,this.t)}; }
+
+        // ★ここがリクエストの display() 差し替え部分
         display(){
           const pos=this.getPosition();
-          const size=5+p.sin(p.frameCount*0.05+this.phase)*2;
-          const glow=18+10*p.sin(p.frameCount*0.08+this.phase);
-          p.noStroke(); p.fill(0,0,0,25); p.ellipse(pos.x,pos.y,size+glow);
-          p.fill(0); p.ellipse(pos.x,pos.y,size);
+          const size=5 + p.sin(p.frameCount*0.05 + this.phase)*2;
+          const glow=18 + 10*p.sin(p.frameCount*0.08 + this.phase);
+
+          const dark = isDark();
+
+          // ソフトな白グロー
+          p.noStroke();
+          p.fill(255,255,255, dark ? 42 : 28); // ダークで少し強め
+          p.ellipse(pos.x, pos.y, size + glow);
+
+          // コア（白）
+          if (dark){
+            p.fill(255);
+            p.ellipse(pos.x, pos.y, size);
+          } else {
+            p.fill(255);
+            p.stroke(0, 0, 0, 60);   // ライト時の視認性UP
+            p.strokeWeight(0.9);
+            p.ellipse(pos.x, pos.y, size);
+            p.noStroke();            // 状態戻し
+          }
         }
       }
 
