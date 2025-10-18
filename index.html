@@ -54,7 +54,7 @@
         radial-gradient(900px 700px at 85% 70%, rgba(93,168,255,.22), transparent 55%),
         linear-gradient(180deg, var(--bg) 0%, var(--bg) 100%);
     }
-    /* p5キャンバス用の“専用レイヤー” */
+    /* p5キャンバス（専用レイヤー） */
     #game-layer{
       position:fixed; inset:0; z-index:2; pointer-events:none;
     }
@@ -111,18 +111,80 @@
 
     footer{ margin-top:36px; padding:18px; text-align:center; color:var(--muted); font-size:13px; }
 
-    /* START OVERLAY（初回のみ） */
+    /* ===== START OVERLAY（扉演出） ===== */
     .start-overlay{
-      position:fixed; inset:0; z-index:30; display:flex; align-items:center; justify-content:center;
+      position:fixed; inset:0; z-index:30; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:28px;
       backdrop-filter: blur(12px);
       background: radial-gradient(40% 35% at 50% 50%, rgba(255,255,255,.12), transparent 60%);
     }
+    .door-scene{
+      position:relative; width:min(860px, 92vw); height:min(360px, 58vh);
+      perspective:1200px;
+      border-radius:16px;
+      border:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .door{
+      position:absolute; top:0; bottom:0; width:50%;
+      background:
+        linear-gradient(135deg, rgba(84,214,163,.18), rgba(93,168,255,.18)),
+        linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.02));
+      border-right:1px solid var(--border);
+      backdrop-filter: blur(6px);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), 0 12px 30px rgba(0,0,0,.35);
+      transition: transform .9s cubic-bezier(.22,.8,.25,1);
+      will-change: transform;
+    }
+    .door.left{ left:0; transform-origin:left center; border-right:1px solid var(--border); }
+    .door.right{ right:0; transform-origin:right center; border-left:1px solid var(--border); }
+
+    .door::before{
+      content:"";
+      position:absolute; inset:12px;
+      border-radius:10px;
+      border:1px dashed rgba(255,255,255,.18);
+    }
+
+    /* ノブ（取っ手） */
+    .handle{
+      position:absolute; top:50%; width:18px; height:18px; border-radius:50%;
+      background: radial-gradient(circle at 35% 35%, #fff, rgba(255,255,255,.5));
+      box-shadow: 0 4px 10px rgba(0,0,0,.3);
+      transform: translateY(-50%);
+    }
+    .door.left .handle{ right:18px; }
+    .door.right .handle{ left:18px; }
+
+    /* 扉の手前にコピー */
+    .door-copy{
+      position:absolute; inset:0; display:grid; place-items:center; pointer-events:none;
+      font-family:"Noto Serif JP", serif; text-align:center;
+    }
+    .door-copy h2{
+      margin:0; font-weight:800; letter-spacing:.04em;
+      font-size:clamp(22px, 3.5vw, 36px);
+      text-shadow:0 10px 30px rgba(0,0,0,.4);
+    }
+    .door-copy p{
+      margin:10px 0 0; color:var(--muted);
+      font-size:clamp(13px, 1.8vw, 15px);
+    }
+
+    /* 扉が開くとき */
+    .start-overlay.opening .door.left{ transform: rotateY(-100deg); }
+    .start-overlay.opening .door.right{ transform: rotateY(100deg); }
+    .start-overlay.opening .door-copy{ opacity:0; transition: opacity .45s ease .25s; }
+
+    /* START/Skip ボタン */
     .start-actions{ display:flex; gap:12px; align-items:center; }
     .start-btn{
       font-family:"Inter","Noto Serif JP",serif; font-weight:800; letter-spacing:.08em;
-      padding:18px 28px; border-radius:16px; border:1px solid var(--border);
+      padding:16px 24px; border-radius:16px; border:1px solid var(--border);
       background:linear-gradient(135deg, var(--accent), var(--accent-2));
-      color:#fff; font-size:22px; cursor:pointer; box-shadow:0 14px 40px rgba(0,0,0,.35);
+      color:#fff; font-size:18px; cursor:pointer; box-shadow:0 14px 40px rgba(0,0,0,.35);
     }
     .start-btn:active{ transform:translateY(1px); }
     .start-skip{
@@ -133,7 +195,7 @@
     }
     .start-skip:active{ transform:translateY(1px); }
 
-    /* PLAY AGAIN（ホームに戻った時にだけ出す） */
+    /* PLAY AGAIN（ホーム右下） */
     .play-again-btn{
       position:fixed; right:18px; bottom:80px; z-index:12;
       display:none; align-items:center; gap:8px;
@@ -181,10 +243,20 @@
   <!-- p5用キャンバスの専用レイヤー -->
   <div id="game-layer" aria-hidden="true"></div>
 
-  <!-- START Overlay（初回のみ表示：Skip追加済み） -->
+  <!-- START Overlay（扉＋Skip） -->
   <div id="start-overlay" class="start-overlay">
-    <div class="start-actions">
-      <button id="startBtn" class="start-btn">GAME START</button>
+    <div class="door-scene" aria-hidden="true">
+      <div class="door left"><span class="handle"></span></div>
+      <div class="door right"><span class="handle"></span></div>
+      <div class="door-copy">
+        <div>
+          <h2>Kyoto Prefectural Univ. of Medicine<br/>Math Club</h2>
+          <p>Swipe / Drag to guide the green point from START to GOAL.</p>
+        </div>
+      </div>
+    </div>
+    <div class="start-actions" aria-label="Game actions">
+      <button id="startBtn" class="start-btn">ENTER &nbsp;/&nbsp; GAME START</button>
       <button id="skipStartBtn" class="start-skip">Skip</button>
     </div>
   </div>
@@ -284,7 +356,7 @@
       }
     })();
 
-    // 共通：ゲーム開始関数（START & Play Again & Retryで使用）
+    // 共通：ゲーム開始（START/Play Again/Retry）
     function startGame(){
       document.body.classList.add('game-only');
       window.__appState = 'game';
@@ -299,22 +371,38 @@
 
     // CLEAR後（p5側から呼ばれる）
     window.__onGameClear = ()=>{
-      // 波紋の余韻はp5側で済ませてから呼ばれる。ここでは即ホーム化。
-      switchToHomeUI(); // ← アンビエント背景で自動回転
+      // 波紋演出完了 → 即ホーム（アンビエント）
+      switchToHomeUI();
     };
 
-    // STARTオーバーレイ（初回のみ）
+    // STARTオーバーレイ（扉演出 & Skip）
     (function(){
-      const btn = document.getElementById('startBtn');
+      const startBtn = document.getElementById('startBtn');
       const skipStart = document.getElementById('skipStartBtn');
       const overlay = document.getElementById('start-overlay');
+      let opening = false;
 
-      btn.addEventListener('click', ()=>{ overlay.style.display='none'; startGame(); });
-      skipStart.addEventListener('click', ()=>{ overlay.style.display='none'; switchToHomeUI(); });
+      startBtn.addEventListener('click', ()=>{
+        if (opening) return;
+        opening = true;
+        overlay.classList.add('opening');         // 扉アニメ開始
+        setTimeout(()=>{                          // 扉が開き切ったらゲーム開始
+          overlay.style.display = 'none';
+          overlay.classList.remove('opening');
+          startGame();
+          opening = false;
+        }, 920); // CSSの .9s に合わせて少し余裕
+      });
+
+      skipStart.addEventListener('click', ()=>{
+        overlay.style.display = 'none';
+        switchToHomeUI(); // ホームへ（アンビエント表示＆Play Again）
+      });
 
       // EscでUI復帰（デバッグ用）。Play Againは出す
       window.addEventListener('keydown', (e)=>{
         if(e.key === 'Escape'){
+          overlay.style.display = 'none';
           switchToHomeUI();
         }
       });
