@@ -49,7 +49,7 @@
       cursor: grabbing !important;
     }
 
-    /* ===== BACKGROUND LAYERS ===== */
+    /* ===== LAYERS ===== */
     .bg-gradient{
       position:fixed; inset:0; z-index:0;
       background:
@@ -57,9 +57,10 @@
         radial-gradient(900px 700px at 85% 70%, rgba(93,168,255,.22), transparent 55%),
         linear-gradient(180deg, var(--bg) 0%, var(--bg) 100%);
     }
-    canvas{ position:fixed; inset:0; pointer-events:none; z-index:1; }
+    canvas{ position:fixed; inset:0; pointer-events:none; z-index:1; } /* ゲーム */
 
-    /* ===== NAVBAR ===== */
+    /* ===== UI LAYER ===== */
+    #ui-layer{ position:relative; z-index:10; }
     nav{
       position:fixed; top:0; left:0; right:0; z-index:10;
       backdrop-filter: blur(12px);
@@ -75,8 +76,7 @@
     .nav-links a:hover{ background:var(--glass); }
     .theme-toggle{ margin-left:6px; border:1px solid var(--border); background:var(--glass); border-radius:12px; padding:8px 12px; cursor:pointer; box-shadow:var(--shadow); font-weight:600; }
 
-    /* ===== LAYOUT ===== */
-    main{ padding-top:86px; position:relative; z-index:10; }
+    main{ padding-top:86px; }
     .container{ max-width:1100px; margin:0 auto; padding:28px 24px 64px; }
     .hero{
       position:relative; overflow:hidden; border:1px solid var(--border); border-radius:24px;
@@ -97,7 +97,6 @@
     .card h3{ margin:0 0 6px; font-size:18px; }
     .card p{ margin:0; color:var(--muted); font-size:14px; }
 
-    /* 操作ヒント */
     .control-hint{
       position:fixed; right:18px; bottom:18px; z-index:10;
       display:flex; gap:10px; align-items:center; background:var(--glass); border:1px solid var(--border);
@@ -125,10 +124,8 @@
     }
     .start-btn:active{ transform:translateY(1px); }
 
-    /* ===== GAME-ONLY MODE: 文字の類を全て非表示 ===== */
-    body.game-only nav,
-    body.game-only main,
-    body.game-only .control-hint { display:none !important; }
+    /* ===== GAME-ONLY: UIレイヤーだけ隠す（キャンバスは残す） ===== */
+    body.game-only #ui-layer { display:none !important; }
   </style>
 </head>
 <body>
@@ -140,61 +137,65 @@
     <button id="startBtn" class="start-btn">GAME START</button>
   </div>
 
-  <!-- NAV -->
-  <nav>
-    <div class="nav-inner">
-      <div class="brand">
-        <div class="brand-badge">∑</div>
-        <div>京都府立医科大学 数学研究部</div>
+  <!-- ===== UI LAYER（ここを丸ごと隠す） ===== -->
+  <div id="ui-layer">
+    <!-- NAV -->
+    <nav>
+      <div class="nav-inner">
+        <div class="brand">
+          <div class="brand-badge">∑</div>
+          <div>京都府立医科大学 数学研究部</div>
+        </div>
+        <div class="nav-links" role="navigation" aria-label="Main">
+          <a href="index.html">Home</a>
+          <a href="schedule.html">Schedule</a>
+          <a href="contact.html">Contact</a>
+          <a href="qa.html">Q&amp;A</a>
+          <button class="theme-toggle" onclick="toggleTheme()">Theme</button>
+        </div>
       </div>
-      <div class="nav-links" role="navigation" aria-label="Main">
-        <a href="index.html">Home</a>
-        <a href="schedule.html">Schedule</a>
-        <a href="contact.html">Contact</a>
-        <a href="qa.html">Q&amp;A</a>
-        <button class="theme-toggle" onclick="toggleTheme()">Theme</button>
+    </nav>
+
+    <!-- MAIN -->
+    <main>
+      <div class="container">
+        <section class="hero">
+          <div class="badge">Official Site</div>
+          <h1>京都府立医科大学 数学研究部 公式HP</h1>
+          <p>幾何と動きの美しさで数学をもっと身近に。三角タイル上のウォーカーを操作して、<br/>START から GOAL へ。画面をフリック / ドラッグで進行方向を指示できます。</p>
+          <div class="cta-grid">
+            <a class="card" href="schedule.html"><h3>Schedule</h3><p>例会 / 勉強会 / イベントの予定をチェック。</p></a>
+            <a class="card" href="contact.html"><h3>Contact</h3><p>参加希望・見学の希望はこちら。</p></a>
+            <a class="card" href="qa.html"><h3>Q&amp;A</h3><p>入部・活動内容・必要スキルetc。</p></a>
+          </div>
+        </section>
+
+        <section class="section" aria-label="about">
+          <div class="panel">
+            <h3 style="margin:0 0 8px;font-family:'Noto Serif JP',serif;">活動の目的</h3>
+            <p style="margin:0;color:var(--muted);">数学力や基本的なサイエンス力の底上げを図り、医学を多角的に学ぶ。</p>
+          </div>
+          <div class="panel">
+            <h3 style="margin:0 0 8px;font-family:'Noto Serif JP',serif;">Works</h3>
+            <p style="margin:0;color:var(--muted);">p5.js / JavaScript / LaTeX / GeoGebra。作品やスライドは定期的に公開予定。</p>
+          </div>
+        </section>
+
+        <footer>© Kyoto Prefectural University of Medicine Math Club Established in 2024</footer>
       </div>
+    </main>
+
+    <!-- 操作ヒント -->
+    <div class="control-hint">
+      <div class="dot"></div>
+      <span>画面をフリック / ドラッグで操作し、Greenの点をGoalに導こう。</span>
     </div>
-  </nav>
-
-  <!-- MAIN -->
-  <main>
-    <div class="container">
-      <section class="hero">
-        <div class="badge">Official Site</div>
-        <h1>京都府立医科大学 数学研究部 公式HP</h1>
-        <p>幾何と動きの美しさで数学をもっと身近に。三角タイル上のウォーカーを操作して、<br/>START から GOAL へ。画面をフリック / ドラッグで進行方向を指示できます。</p>
-        <div class="cta-grid">
-          <a class="card" href="schedule.html"><h3>Schedule</h3><p>例会 / 勉強会 / イベントの予定をチェック。</p></a>
-          <a class="card" href="contact.html"><h3>Contact</h3><p>参加希望・見学の希望はこちら。</p></a>
-          <a class="card" href="qa.html"><h3>Q&amp;A</h3><p>入部・活動内容・必要スキルetc。</p></a>
-        </div>
-      </section>
-
-      <section class="section" aria-label="about">
-        <div class="panel">
-          <h3 style="margin:0 0 8px;font-family:'Noto Serif JP',serif;">活動の目的</h3>
-          <p style="margin:0;color:var(--muted);">数学力や基本的なサイエンス力の底上げを図り、医学を多角的に学ぶ。</p>
-        </div>
-        <div class="panel">
-          <h3 style="margin:0 0 8px;font-family:'Noto Serif JP',serif;">Works</h3>
-          <p style="margin:0;color:var(--muted);">p5.js / JavaScript / LaTeX / GeoGebra。作品やスライドは定期的に公開予定。</p>
-        </div>
-      </section>
-
-      <footer>© Kyoto Prefectural University of Medicine Math Club Established in 2024</footer>
-    </div>
-  </main>
-
-  <!-- 操作ヒント -->
-  <div class="control-hint">
-    <div class="dot"></div>
-    <span>画面をフリック / ドラッグで操作し、Greenの点をGoalに導こう。</span>
   </div>
+  <!-- /#ui-layer -->
 
   <!-- ===== Theme, Start Button Hook & p5.js ===== -->
   <script>
-    // 文字非表示フラグ（キャンバス内テキストも含む）
+    // 文字非表示フラグ（キャンバス上テキスト抑制用）
     window.hideCanvasText = false;
 
     // テーマ切替
@@ -209,16 +210,26 @@
       }
     })();
 
-    // STARTボタン：押下でゲーム専用モードへ
+    // STARTボタン：UIレイヤーだけ消す（キャンバスは残す）
     (function(){
       const btn = document.getElementById('startBtn');
       const overlay = document.getElementById('start-overlay');
       btn.addEventListener('click', ()=>{
-        document.body.classList.add('game-only');  // DOM上の文字UIを全て隠す
-        overlay.style.display = 'none';            // オーバーレイも消す
-        window.hideCanvasText = true;              // キャンバス上のテキストも非表示に
-        // キャンバスをビューポートに最適化
+        document.body.classList.add('game-only');  // UIを丸ごと非表示
+        overlay.style.display = 'none';            // スタート画面も消す
+        window.hideCanvasText = true;              // キャンバス上のテキストも非表示
+        // キャンバスの高さをビューポートに合わせ直す
         window.dispatchEvent(new Event('resize'));
+      });
+
+      // もし戻したくなったら ESC でUI復活（任意）
+      window.addEventListener('keydown', (e)=>{
+        if(e.key === 'Escape'){
+          document.body.classList.remove('game-only');
+          overlay.style.display = '';
+          window.hideCanvasText = false;
+          window.dispatchEvent(new Event('resize'));
+        }
       });
     })();
 
@@ -227,8 +238,7 @@
       let triangles=[], points=[], adjacency=new Map(), walkers=[];
       let startPoint=null, goalPoint=null, manualWalker;
       let gameOver=false, gameClear=false;
-      let trails=[]; // 軌跡
-      let waveAnim=null; // CLEAR波紋
+      let trails=[]; let waveAnim=null;
 
       // テーマ状態参照
       const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
@@ -318,8 +328,7 @@
 
       /* ==== p5 lifecycle ==== */
       p.setup=()=>{
-        const h=Math.max(document.body.scrollHeight,document.documentElement.scrollHeight);
-        const cnv=p.createCanvas(p.windowWidth,h); cnv.position(0,0);
+        const cnv=p.createCanvas(p.windowWidth, window.innerHeight); cnv.position(0,0);
         generateTriangleGrid(); pickStartGoalFixed();
         for(let i=0;i<walkerCount;i++) walkers.push(new Walker());
         manualWalker=new ManualWalker(startPoint);
@@ -327,8 +336,7 @@
       };
 
       p.windowResized=()=>{
-        const h=Math.max(window.innerHeight, document.body.scrollHeight, document.documentElement.scrollHeight);
-        p.resizeCanvas(p.windowWidth,h);
+        p.resizeCanvas(p.windowWidth, window.innerHeight);
         triangles=[]; points=[]; adjacency.clear();
         generateTriangleGrid(); pickStartGoalFixed();
       };
@@ -338,7 +346,7 @@
         // 三角タイル：テーマで線色切替
         p.noFill(); p.strokeWeight(1);
         if (isDark()) { p.stroke(255,28); } else { p.stroke(0,40); }
-        for(const t of triangles){ p.beginShape(); for(const pt of t)p.vertex(pt.x,pt.y); p.endShape(p.CLOSE); }
+        for(const t of triangles){ p.beginShape(); for(const pt of t)p.vertex(pt.x,p t.y); p.endShape(p.CLOSE); }
 
         drawStartGoal();
 
