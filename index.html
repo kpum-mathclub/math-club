@@ -56,11 +56,9 @@
     }
     /* p5キャンバス用の“専用レイヤー” */
     #game-layer{
-      position:fixed; inset:0; z-index:2; pointer-events:none; /* 触ってもスクロール等が起きない */
+      position:fixed; inset:0; z-index:2; pointer-events:none;
     }
-    #game-layer canvas{
-      position:absolute; inset:0;
-    }
+    #game-layer canvas{ position:absolute; inset:0; }
 
     /* ===== UI LAYER ===== */
     #ui-layer{ position:relative; z-index:10; }
@@ -212,7 +210,22 @@
       }
     })();
 
-    // START：UIを隠し、p5を確実にloop、再初期化フェイルセーフ
+    // UI復帰（ホームに戻す）
+    window.__onGameClear = ()=>{
+      const overlay = document.getElementById('start-overlay');
+      const btn = document.getElementById('startBtn');
+      setTimeout(()=>{
+        document.body.classList.remove('game-only'); // UI復帰
+        window.hideCanvasText = false;               // キャンバステキストも復帰
+        overlay.style.display = '';                  // スタートオーバーレイ復活
+        btn.textContent = 'PLAY AGAIN';              // 次回用の文言
+        // 省電力：ホームでは止めておく（再スタート時に loop される）
+        if (window.__game && typeof window.__game.noLoop==='function') window.__game.noLoop();
+        window.dispatchEvent(new Event('resize'));
+      }, 300); // 波紋の余韻を少しだけ
+    };
+
+    // START：UIを隠し、p5をloop、状況により再初期化
     (function(){
       const btn = document.getElementById('startBtn');
       const overlay = document.getElementById('start-overlay');
@@ -220,15 +233,8 @@
         document.body.classList.add('game-only');
         overlay.style.display = 'none';
         window.hideCanvasText = true;
-
-        // p5が停止していた場合に備えてloopを強制
-        if (window.__game && typeof window.__game.loop === 'function') {
-          window.__game.loop();
-        }
-        // もし描画要素が消えていたら再構築
+        if (window.__game && typeof window.__game.loop === 'function') window.__game.loop();
         if (window.__ensureGameAlive) window.__ensureGameAlive();
-
-        // ビューポートに合わせ直す
         window.dispatchEvent(new Event('resize'));
       });
 
@@ -238,6 +244,7 @@
           document.body.classList.remove('game-only');
           overlay.style.display = '';
           window.hideCanvasText = false;
+          if (window.__game && typeof window.__game.noLoop==='function') window.__game.noLoop();
           window.dispatchEvent(new Event('resize'));
         }
       });
@@ -249,7 +256,7 @@
         const sideLength=60, walkerCount=300, SAFE_RADIUS=20;
         let triangles=[], points=[], adjacency=new Map(), walkers=[];
         let startPoint=null, goalPoint=null, manualWalker;
-        let gameOver=false, gameClear=false;
+        let gameOver=false, gameClear=false, clearHandled=false;
         let trails=[]; let waveAnim=null;
 
         const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
@@ -364,7 +371,7 @@
           if(!window.hideCanvasText){ p.noStroke(); p.fill(140,255,200); p.text("START",startPoint.x+12,startPoint.y-10); }
           const pulse=22+6*Math.sin(p.frameCount*0.07);
           p.noFill(); p.stroke(100,170,255,230); p.ellipse(goalPoint.x,goalPoint.y,pulse);
-          if(!window.hideCanvasText){ p.noStroke(); p.fill(150,200,255); p.text("GOAL",goalPoint.x+12,goalPoint.y-10); }
+          if(!window.hideCanvasText){ p.noStroke(); p.fill(150,200,255); p.text("GOAL",goalPoint.x+12,startPoint.y-10); } // （ラベルは消される想定）
         }
         function checkCollision(){
           const mp=manualWalker.getPosition();
@@ -378,10 +385,11 @@
           walkers.length=0;
           for(let i=0;i<walkerCount;i++) walkers.push(new Walker());
           manualWalker=new ManualWalker(startPoint);
-          gameOver=false; gameClear=false; trails=[]; waveAnim=null;
+          gameOver=false; gameClear=false; clearHandled=false;
+          trails=[]; waveAnim=null;
         }
 
-        // 外から生存確認＆再構築できるようにエクスポート
+        // 外から再構築できるように
         window.__ensureGameAlive = ()=>{
           if (!triangles.length || !points.length || !walkers.length || !startPoint || !goalPoint){
             rebuildAll();
@@ -390,7 +398,7 @@
 
         p.setup=()=>{
           const cnv=p.createCanvas(window.innerWidth, window.innerHeight);
-          cnv.parent('game-layer'); // ★ 専用レイヤーにアタッチ
+          cnv.parent('game-layer');
           cnv.style('pointer-events','none');
           rebuildAll();
           setupFlickControls();
@@ -402,7 +410,7 @@
         };
 
         p.draw=()=>{
-          p.clear(); // 透明背景（下のグラデが透ける）
+          p.clear();
           p.noFill(); p.strokeWeight(1);
           if (isDark()) { p.stroke(255,28); } else { p.stroke(0,40); }
           for(const t of triangles){ p.beginShape(); for(const pt of t) p.vertex(pt.x, pt.y); p.endShape(p.CLOSE); }
@@ -421,7 +429,14 @@
             gameOver=true; drawBanner("GAME OVER","#ff2d2d"); p.noLoop(); return;
           }
           if(gameClear){
-            if(waveAnim){ waveAnim.update(); waveAnim.display(); if(!waveAnim.isAlive()){ drawBanner("CLEAR!","#00b86b"); } }
+            if(waveAnim){ 
+              waveAnim.update(); waveAnim.display();
+              if(!waveAnim.isAlive() && !clearHandled){
+                clearHandled = true;
+                // ★ ここでホームに戻す
+                if (typeof window.__onGameClear === 'function') window.__onGameClear();
+              }
+            }
           }
         };
 
@@ -464,7 +479,7 @@
         }
       };
 
-      // p5インスタンスをグローバルに持っておく（START時にloop等を叩くため）
+      // p5インスタンスを保持
       window.__game = new p5(sketch);
     })();
   </script>
