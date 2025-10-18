@@ -14,7 +14,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
 
   <style>
-    /* ===== THEME TOKENS ===== */
     :root{
       --bg:#0b0d12; --fg:#e7e9ee; --muted:#9aa3af;
       --accent:#54d6a3; --accent-2:#5da8ff;
@@ -30,7 +29,6 @@
       --focus:0 0 0 3px rgba(47,124,255,.25);
     }
 
-    /* ===== RESET / BASE ===== */
     *{box-sizing:border-box}
     html,body{height:100%;}
     html, body {
@@ -38,12 +36,11 @@
       background:var(--bg); color:var(--fg);
       font-family:"Inter", system-ui, -apple-system, "Noto Serif JP", serif;
       -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-      overscroll-behavior: none; /* ビヨン防止 */
+      overscroll-behavior: none;
     }
     a{color:inherit; text-decoration:none}
     a:focus-visible, button:focus-visible{outline:none; box-shadow:var(--focus); border-radius:10px}
 
-    /* ドラッグ中は選択や長押しメニューを抑制 */
     body.dragging, body.dragging *{
       user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
       cursor: grabbing !important;
@@ -57,12 +54,18 @@
         radial-gradient(900px 700px at 85% 70%, rgba(93,168,255,.22), transparent 55%),
         linear-gradient(180deg, var(--bg) 0%, var(--bg) 100%);
     }
-    canvas{ position:fixed; inset:0; pointer-events:none; z-index:1; } /* ゲーム面 */
+    /* p5キャンバス用の“専用レイヤー” */
+    #game-layer{
+      position:fixed; inset:0; z-index:2; pointer-events:none; /* 触ってもスクロール等が起きない */
+    }
+    #game-layer canvas{
+      position:absolute; inset:0;
+    }
 
     /* ===== UI LAYER ===== */
     #ui-layer{ position:relative; z-index:10; }
     nav{
-      position:fixed; top:0; left:0; right:0; z-index:10;
+      position:fixed; top:0; left:0; right:0; z-index:11;
       backdrop-filter: blur(12px);
       background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.10)), var(--glass);
       border-bottom:1px solid var(--border);
@@ -98,7 +101,7 @@
     .card p{ margin:0; color:var(--muted); font-size:14px; }
 
     .control-hint{
-      position:fixed; right:18px; bottom:18px; z-index:10;
+      position:fixed; right:18px; bottom:18px; z-index:12;
       display:flex; gap:10px; align-items:center; background:var(--glass); border:1px solid var(--border);
       border-radius:12px; padding:10px 12px; backdrop-filter: blur(8px); box-shadow: var(--shadow); font-size:13px; color:var(--muted);
     }
@@ -110,9 +113,9 @@
 
     footer{ margin-top:36px; padding:18px; text-align:center; color:var(--muted); font-size:13px; }
 
-    /* ===== START OVERLAY ===== */
+    /* START OVERLAY（UIの最前面） */
     .start-overlay{
-      position:fixed; inset:0; z-index:20; display:flex; align-items:center; justify-content:center;
+      position:fixed; inset:0; z-index:30; display:flex; align-items:center; justify-content:center;
       backdrop-filter: blur(12px);
       background: radial-gradient(40% 35% at 50% 50%, rgba(255,255,255,.12), transparent 60%);
     }
@@ -124,23 +127,25 @@
     }
     .start-btn:active{ transform:translateY(1px); }
 
-    /* ===== GAME-ONLY: UIレイヤーだけ隠す（キャンバスは常時表示） ===== */
+    /* GAME-ONLY: UIだけ隠す（キャンバスは常時表示） */
     body.game-only #ui-layer { display:none !important; }
-    body.game-only { overflow:hidden; } /* 念のためスクロールロック */
+    body.game-only { overflow:hidden; }
   </style>
 </head>
 <body>
-  <!-- Background layers -->
+  <!-- 背景 -->
   <div class="bg-gradient"></div>
+
+  <!-- p5用キャンバスの専用レイヤー -->
+  <div id="game-layer" aria-hidden="true"></div>
 
   <!-- START Overlay -->
   <div id="start-overlay" class="start-overlay">
     <button id="startBtn" class="start-btn">GAME START</button>
   </div>
 
-  <!-- ===== UI LAYER（ここを丸ごと隠す） ===== -->
+  <!-- UIレイヤー（ゲーム開始で消す） -->
   <div id="ui-layer">
-    <!-- NAV -->
     <nav>
       <div class="nav-inner">
         <div class="brand">
@@ -157,7 +162,6 @@
       </div>
     </nav>
 
-    <!-- MAIN -->
     <main>
       <div class="container">
         <section class="hero">
@@ -186,17 +190,14 @@
       </div>
     </main>
 
-    <!-- 操作ヒント -->
     <div class="control-hint">
       <div class="dot"></div>
       <span>画面をフリック / ドラッグで操作し、Greenの点をGoalに導こう。</span>
     </div>
   </div>
-  <!-- /#ui-layer -->
 
-  <!-- ===== Theme, Start Button Hook & p5.js ===== -->
   <script>
-    // 文字非表示フラグ（キャンバス内テキスト抑止）
+    // キャンバス内テキスト（CLEAR/START/GOAL）を消すフラグ
     window.hideCanvasText = false;
 
     // テーマ切替
@@ -211,19 +212,27 @@
       }
     })();
 
-    // STARTボタン：UIレイヤーだけ消す（キャンバスは残す）
+    // START：UIを隠し、p5を確実にloop、再初期化フェイルセーフ
     (function(){
       const btn = document.getElementById('startBtn');
       const overlay = document.getElementById('start-overlay');
       btn.addEventListener('click', ()=>{
-        document.body.classList.add('game-only');  // UIを丸ごと非表示
-        overlay.style.display = 'none';            // スタート画面も消す
-        window.hideCanvasText = true;              // キャンバス上のテキストも非表示（START/GOAL/CLEARなど）
-        // キャンバスの高さをビューポートに合わせ直す
+        document.body.classList.add('game-only');
+        overlay.style.display = 'none';
+        window.hideCanvasText = true;
+
+        // p5が停止していた場合に備えてloopを強制
+        if (window.__game && typeof window.__game.loop === 'function') {
+          window.__game.loop();
+        }
+        // もし描画要素が消えていたら再構築
+        if (window.__ensureGameAlive) window.__ensureGameAlive();
+
+        // ビューポートに合わせ直す
         window.dispatchEvent(new Event('resize'));
       });
 
-      // デバッグ/復帰用：Esc でUI復活
+      // EscでUI復活（任意）
       window.addEventListener('keydown', (e)=>{
         if(e.key === 'Escape'){
           document.body.classList.remove('game-only');
@@ -234,221 +243,230 @@
       });
     })();
 
-    new p5(p=>{
-      const sideLength=60, walkerCount=300, SAFE_RADIUS=20;
-      let triangles=[], points=[], adjacency=new Map(), walkers=[];
-      let startPoint=null, goalPoint=null, manualWalker;
-      let gameOver=false, gameClear=false;
-      let trails=[]; let waveAnim=null;
+    // ===== p5.js スケッチ =====
+    (function(){
+      const sketch = (p)=>{
+        const sideLength=60, walkerCount=300, SAFE_RADIUS=20;
+        let triangles=[], points=[], adjacency=new Map(), walkers=[];
+        let startPoint=null, goalPoint=null, manualWalker;
+        let gameOver=false, gameClear=false;
+        let trails=[]; let waveAnim=null;
 
-      // テーマ状態参照
-      const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
-      const mo = new MutationObserver(()=>{}); mo.observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+        const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
+        new MutationObserver(()=>{}).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
 
-      /* ==== Trail / Wave ==== */
-      class Trail { constructor(x,y){ this.x=x; this.y=y; this.life=255; } update(){ this.life-=4; } isAlive(){ return this.life>0; }
-        display(){ p.noStroke(); p.fill(0,255,100,this.life*0.4); p.ellipse(this.x,this.y,8); } }
-      class Wave { constructor(x,y){ this.x=x; this.y=y; this.radius=0; this.life=255; }
-        update(){ this.radius+=12; this.life-=4; } isAlive(){ return this.life>0; }
-        display(){ p.noFill(); p.stroke(0,180,255,this.life); p.strokeWeight(2); p.ellipse(this.x,this.y,this.radius*2); } }
+        class Trail{ constructor(x,y){ this.x=x; this.y=y; this.life=255; }
+          update(){ this.life-=4; } isAlive(){ return this.life>0; }
+          display(){ p.noStroke(); p.fill(0,255,100,this.life*0.4); p.ellipse(this.x,this.y,8); } }
+        class Wave{ constructor(x,y){ this.x=x; this.y=y; this.radius=0; this.life=255; }
+          update(){ this.radius+=12; this.life-=4; } isAlive(){ return this.life>0; }
+          display(){ p.noFill(); p.stroke(0,180,255,this.life); p.strokeWeight(2); p.ellipse(this.x,this.y,this.radius*2); } }
 
-      /* ==== Manual Walker（緑） ==== */
-      class ManualWalker{
-        constructor(v){ this.current=v; this.next=null; this.t=0; }
-        isMoving(){ return !!this.next; }
-        stepByAim(a){
-          if(this.isMoving()||gameOver||gameClear)return;
-          const rad=a*Math.PI/180, aim={x:Math.cos(rad), y:-Math.sin(rad)};
-          const key=this.current.x+","+this.current.y;
-          const nbrs=adjacency.get(key)?.neighbors||[];
-          let best=null,bestDot=0.1;
-          for(const n of nbrs){
-            const vx=n.x-this.current.x,vy=n.y-this.current.y,len=Math.hypot(vx,vy)||1;
-            const dot=(vx/len)*aim.x+(vy/len)*aim.y;
-            if(dot>bestDot){ bestDot=dot; best=n; }
+        class ManualWalker{
+          constructor(v){ this.current=v; this.next=null; this.t=0; }
+          isMoving(){ return !!this.next; }
+          stepByAim(a){
+            if(this.isMoving()||gameOver||gameClear)return;
+            const rad=a*Math.PI/180, aim={x:Math.cos(rad), y:-Math.sin(rad)};
+            const key=this.current.x+","+this.current.y;
+            const nbrs=adjacency.get(key)?.neighbors||[];
+            let best=null,bestDot=0.1;
+            for(const n of nbrs){
+              const vx=n.x-this.current.x,vy=n.y-this.current.y,len=Math.hypot(vx,vy)||1;
+              const dot=(vx/len)*aim.x+(vy/len)*aim.y;
+              if(dot>bestDot){ bestDot=dot; best=n; }
+            }
+            if(best){ this.next=best; this.t=0; }
           }
-          if(best){ this.next=best; this.t=0; }
-        }
-        update(){
-          if(this.next){
-            this.t+=0.08;
-            if(this.t>=1){
-              this.current=this.next; this.next=null; this.t=0;
-              trails.push(new Trail(this.current.x,this.current.y));
-              if(goalPoint && this.current.x===goalPoint.x && this.current.y===goalPoint.y){
-                gameClear=true; waveAnim=new Wave(goalPoint.x,goalPoint.y);
+          update(){
+            if(this.next){
+              this.t+=0.08;
+              if(this.t>=1){
+                this.current=this.next; this.next=null; this.t=0;
+                trails.push(new Trail(this.current.x,this.current.y));
+                if(goalPoint && this.current.x===goalPoint.x && this.current.y===goalPoint.y){
+                  gameClear=true; waveAnim=new Wave(goalPoint.x,goalPoint.y);
+                }
               }
             }
           }
-        }
-        getPosition(){
-          if(this.next) return p.createVector(p.lerp(this.current.x,this.next.x,this.t),p.lerp(this.current.y,this.next.y,this.t));
-          return this.current.copy();
-        }
-        display(){
-          const pos=this.getPosition();
-          const glow=22+6*Math.sin(p.frameCount*0.07);
-          p.noStroke(); p.fill(0,255,0,40); p.ellipse(pos.x,pos.y,glow);
-          p.fill(0,200,80); p.ellipse(pos.x,pos.y,10);
-        }
-      }
-
-      /* ==== Auto Walkers（白） ==== */
-      class Walker{
-        constructor(){
-          let pt; do{ pt=p.random(points);}while(insideAnySafety(pt));
-          this.current=pt; this.next=this.chooseNext(pt); this.t=0;
-          this.baseSpeed=p.random(0.003,0.008); this.phase=p.random(p.TWO_PI);
-        }
-        chooseNext(cur){
-          const key=cur.x+","+cur.y;
-          let opt=adjacency.get(key)?.neighbors||[];
-          opt=opt.filter(n=>!insideAnySafety(n));
-          if(!opt.length)return cur;
-          let next; do{ next=p.random(opt);}while(next.x===cur.x&&next.y===cur.y&&opt.length>1);
-          return next;
-        }
-        update(){ this.t+=this.baseSpeed; if(this.t>=1){ this.current=this.next; this.next=this.chooseNext(this.current); this.t=0; } }
-        getPosition(){ return{x:p.lerp(this.current.x,this.next.x,this.t),y:p.lerp(this.current.y,this.next.y,this.t)}; }
-        display(){
-          const pos=this.getPosition();
-          const size=5 + p.sin(p.frameCount*0.05 + this.phase)*2;
-          const glow=18 + 10*p.sin(p.frameCount*0.08 + this.phase);
-          const dark = isDark();
-          p.noStroke();
-          p.fill(255,255,255, dark ? 42 : 28);
-          p.ellipse(pos.x, pos.y, size + glow);
-          if (dark){
-            p.fill(255); p.ellipse(pos.x, pos.y, size);
-          } else {
-            p.fill(255); p.stroke(0,0,0,60); p.strokeWeight(0.9);
-            p.ellipse(pos.x, pos.y, size); p.noStroke();
+          getPosition(){
+            if(this.next) return p.createVector(p.lerp(this.current.x,this.next.x,this.t), p.lerp(this.current.y,this.next.y,this.t));
+            return this.current.copy();
+          }
+          display(){
+            const pos=this.getPosition();
+            const glow=22+6*Math.sin(p.frameCount*0.07);
+            p.noStroke(); p.fill(0,255,0,40); p.ellipse(pos.x,pos.y,glow);
+            p.fill(0,200,80); p.ellipse(pos.x,pos.y,10);
           }
         }
-      }
 
-      /* ==== p5 lifecycle ==== */
-      p.setup=()=>{
-        const cnv=p.createCanvas(p.windowWidth, window.innerHeight); cnv.position(0,0);
-        generateTriangleGrid(); pickStartGoalFixed();
-        for(let i=0;i<walkerCount;i++) walkers.push(new Walker());
-        manualWalker=new ManualWalker(startPoint);
-        setupFlickControls();
-      };
-
-      p.windowResized=()=>{
-        p.resizeCanvas(p.windowWidth, window.innerHeight);
-        triangles=[]; points=[]; adjacency.clear();
-        generateTriangleGrid(); pickStartGoalFixed();
-      };
-
-      p.draw=()=>{
-        p.clear(); // 透明背景
-        // 三角タイル：テーマで線色切替
-        p.noFill(); p.strokeWeight(1);
-        if (isDark()) { p.stroke(255,28); } else { p.stroke(0,40); }
-        for(const t of triangles){ p.beginShape(); for(const pt of t) p.vertex(pt.x, pt.y); p.endShape(p.CLOSE); } /* ← typo修正済み */
-
-        drawStartGoal();
-
-        for(const w of walkers){ w.update(); w.display(); }
-
-        trails.forEach(t=>t.update());
-        trails=trails.filter(t=>t.isAlive());
-        trails.forEach(t=>t.display());
-
-        manualWalker.update();
-        manualWalker.display();
-
-        if(!gameOver&&!gameClear&&checkCollision()){
-          gameOver=true; if(!window.hideCanvasText){ drawBanner("GAME OVER","#ff2d2d"); } p.noLoop(); return;
-        }
-        if(gameClear && waveAnim){
-          waveAnim.update(); waveAnim.display();
-          if(!waveAnim.isAlive()){ if(!window.hideCanvasText){ drawBanner("CLEAR!","#00b86b"); } }
-        }
-      };
-
-      /* ==== helpers ==== */
-      function pickStartGoalFixed(){ startPoint=nearestVertex(60,250); goalPoint=nearestVertex(p.width-300,p.height-300); }
-      function nearestVertex(x,y){ let best=null,bestD=1e9; for(const pt of points){ const d=p.dist(x,y,pt.x,pt.y); if(d<bestD){bestD=d;best=pt;} } return best; }
-      function insideAnySafety(pt){ return (p.dist(pt.x,pt.y,startPoint.x,startPoint.y)<=SAFE_RADIUS)||(p.dist(pt.x,pt.y,goalPoint.x,goalPoint.y)<=SAFE_RADIUS); }
-      function drawStartGoal(){
-        // START circle
-        p.stroke(0,220,120,220); p.noFill(); p.ellipse(startPoint.x,startPoint.y,18);
-        if(!window.hideCanvasText){ p.noStroke(); p.fill(140,255,200); p.text("START",startPoint.x+12,startPoint.y-10); }
-        // GOAL circle (pulse)
-        const pulse=22+6*Math.sin(p.frameCount*0.07);
-        p.noFill(); p.stroke(100,170,255,230); p.ellipse(goalPoint.x,goalPoint.y,pulse);
-        if(!window.hideCanvasText){ p.noStroke(); p.fill(150,200,255); p.text("GOAL",goalPoint.x+12,goalPoint.y-10); }
-      }
-      function checkCollision(){
-        const mp=manualWalker.getPosition();
-        for(const w of walkers){ const pos=w.getPosition(); if(p.dist(mp.x,mp.y,pos.x,pos.y)<12)return true; }
-        return false;
-      }
-      function drawBanner(txt,c){ if(window.hideCanvasText) return; p.textAlign(p.CENTER,p.CENTER); p.textSize(64); p.fill(c); p.text(txt,p.width/2,p.height/2); }
-
-      function generateTriangleGrid(){
-        const h=sideLength*Math.sqrt(3)/2; triangles=[]; adjacency.clear();
-        for(let y=0;y<p.height+h;y+=h){
-          for(let x=0;x<p.width+sideLength;x+=sideLength){
-            const xOffset=(Math.floor(y/h)%2)*(sideLength/2);
-            const p1=p.createVector(x+xOffset,y),
-                  p2=p.createVector(x+sideLength/2+xOffset,y+h),
-                  p3=p.createVector(x-sideLength/2+xOffset,y+h);
-            triangles.push([p1,p2,p3]); registerEdge(p1,p2); registerEdge(p2,p3); registerEdge(p3,p1);
+        class Walker{
+          constructor(){
+            let pt; do{ pt=p.random(points);}while(insideAnySafety(pt));
+            this.current=pt; this.next=this.chooseNext(pt); this.t=0;
+            this.baseSpeed=p.random(0.003,0.008); this.phase=p.random(p.TWO_PI);
+          }
+          chooseNext(cur){
+            const key=cur.x+","+cur.y;
+            let opt=adjacency.get(key)?.neighbors||[];
+            opt=opt.filter(n=>!insideAnySafety(n));
+            if(!opt.length)return cur;
+            let next; do{ next=p.random(opt);}while(next.x===cur.x&&next.y===cur.y&&opt.length>1);
+            return next;
+          }
+          update(){ this.t+=this.baseSpeed; if(this.t>=1){ this.current=this.next; this.next=this.chooseNext(this.current); this.t=0; } }
+          getPosition(){ return{x:p.lerp(this.current.x,this.next.x,this.t),y:p.lerp(this.current.y,this.next.y,this.t)}; }
+          display(){
+            const pos=this.getPosition();
+            const size=5 + p.sin(p.frameCount*0.05 + this.phase)*2;
+            const glow=18 + 10*p.sin(p.frameCount*0.08 + this.phase);
+            const dark = isDark();
+            p.noStroke();
+            p.fill(255,255,255, dark ? 42 : 28);
+            p.ellipse(pos.x, pos.y, size + glow);
+            if (dark){
+              p.fill(255); p.ellipse(pos.x, pos.y, size);
+            } else {
+              p.fill(255); p.stroke(0,0,0,60); p.strokeWeight(0.9);
+              p.ellipse(pos.x, pos.y, size); p.noStroke();
+            }
           }
         }
-        points=Array.from(adjacency.values()).map(o=>o.vec);
-      }
-      function registerEdge(a,b){
-        const ka=a.x+","+a.y,kb=b.x+","+b.y;
-        if(!adjacency.has(ka))adjacency.set(ka,{vec:a,neighbors:[]});
-        if(!adjacency.has(kb))adjacency.set(kb,{vec:b,neighbors:[]});
-        const A=adjacency.get(ka).neighbors, B=adjacency.get(kb).neighbors;
-        if(!A.some(n=>n.x===b.x&&n.y===b.y))A.push(adjacency.get(kb).vec);
-        if(!B.some(n=>n.x===a.x&&n.y===a.y))B.push(adjacency.get(ka).vec);
-      }
 
-      function setupFlickControls(){
-        let startX=0,startY=0,endX=0,endY=0;
-        let dragging=false, mouseDown=false;
-        const threshold=40, blockThreshold=12;
-        const getAngle=(dx,dy)=>{let ang=Math.atan2(-dy,dx)*180/Math.PI;if(ang<0)ang+=360;return ang;};
+        function generateTriangleGrid(){
+          const h=sideLength*Math.sqrt(3)/2; triangles=[]; adjacency.clear();
+          for(let y=0;y<p.height+h;y+=h){
+            for(let x=0;x<p.width+sideLength;x+=sideLength){
+              const xOffset=(Math.floor(y/h)%2)*(sideLength/2);
+              const p1=p.createVector(x+xOffset,y),
+                    p2=p.createVector(x+sideLength/2+xOffset,y+h),
+                    p3=p.createVector(x-sideLength/2+xOffset,y+h);
+              triangles.push([p1,p2,p3]); registerEdge(p1,p2); registerEdge(p2,p3); registerEdge(p3,p1);
+            }
+          }
+          points=Array.from(adjacency.values()).map(o=>o.vec);
+        }
+        function registerEdge(a,b){
+          const ka=a.x+","+a.y,kb=b.x+","+b.y;
+          if(!adjacency.has(ka))adjacency.set(ka,{vec:a,neighbors:[]});
+          if(!adjacency.has(kb))adjacency.set(kb,{vec:b,neighbors:[]});
+          const A=adjacency.get(ka).neighbors,B=adjacency.get(kb).neighbors;
+          if(!A.some(n=>n.x===b.x&&n.y===b.y))A.push(adjacency.get(kb).vec);
+          if(!B.some(n=>n.x===a.x&&n.y===a.y))B.push(adjacency.get(ka).vec);
+        }
+        function nearestVertex(x,y){ let best=null,bestD=1e9; for(const pt of points){ const d=p.dist(x,y,pt.x,pt.y); if(d<bestD){bestD=d;best=pt;} } return best; }
+        function pickStartGoalFixed(){ startPoint=nearestVertex(60, Math.min(250,p.height-50)); goalPoint=nearestVertex(Math.max(60,p.width-300), Math.max(60,p.height-300)); }
+        function insideAnySafety(pt){ return (p.dist(pt.x,pt.y,startPoint.x,startPoint.y)<=SAFE_RADIUS)||(p.dist(pt.x,pt.y,goalPoint.x,goalPoint.y)<=SAFE_RADIUS); }
+        function drawStartGoal(){
+          p.stroke(0,220,120,220); p.noFill(); p.ellipse(startPoint.x,startPoint.y,18);
+          if(!window.hideCanvasText){ p.noStroke(); p.fill(140,255,200); p.text("START",startPoint.x+12,startPoint.y-10); }
+          const pulse=22+6*Math.sin(p.frameCount*0.07);
+          p.noFill(); p.stroke(100,170,255,230); p.ellipse(goalPoint.x,goalPoint.y,pulse);
+          if(!window.hideCanvasText){ p.noStroke(); p.fill(150,200,255); p.text("GOAL",goalPoint.x+12,goalPoint.y-10); }
+        }
+        function checkCollision(){
+          const mp=manualWalker.getPosition();
+          for(const w of walkers){ const pos=w.getPosition(); if(p.dist(mp.x,mp.y,pos.x,pos.y)<12)return true; }
+          return false;
+        }
+        function drawBanner(txt,c){ if(window.hideCanvasText) return; p.textAlign(p.CENTER,p.CENTER); p.textSize(64); p.fill(c); p.text(txt,p.width/2,p.height/2); }
 
-        // Touch
-        window.addEventListener("touchstart",e=>{ const t=e.touches[0]; startX=t.clientX; startY=t.clientY; dragging=false; },{passive:true});
-        window.addEventListener("touchmove",e=>{
-          const t=e.touches[0]; const dx=t.clientX-startX, dy=t.clientY-startY;
-          if(!dragging && Math.hypot(dx,dy)>=blockThreshold){ dragging=true; document.body.classList.add('dragging'); }
-          if(dragging){ e.preventDefault(); } // スクロール抑止
-        },{passive:false});
-        window.addEventListener("touchend",e=>{
-          const t=e.changedTouches[0]; endX=t.clientX; endY=t.clientY;
-          const dx=endX-startX, dy=endY-startY;
-          if(Math.hypot(dx,dy)>=threshold){ const ang=getAngle(dx,dy); const snapped=Math.round(ang/60)*60%360; manualWalker.stepByAim(snapped); }
-          dragging=false; document.body.classList.remove('dragging');
-        });
+        function rebuildAll(){
+          generateTriangleGrid(); pickStartGoalFixed();
+          walkers.length=0;
+          for(let i=0;i<walkerCount;i++) walkers.push(new Walker());
+          manualWalker=new ManualWalker(startPoint);
+          gameOver=false; gameClear=false; trails=[]; waveAnim=null;
+        }
 
-        // Mouse
-        window.addEventListener("mousedown",e=>{ mouseDown=true; startX=e.clientX; startY=e.clientY; dragging=false; });
-        window.addEventListener("mousemove",e=>{
-          if(!mouseDown) return;
-          const dx=e.clientX-startX, dy=e.clientY-startY;
-          if(!dragging && Math.hypot(dx,dy)>=blockThreshold){ dragging=true; document.body.classList.add('dragging'); }
-          if(dragging){ e.preventDefault(); } // テキスト選択やドラッグスクロール抑止
-        });
-        window.addEventListener("mouseup",e=>{
-          if(!mouseDown) return; mouseDown=false;
-          endX=e.clientX; endY=e.clientY;
-          const dx=endX-startX, dy=endY-startY;
-          if(Math.hypot(dx,dy)>=threshold){ const ang=getAngle(dx,dy); const snapped=Math.round(ang/60)*60%360; manualWalker.stepByAim(snapped); }
-          dragging=false; document.body.classList.remove('dragging');
-        });
-        window.addEventListener("mouseleave",()=>{ mouseDown=false; dragging=false; document.body.classList.remove('dragging'); });
-      }
-    });
+        // 外から生存確認＆再構築できるようにエクスポート
+        window.__ensureGameAlive = ()=>{
+          if (!triangles.length || !points.length || !walkers.length || !startPoint || !goalPoint){
+            rebuildAll();
+          }
+        };
+
+        p.setup=()=>{
+          const cnv=p.createCanvas(window.innerWidth, window.innerHeight);
+          cnv.parent('game-layer'); // ★ 専用レイヤーにアタッチ
+          cnv.style('pointer-events','none');
+          rebuildAll();
+          setupFlickControls();
+        };
+
+        p.windowResized=()=>{
+          p.resizeCanvas(window.innerWidth, window.innerHeight);
+          rebuildAll();
+        };
+
+        p.draw=()=>{
+          p.clear(); // 透明背景（下のグラデが透ける）
+          p.noFill(); p.strokeWeight(1);
+          if (isDark()) { p.stroke(255,28); } else { p.stroke(0,40); }
+          for(const t of triangles){ p.beginShape(); for(const pt of t) p.vertex(pt.x, pt.y); p.endShape(p.CLOSE); }
+
+          if(startPoint && goalPoint) drawStartGoal();
+
+          for(const w of walkers){ w.update(); w.display(); }
+
+          for(const t of trails) t.update();
+          trails=trails.filter(t=>t.isAlive());
+          for(const t of trails) t.display();
+
+          if (manualWalker){ manualWalker.update(); manualWalker.display(); }
+
+          if(!gameOver&&!gameClear&&checkCollision()){
+            gameOver=true; drawBanner("GAME OVER","#ff2d2d"); p.noLoop(); return;
+          }
+          if(gameClear){
+            if(waveAnim){ waveAnim.update(); waveAnim.display(); if(!waveAnim.isAlive()){ drawBanner("CLEAR!","#00b86b"); } }
+          }
+        };
+
+        function setupFlickControls(){
+          let startX=0,startY=0,endX=0,endY=0;
+          let dragging=false, mouseDown=false;
+          const threshold=40, blockThreshold=12;
+          const getAngle=(dx,dy)=>{let ang=Math.atan2(-dy,dx)*180/Math.PI;if(ang<0)ang+=360;return ang;};
+
+          // Touch
+          window.addEventListener("touchstart",e=>{ const t=e.touches[0]; startX=t.clientX; startY=t.clientY; dragging=false; },{passive:true});
+          window.addEventListener("touchmove",e=>{
+            const t=e.touches[0]; const dx=t.clientX-startX, dy=t.clientY-startY;
+            if(!dragging && Math.hypot(dx,dy)>=blockThreshold){ dragging=true; document.body.classList.add('dragging'); }
+            if(dragging){ e.preventDefault(); }
+          },{passive:false});
+          window.addEventListener("touchend",e=>{
+            const t=e.changedTouches[0]; endX=t.clientX; endY=t.clientY;
+            const dx=endX-startX, dy=endY-startY;
+            if(Math.hypot(dx,dy)>=threshold){ const ang=getAngle(dx,dy); const snapped=Math.round(ang/60)*60%360; manualWalker.stepByAim(snapped); }
+            dragging=false; document.body.classList.remove('dragging');
+          });
+
+          // Mouse
+          window.addEventListener("mousedown",e=>{ mouseDown=true; startX=e.clientX; startY=e.clientY; dragging=false; });
+          window.addEventListener("mousemove",e=>{
+            if(!mouseDown) return;
+            const dx=e.clientX-startX, dy=e.clientY-startY;
+            if(!dragging && Math.hypot(dx,dy)>=blockThreshold){ dragging=true; document.body.classList.add('dragging'); }
+            if(dragging){ e.preventDefault(); }
+          });
+          window.addEventListener("mouseup",e=>{
+            if(!mouseDown) return; mouseDown=false;
+            endX=e.clientX; endY=e.clientY;
+            const dx=endX-startX, dy=endY-startY;
+            if(Math.hypot(dx,dy)>=threshold){ const ang=getAngle(dx,dy); const snapped=Math.round(ang/60)*60%360; manualWalker.stepByAim(snapped); }
+            dragging=false; document.body.classList.remove('dragging');
+          });
+          window.addEventListener("mouseleave",()=>{ mouseDown=false; dragging=false; document.body.classList.remove('dragging'); });
+        }
+      };
+
+      // p5インスタンスをグローバルに持っておく（START時にloop等を叩くため）
+      window.__game = new p5(sketch);
+    })();
   </script>
 </body>
 </html>
