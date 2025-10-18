@@ -47,9 +47,18 @@
       background:var(--bg); color:var(--fg);
       font-family: "Inter", system-ui, -apple-system, "Noto Serif JP", serif;
       -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+      overscroll-behavior: none; /* 端でのビヨン防止（対応ブラウザ） */
     }
     a{color:inherit; text-decoration:none}
     a:focus-visible, button:focus-visible{outline:none; box-shadow:var(--focus); border-radius:10px}
+
+    /* ドラッグ中は選択や長押しメニューを抑制 */
+    body.dragging, body.dragging *{
+      user-select:none;
+      -webkit-user-select:none;
+      -webkit-touch-callout:none;
+      cursor: grabbing !important;
+    }
 
     /* ===== BACKGROUND LAYERS ===== */
     .bg-gradient{
@@ -59,11 +68,11 @@
         radial-gradient(900px 700px at 85% 70%, rgba(93,168,255,.22), transparent 55%),
         linear-gradient(180deg, var(--bg) 0%, var(--bg) 100%);
     }
-    canvas{ position:fixed; inset:0; pointer-events:none; z-index:1; } /* キャンバスは最背面+1 */
+    canvas{ position:fixed; inset:0; pointer-events:none; z-index:1; } /* キャンバスは背景の上、コンテンツの下 */
 
     /* ===== NAVBAR ===== */
     nav{
-      position:fixed; top:0; left:0; right:0; z-index:10; /* コンテンツ前面に */
+      position:fixed; top:0; left:0; right:0; z-index:10; /* コンテンツ前面 */
       backdrop-filter: blur(12px);
       background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.10)), var(--glass);
       border-bottom:1px solid var(--border);
@@ -352,7 +361,6 @@
       p.setup=()=>{
         const h=Math.max(document.body.scrollHeight,document.documentElement.scrollHeight);
         const cnv=p.createCanvas(p.windowWidth,h); cnv.position(0,0);
-        // p.pixelDensity(1); // 必要ならレンダ負荷軽減
         generateTriangleGrid(); pickStartGoalFixed();
         for(let i=0;i<walkerCount;i++) walkers.push(new Walker());
         manualWalker=new ManualWalker(startPoint);
@@ -412,7 +420,7 @@
         // GOAL
         const pulse=22+6*Math.sin(p.frameCount*0.07);
         p.noFill(); p.stroke(100,170,255,230); p.ellipse(goalPoint.x,goalPoint.y,pulse);
-        p.noStroke(); p.fill(150,200,255); p.text("GOAL",goalPoint.x+12,goalPoint.y-10);  // ← 素直に
+        p.noStroke(); p.fill(150,200,255); p.text("GOAL",goalPoint.x+12,goalPoint.y-10);
       }
       function checkCollision(){
         const mp=manualWalker.getPosition();
@@ -445,27 +453,71 @@
 
       function setupFlickControls(){
         let startX=0,startY=0,endX=0,endY=0;
+        let dragging=false, mouseDown=false;
         const threshold=40;
+        const blockThreshold=12; // ← この距離を超えたらスクロールを止める
         const getAngle=(dx,dy)=>{let ang=Math.atan2(-dy,dx)*180/Math.PI;if(ang<0)ang+=360;return ang;};
 
-        window.addEventListener("touchstart",e=>{const t=e.touches[0];startX=t.clientX;startY=t.clientY;},{passive:true});
-        window.addEventListener("touchend",e=>{
-          const t=e.changedTouches[0];endX=t.clientX;endY=t.clientY;
-          const dx=endX-startX,dy=endY-startY;
-          if(Math.hypot(dx,dy)<threshold)return;
-          const ang=getAngle(dx,dy);const snapped=Math.round(ang/60)*60%360;
-          manualWalker.stepByAim(snapped);
+        // --- Touch ---
+        window.addEventListener("touchstart",e=>{
+          const t=e.touches[0]; startX=t.clientX; startY=t.clientY; dragging=false;
         },{passive:true});
 
-        let mouseDown=false;
-        window.addEventListener("mousedown",e=>{mouseDown=true;startX=e.clientX;startY=e.clientY;});
+        window.addEventListener("touchmove",e=>{
+          const t=e.touches[0]; const dx=t.clientX-startX, dy=t.clientY-startY;
+          if(!dragging && Math.hypot(dx,dy)>=blockThreshold){
+            dragging=true;
+            document.body.classList.add('dragging');
+          }
+          if(dragging){
+            // ここでページスクロール等を抑止
+            e.preventDefault();
+          }
+        },{passive:false}); // ← 重要：passive:false
+
+        window.addEventListener("touchend",e=>{
+          const t=e.changedTouches[0]; endX=t.clientX; endY=t.clientY;
+          const dx=endX-startX, dy=endY-startY;
+          if(Math.hypot(dx,dy)>=threshold){
+            const ang=getAngle(dx,dy); const snapped=Math.round(ang/60)*60%360;
+            manualWalker.stepByAim(snapped);
+          }
+          dragging=false;
+          document.body.classList.remove('dragging');
+        });
+
+        // --- Mouse ---
+        window.addEventListener("mousedown",e=>{
+          mouseDown=true; startX=e.clientX; startY=e.clientY; dragging=false;
+        });
+        window.addEventListener("mousemove",e=>{
+          if(!mouseDown) return;
+          const dx=e.clientX-startX, dy=e.clientY-startY;
+          if(!dragging && Math.hypot(dx,dy)>=blockThreshold){
+            dragging=true;
+            document.body.classList.add('dragging');
+          }
+          if(dragging){
+            // テキスト選択・ドラッグスクロールを抑止
+            e.preventDefault();
+          }
+        });
         window.addEventListener("mouseup",e=>{
-          if(!mouseDown)return;mouseDown=false;
-          endX=e.clientX;endY=e.clientY;
-          const dx=endX-startX,dy=endY-startY;
-          if(Math.hypot(dx,dy)<threshold)return;
-          const ang=getAngle(dx,dy);const snapped=Math.round(ang/60)*60%360;
-          manualWalker.stepByAim(snapped);
+          if(!mouseDown) return; mouseDown=false;
+          endX=e.clientX; endY=e.clientY;
+          const dx=endX-startX, dy=endY-startY;
+          if(Math.hypot(dx,dy)>=threshold){
+            const ang=getAngle(dx,dy); const snapped=Math.round(ang/60)*60%360;
+            manualWalker.stepByAim(snapped);
+          }
+          dragging=false;
+          document.body.classList.remove('dragging');
+        });
+
+        // 画面外へ出たケースの後始末
+        window.addEventListener("mouseleave",()=>{
+          mouseDown=false; dragging=false;
+          document.body.classList.remove('dragging');
         });
       }
     });
