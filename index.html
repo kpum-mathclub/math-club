@@ -5,9 +5,7 @@
   <title>京都府立医科大学数学研究部 | Math Club</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
   <style>
-    html, body {
-      margin:0; padding:0; font-family:sans-serif; background:#fff; overflow:hidden;
-    }
+    html, body { margin:0; padding:0; background:#fff; overflow:hidden; font-family:sans-serif; }
     nav {
       position:fixed; top:0; left:0; width:100%;
       background:#111; color:#fff; padding:12px 24px; z-index:999;
@@ -31,16 +29,51 @@
   </div>
 
   <script>
-  new p5(p => {
-    const sideLength = 60;
-    const walkerCount = 300;
-    const SAFE_RADIUS = 20;
+  new p5(p=>{
+    const sideLength=60, walkerCount=300, SAFE_RADIUS=20;
     let triangles=[], points=[], adjacency=new Map(), walkers=[];
     let startPoint=null, goalPoint=null, manualWalker;
     let gameOver=false, gameClear=false;
+    let trails=[]; // ← 軌跡リスト
+    let waveAnim=null; // ← CLEAR用光波
 
-    // --- Manual walker ---
-    class ManualWalker {
+    // --- Trail（軌跡オブジェクト） ---
+    class Trail {
+      constructor(x,y){
+        this.x=x; this.y=y;
+        this.life=255; // フェード時間
+      }
+      update(){ this.life-=4; }
+      isAlive(){ return this.life>0; }
+      display(){
+        p.noStroke();
+        p.fill(0,255,100,this.life*0.4);
+        p.ellipse(this.x,this.y,8);
+      }
+    }
+
+    // --- CLEAR Wave（波紋アニメーション） ---
+    class Wave {
+      constructor(x,y){
+        this.x=x; this.y=y;
+        this.radius=0;
+        this.life=255;
+      }
+      update(){
+        this.radius+=12;
+        this.life-=4;
+      }
+      isAlive(){ return this.life>0; }
+      display(){
+        p.noFill();
+        p.stroke(0,180,255,this.life);
+        p.strokeWeight(2);
+        p.ellipse(this.x,this.y,this.radius*2);
+      }
+    }
+
+    // --- Manual Walker ---
+    class ManualWalker{
       constructor(v){ this.current=v; this.next=null; this.t=0; }
       isMoving(){ return !!this.next; }
       stepByAim(a){
@@ -60,29 +93,35 @@
         if(this.next){
           this.t+=0.08;
           if(this.t>=1){
-            this.current=this.next; this.next=null; this.t=0;
+            this.current=this.next;
+            this.next=null;
+            this.t=0;
+            // 軌跡追加
+            trails.push(new Trail(this.current.x,this.current.y));
+            // GOAL判定
             if(goalPoint && this.current.x===goalPoint.x && this.current.y===goalPoint.y){
-              gameClear=true; p.noLoop();
+              gameClear=true;
+              waveAnim=new Wave(goalPoint.x,goalPoint.y);
             }
           }
         }
       }
       getPosition(){
         if(this.next)
-          return p.createVector(p.lerp(this.current.x,this.next.x,this.t), p.lerp(this.current.y,this.next.y,this.t));
+          return p.createVector(p.lerp(this.current.x,this.next.x,this.t),p.lerp(this.current.y,this.next.y,this.t));
         return this.current.copy();
       }
       display(){
         const pos=this.getPosition();
-        p.noStroke(); p.fill(0,255,0,60); p.ellipse(pos.x,pos.y,24);
+        p.noStroke(); p.fill(0,255,0,80); p.ellipse(pos.x,pos.y,24);
         p.fill(0,180,0); p.ellipse(pos.x,pos.y,8);
       }
     }
 
-    // --- Automatic walkers ---
+    // --- Auto walkers ---
     class Walker{
       constructor(){
-        let pt; do{ pt=p.random(points);} while(insideAnySafety(pt));
+        let pt; do{ pt=p.random(points);}while(insideAnySafety(pt));
         this.current=pt; this.next=this.chooseNext(pt); this.t=0;
         this.baseSpeed=p.random(0.003,0.008); this.phase=p.random(p.TWO_PI);
       }
@@ -96,7 +135,7 @@
         return next;
       }
       update(){ this.t+=this.baseSpeed; if(this.t>=1){ this.current=this.next; this.next=this.chooseNext(this.current); this.t=0; } }
-      getPosition(){ return {x:p.lerp(this.current.x,this.next.x,this.t), y:p.lerp(this.current.y,this.next.y,this.t)}; }
+      getPosition(){ return{x:p.lerp(this.current.x,this.next.x,this.t),y:p.lerp(this.current.y,this.next.y,this.t)}; }
       display(){
         const pos=this.getPosition();
         const size=6+p.sin(p.frameCount*0.05+this.phase)*2;
@@ -110,7 +149,7 @@
       const h=Math.max(document.body.scrollHeight,document.documentElement.scrollHeight);
       const cnv=p.createCanvas(p.windowWidth,h); cnv.position(0,0);
       generateTriangleGrid(); pickStartGoalFixed();
-      walkers=[]; for(let i=0;i<walkerCount;i++) walkers.push(new Walker());
+      for(let i=0;i<walkerCount;i++) walkers.push(new Walker());
       manualWalker=new ManualWalker(startPoint);
       setupFlickControls();
     };
@@ -122,18 +161,33 @@
 
       drawStartGoal();
       for(const w of walkers){ w.update(); w.display(); }
-      manualWalker.update(); manualWalker.display();
+
+      // --- Trail update ---
+      trails.forEach(t=>t.update());
+      trails=trails.filter(t=>t.isAlive());
+      trails.forEach(t=>t.display());
+
+      manualWalker.update();
+      manualWalker.display();
 
       if(!gameOver&&!gameClear&&checkCollision()){
         gameOver=true; drawBanner("GAME OVER","#ff2d2d"); p.noLoop(); return;
       }
-      if(gameClear){ drawBanner("CLEAR!","#00b86b"); }
+
+      if(gameClear && waveAnim){
+        waveAnim.update();
+        waveAnim.display();
+        if(!waveAnim.isAlive()){
+          drawBanner("CLEAR!","#00b86b");
+        }
+      }
     };
 
     function pickStartGoalFixed(){
       startPoint=nearestVertex(60,250);
       goalPoint=nearestVertex(p.width-300,p.height-300);
     }
+
     function nearestVertex(x,y){ let best=null,bestD=1e9; for(const pt of points){ const d=p.dist(x,y,pt.x,pt.y); if(d<bestD){bestD=d;best=pt;} } return best; }
     function insideAnySafety(pt){ return (p.dist(pt.x,pt.y,startPoint.x,startPoint.y)<=SAFE_RADIUS)||(p.dist(pt.x,pt.y,goalPoint.x,goalPoint.y)<=SAFE_RADIUS); }
     function drawStartGoal(){
@@ -163,41 +217,35 @@
     }
     function registerEdge(a,b){
       const ka=a.x+","+a.y,kb=b.x+","+b.y;
-      if(!adjacency.has(ka)) adjacency.set(ka,{vec:a,neighbors:[]});
-      if(!adjacency.has(kb)) adjacency.set(kb,{vec:b,neighbors:[]});
+      if(!adjacency.has(ka))adjacency.set(ka,{vec:a,neighbors:[]});
+      if(!adjacency.has(kb))adjacency.set(kb,{vec:b,neighbors:[]});
       const A=adjacency.get(ka).neighbors,B=adjacency.get(kb).neighbors;
       if(!A.some(n=>n.x===b.x&&n.y===b.y))A.push(adjacency.get(kb).vec);
       if(!B.some(n=>n.x===a.x&&n.y===a.y))B.push(adjacency.get(ka).vec);
     }
 
-    // --- フリック操作 ---
     function setupFlickControls(){
       let startX=0,startY=0,endX=0,endY=0;
-      const threshold=40; // 最低移動距離
-      const getAngle=(dx,dy)=>{ let ang=Math.atan2(-dy,dx)*180/Math.PI; if(ang<0)ang+=360; return ang; };
+      const threshold=40;
+      const getAngle=(dx,dy)=>{let ang=Math.atan2(-dy,dx)*180/Math.PI;if(ang<0)ang+=360;return ang;};
 
-      window.addEventListener("touchstart",e=>{
-        const t=e.touches[0]; startX=t.clientX; startY=t.clientY;
-      },{passive:true});
+      window.addEventListener("touchstart",e=>{const t=e.touches[0];startX=t.clientX;startY=t.clientY;},{passive:true});
       window.addEventListener("touchend",e=>{
-        const t=e.changedTouches[0]; endX=t.clientX; endY=t.clientY;
-        const dx=endX-startX, dy=endY-startY;
+        const t=e.changedTouches[0];endX=t.clientX;endY=t.clientY;
+        const dx=endX-startX,dy=endY-startY;
         if(Math.hypot(dx,dy)<threshold)return;
-        const ang=getAngle(dx,dy);
-        const snapped=Math.round(ang/60)*60 % 360; // 6方向にスナップ
+        const ang=getAngle(dx,dy);const snapped=Math.round(ang/60)*60%360;
         manualWalker.stepByAim(snapped);
       },{passive:true});
 
-      // PC用マウス対応
       let mouseDown=false;
       window.addEventListener("mousedown",e=>{mouseDown=true;startX=e.clientX;startY=e.clientY;});
       window.addEventListener("mouseup",e=>{
-        if(!mouseDown)return; mouseDown=false;
-        endX=e.clientX; endY=e.clientY;
-        const dx=endX-startX, dy=endY-startY;
+        if(!mouseDown)return;mouseDown=false;
+        endX=e.clientX;endY=e.clientY;
+        const dx=endX-startX,dy=endY-startY;
         if(Math.hypot(dx,dy)<threshold)return;
-        const ang=getAngle(dx,dy);
-        const snapped=Math.round(ang/60)*60 % 360;
+        const ang=getAngle(dx,dy);const snapped=Math.round(ang/60)*60%360;
         manualWalker.stepByAim(snapped);
       });
     }
