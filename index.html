@@ -134,6 +134,33 @@
       color:#fff; font-weight:700; cursor:pointer; box-shadow: var(--shadow); letter-spacing:.02em;
     }
 
+    /* GAME OVER OVERLAY */
+    .gameover-overlay{
+      position:fixed; inset:0; z-index:35; display:none; align-items:center; justify-content:center;
+      backdrop-filter: blur(10px);
+      background: rgba(0,0,0,.25);
+    }
+    .gameover-card{
+      background: var(--glass);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:20px;
+      box-shadow: var(--shadow);
+      min-width:240px;
+      display:flex; flex-direction:column; gap:14px; align-items:center;
+    }
+    .gameover-title{ font-weight:800; font-size:20px; letter-spacing:.05em; }
+    .btn-row{ display:flex; gap:10px; }
+    .btn{ padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:700; }
+    .btn.primary{
+      background:linear-gradient(135deg, var(--accent), var(--accent-2));
+      color:#fff; border:1px solid var(--border); box-shadow: var(--shadow);
+    }
+    .btn.ghost{
+      background:var(--glass); color:var(--fg);
+      border:1px solid var(--border);
+    }
+
     /* GAME-ONLY: UIだけ隠す（キャンバスは常時表示） */
     body.game-only #ui-layer { display:none !important; }
     body.game-only { overflow:hidden; }
@@ -149,6 +176,17 @@
   <!-- START Overlay（初回のみ表示） -->
   <div id="start-overlay" class="start-overlay">
     <button id="startBtn" class="start-btn">GAME START</button>
+  </div>
+
+  <!-- GAME OVER Overlay -->
+  <div id="gameover-overlay" class="gameover-overlay" aria-modal="true">
+    <div class="gameover-card">
+      <div class="gameover-title">Game Over</div>
+      <div class="btn-row">
+        <button id="retryBtn" class="btn primary">Retry</button>
+        <button id="skipBtn" class="btn ghost">Skip</button>
+      </div>
+    </div>
   </div>
 
   <!-- UIレイヤー（ゲーム開始で消す） -->
@@ -202,13 +240,25 @@
       <span>画面をフリック / ドラッグで操作し、Greenの点をGoalに導こう。</span>
     </div>
 
-    <!-- ★ ホームに戻ったら出る「Play Again」 -->
+    <!-- ホームに戻ったら出る「Play Again」 -->
     <button id="playAgainBtn" class="play-again-btn">Play Again</button>
   </div>
 
   <script>
-    // キャンバス内テキスト（CLEAR/START/GOAL）を消すフラグ
-    window.hideCanvasText = false;
+    // ====== グローバル状態 ======
+    window.hideCanvasText = false;           // キャンバス上のテキスト表示制御
+    window.__appState = 'home';              // 'home' | 'game'
+    // （p5から呼ぶ）ホームへ戻すアクション（CLEAR/Skip用）
+    function switchToHomeUI(){
+      document.body.classList.remove('game-only');
+      window.__appState = 'home';
+      window.hideCanvasText = false;
+      document.getElementById('start-overlay').style.display = 'none'; // 初回以降は出さない
+      document.getElementById('gameover-overlay').style.display = 'none';
+      const pa = document.getElementById('playAgainBtn');
+      pa.style.display = 'inline-flex';
+      window.dispatchEvent(new Event('resize'));
+    }
 
     // テーマ切替
     (function(){
@@ -222,53 +272,45 @@
       }
     })();
 
-    // 共通：ゲーム開始関数（START & Play Again で使う）
+    // 共通：ゲーム開始関数（START & Play Again & Retryで使用）
     function startGame(){
       document.body.classList.add('game-only');
+      window.__appState = 'game';
       window.hideCanvasText = true;
-      const pa = document.getElementById('playAgainBtn');
-      pa.style.display = 'none';              // ホームのPlay Againを隠す
+      document.getElementById('playAgainBtn').style.display = 'none';
+      document.getElementById('gameover-overlay').style.display = 'none';
       if (window.__game && typeof window.__game.loop === 'function') window.__game.loop();
+      if (window.__resetGame) window.__resetGame();     // ★毎回クリーンに開始
       if (window.__ensureGameAlive) window.__ensureGameAlive();
       window.dispatchEvent(new Event('resize'));
     }
 
-    // CLEAR後：UI復帰＋ホームのPlay Again ボタン表示（オーバーレイは出さない）
+    // CLEAR後（p5側から呼ばれる）
     window.__onGameClear = ()=>{
-      setTimeout(()=>{
-        document.body.classList.remove('game-only'); // UI復帰
-        window.hideCanvasText = false;               // キャンバステキストも復帰（ホームなので表示OK）
-        document.getElementById('start-overlay').style.display = 'none'; // ★二度とオーバーレイは表示しない
-        const pa = document.getElementById('playAgainBtn');
-        pa.style.display = 'inline-flex';            // ★ホーム右下にPlay Againを出す
-        if (window.__game && typeof window.__game.noLoop==='function') window.__game.noLoop(); // 省電力
-        window.dispatchEvent(new Event('resize'));
-      }, 200); // 波紋の余韻（短め）
+      // 波紋の余韻はp5側が管理。ここでは即ホーム化（少しだけdelayしてもOK）
+      switchToHomeUI(); // ★ホームに戻る（アンビエントモードで背景は動き続ける）
     };
 
     // STARTオーバーレイ（初回のみ）
     (function(){
       const btn = document.getElementById('startBtn');
       const overlay = document.getElementById('start-overlay');
-      btn.addEventListener('click', ()=>{
-        overlay.style.display = 'none'; // 初回オーバーレイ消す
-        startGame();
-      });
+      btn.addEventListener('click', ()=>{ overlay.style.display='none'; startGame(); });
 
-      // EscでUI復帰（デバッグ用途）。オーバーレイは出さない / Play Againは出す
+      // EscでUI復帰（デバッグ用）。Play Againは出す
       window.addEventListener('keydown', (e)=>{
         if(e.key === 'Escape'){
-          document.body.classList.remove('game-only');
-          window.hideCanvasText = false;
-          document.getElementById('start-overlay').style.display = 'none';
-          document.getElementById('playAgainBtn').style.display = 'inline-flex';
-          if (window.__game && typeof window.__game.noLoop==='function') window.__game.noLoop();
-          window.dispatchEvent(new Event('resize'));
+          switchToHomeUI();
+          if (window.__game && typeof window.__game.noLoop==='function') window.__game.noLoop(); // 省電力したいならON
         }
       });
 
-      // Play Again ボタン
+      // Play Again
       document.getElementById('playAgainBtn').addEventListener('click', startGame);
+
+      // GAME OVER Overlay buttons
+      document.getElementById('retryBtn').addEventListener('click', startGame);
+      document.getElementById('skipBtn').addEventListener('click', switchToHomeUI);
     })();
 
     // ===== p5.js スケッチ =====
@@ -276,8 +318,8 @@
       const sketch = (p)=>{
         const sideLength=60, walkerCount=300, SAFE_RADIUS=20;
         let triangles=[], points=[], adjacency=new Map(), walkers=[];
-        let startPoint=null, goalPoint=null, manualWalker;
-        let gameOver=false, gameClear=false, clearHandled=false;
+        let startPoint=null, goalPoint=null, manualWalker=null;
+        let gameOver=false, gameClear=false, clearHandled=false, gameOverShown=false;
         let trails=[]; let waveAnim=null;
 
         const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
@@ -363,6 +405,7 @@
           }
         }
 
+        /* ===== ユーティリティ ===== */
         function generateTriangleGrid(){
           const h=sideLength*Math.sqrt(3)/2; triangles=[]; adjacency.clear();
           for(let y=0;y<p.height+h;y+=h){
@@ -385,8 +428,14 @@
           if(!B.some(n=>n.x===a.x&&n.y===a.y))B.push(adjacency.get(ka).vec);
         }
         function nearestVertex(x,y){ let best=null,bestD=1e9; for(const pt of points){ const d=p.dist(x,y,pt.x,pt.y); if(d<bestD){bestD=d;best=pt;} } return best; }
-        function pickStartGoalFixed(){ startPoint=nearestVertex(60, Math.min(250,p.height-50)); goalPoint=nearestVertex(Math.max(60,p.width-300), Math.max(60,p.height-300)); }
-        function insideAnySafety(pt){ return (p.dist(pt.x,pt.y,startPoint.x,startPoint.y)<=SAFE_RADIUS)||(p.dist(pt.x,pt.y,goalPoint.x,goalPoint.y)<=SAFE_RADIUS); }
+        function pickStartGoalFixed(){
+          startPoint=nearestVertex(60, Math.min(250,p.height-50));
+          goalPoint =nearestVertex(Math.max(60,p.width-300), Math.max(60,p.height-300));
+        }
+        function insideAnySafety(pt){
+          return (p.dist(pt.x,pt.y,startPoint.x,startPoint.y)<=SAFE_RADIUS) ||
+                 (p.dist(pt.x,pt.y,goalPoint.x,goalPoint.y)<=SAFE_RADIUS);
+        }
         function drawStartGoal(){
           p.stroke(0,220,120,220); p.noFill(); p.ellipse(startPoint.x,startPoint.y,18);
           if(!window.hideCanvasText){ p.noStroke(); p.fill(140,255,200); p.text("START",startPoint.x+12,startPoint.y-10); }
@@ -396,7 +445,10 @@
         }
         function checkCollision(){
           const mp=manualWalker.getPosition();
-          for(const w of walkers){ const pos=w.getPosition(); if(p.dist(mp.x,mp.y,pos.x,pos.y)<12)return true; }
+          for(const w of walkers){
+            const pos=w.getPosition();
+            if(p.dist(mp.x,mp.y,pos.x,pos.y)<12) return true;
+          }
           return false;
         }
         function drawBanner(txt,c){ if(window.hideCanvasText) return; p.textAlign(p.CENTER,p.CENTER); p.textSize(64); p.fill(c); p.text(txt,p.width/2,p.height/2); }
@@ -406,16 +458,25 @@
           walkers.length=0;
           for(let i=0;i<walkerCount;i++) walkers.push(new Walker());
           manualWalker=new ManualWalker(startPoint);
-          gameOver=false; gameClear=false; clearHandled=false;
+          gameOver=false; gameClear=false; clearHandled=false; gameOverShown=false;
           trails=[]; waveAnim=null;
         }
 
+        /* ===== 外部操作API ===== */
+        window.__resetGame = ()=>{ rebuildAll(); window.__appState='game'; };
         window.__ensureGameAlive = ()=>{
           if (!triangles.length || !points.length || !walkers.length || !startPoint || !goalPoint){
             rebuildAll();
           }
         };
+        window.__switchToHomeAmbient = ()=>{
+          // 余計な演出を切ってホーム用の「背景だけ動く」状態へ
+          gameOver=false; gameClear=false; clearHandled=false; gameOverShown=false;
+          trails=[]; waveAnim=null;
+          window.__appState='home';
+        };
 
+        /* ===== p5 lifecycle ===== */
         p.setup=()=>{
           const cnv=p.createCanvas(window.innerWidth, window.innerHeight);
           cnv.parent('game-layer');
@@ -430,35 +491,59 @@
         };
 
         p.draw=()=>{
+          const isHome = (window.__appState === 'home');
+
           p.clear();
+          // 三角タイル
           p.noFill(); p.strokeWeight(1);
           if (isDark()) { p.stroke(255,28); } else { p.stroke(0,40); }
           for(const t of triangles){ p.beginShape(); for(const pt of t) p.vertex(pt.x, pt.y); p.endShape(p.CLOSE); }
 
-          if(startPoint && goalPoint) drawStartGoal();
-
+          // ホームでは“背景だけ”＝オートウォーカーのみ動かす
           for(const w of walkers){ w.update(); w.display(); }
 
-          for(const t of trails) t.update();
-          trails=trails.filter(t=>t.isAlive());
-          for(const t of trails) t.display();
+          if (!isHome){
+            // ==== GAMEモードのみ ====
+            drawStartGoal();
 
-          if (manualWalker){ manualWalker.update(); manualWalker.display(); }
+            // Trails
+            for(const t of trails) t.update();
+            trails=trails.filter(t=>t.isAlive());
+            for(const t of trails) t.display();
 
-          if(!gameOver&&!gameClear&&checkCollision()){
-            gameOver=true; drawBanner("GAME OVER","#ff2d2d"); p.noLoop(); return;
-          }
-          if(gameClear){
-            if(waveAnim){ 
-              waveAnim.update(); waveAnim.display();
-              if(!waveAnim.isAlive() && !clearHandled){
-                clearHandled = true;
-                if (typeof window.__onGameClear === 'function') window.__onGameClear(); // ← ホームへ戻す
+            // Manual walker
+            if (manualWalker){ manualWalker.update(); manualWalker.display(); }
+
+            // Game Over 検知
+            if(!gameOver && !gameClear && checkCollision()){
+              gameOver = true;
+              // オーバーレイを出す（ループは止めない）
+              if (!gameOverShown){
+                const ov = document.getElementById('gameover-overlay');
+                ov.style.display = 'flex';
+                gameOverShown = true;
               }
             }
+
+            // Game Clear 処理
+            if(gameClear){
+              if(waveAnim){
+                waveAnim.update(); waveAnim.display();
+                if(!waveAnim.isAlive() && !clearHandled){
+                  clearHandled = true;
+                  // ← ホームへ戻す（アンビエントに切替）
+                  window.__switchToHomeAmbient();
+                  if (typeof window.__onGameClear === 'function') window.__onGameClear();
+                }
+              }
+            }
+          }else{
+            // ==== HOMEモード（アンビエント） ====
+            // 何も描かない（Start/Goal/Trail/Manualを抑制）。オートウォーカーのみが背景で動く。
           }
         };
 
+        /* ===== 操作（スワイプ/ドラッグ） ===== */
         function setupFlickControls(){
           let startX=0,startY=0,endX=0,endY=0;
           let dragging=false, mouseDown=false;
@@ -468,30 +553,41 @@
           // Touch
           window.addEventListener("touchstart",e=>{ const t=e.touches[0]; startX=t.clientX; startY=t.clientY; dragging=false; },{passive:true});
           window.addEventListener("touchmove",e=>{
+            if(window.__appState!=='game') return; // ホームでは操作無効
             const t=e.touches[0]; const dx=t.clientX-startX, dy=t.clientY-startY;
             if(!dragging && Math.hypot(dx,dy)>=blockThreshold){ dragging=true; document.body.classList.add('dragging'); }
             if(dragging){ e.preventDefault(); }
           },{passive:false});
           window.addEventListener("touchend",e=>{
+            if(window.__appState!=='game') return;
             const t=e.changedTouches[0]; endX=t.clientX; endY=t.clientY;
             const dx=endX-startX, dy=endY-startY;
-            if(Math.hypot(dx,dy)>=threshold){ const ang=getAngle(dx,dy); const snapped=Math.round(ang/60)*60%360; manualWalker.stepByAim(snapped); }
+            if(Math.hypot(dx,dy)>=threshold){
+              const ang=getAngle(dx,dy); const snapped=Math.round(ang/60)*60%360; manualWalker.stepByAim(snapped);
+            }
             dragging=false; document.body.classList.remove('dragging');
           });
 
           // Mouse
-          window.addEventListener("mousedown",e=>{ mouseDown=true; startX=e.clientX; startY=e.clientY; dragging=false; });
+          window.addEventListener("mousedown",e=>{
+            if(window.__appState!=='game') return;
+            mouseDown=true; startX=e.clientX; startY=e.clientY; dragging=false;
+          });
           window.addEventListener("mousemove",e=>{
+            if(window.__appState!=='game') return;
             if(!mouseDown) return;
             const dx=e.clientX-startX, dy=e.clientY-startY;
             if(!dragging && Math.hypot(dx,dy)>=blockThreshold){ dragging=true; document.body.classList.add('dragging'); }
             if(dragging){ e.preventDefault(); }
           });
           window.addEventListener("mouseup",e=>{
+            if(window.__appState!=='game') return;
             if(!mouseDown) return; mouseDown=false;
             endX=e.clientX; endY=e.clientY;
             const dx=endX-startX, dy=endY-startY;
-            if(Math.hypot(dx,dy)>=threshold){ const ang=getAngle(dx,dy); const snapped=Math.round(ang/60)*60%360; manualWalker.stepByAim(snapped); }
+            if(Math.hypot(dx,dy)>=threshold){
+              const ang=getAngle(dx,dy); const snapped=Math.round(ang/60)*60%360; manualWalker.stepByAim(snapped);
+            }
             dragging=false; document.body.classList.remove('dragging');
           });
           window.addEventListener("mouseleave",()=>{ mouseDown=false; dragging=false; document.body.classList.remove('dragging'); });
