@@ -30,29 +30,26 @@
 
   <script>
   new p5(p=>{
+    // ===== 基本設定 =====
     const sideLength=60, walkerCount=300, SAFE_RADIUS=20;
     let triangles=[], points=[], adjacency=new Map(), walkers=[];
     let startPoint=null, goalPoint=null, manualWalker;
     let gameOver=false, gameClear=false;
     let waveAnim=null;
 
-    // === Clear Wave ===
+    // ===== CLEAR波紋 =====
     class Wave {
       constructor(x,y){ this.x=x; this.y=y; this.radius=0; this.life=255; }
       update(){ this.radius+=12; this.life-=4; }
       isAlive(){ return this.life>0; }
-      display(){
-        p.noFill(); p.stroke(0,180,255,this.life); p.strokeWeight(2);
-        p.ellipse(this.x,this.y,this.radius*2);
-      }
+      display(){ p.noFill(); p.stroke(0,180,255,this.life); p.strokeWeight(2); p.ellipse(this.x,this.y,this.radius*2); }
     }
 
-    // === Manual Walker ===
+    // ===== 手動Walker（細い一本線のトレイル） =====
     class ManualWalker{
       constructor(v){
         this.current=v; this.next=null; this.t=0;
-        this.trail=[];       // ← comet tail points
-        this.maxTrail=30;    // ← 尾の長さ
+        this.trail=[]; this.maxTrail=40; // 尾の長さ
       }
       isMoving(){ return !!this.next; }
       stepByAim(a){
@@ -69,49 +66,44 @@
         if(best){ this.next=best; this.t=0; }
       }
       update(){
-        // move
         if(this.next){
           this.t+=0.08;
           if(this.t>=1){
-            this.current=this.next;
-            this.next=null;
-            this.t=0;
+            this.current=this.next; this.next=null; this.t=0;
             if(goalPoint && this.current.x===goalPoint.x && this.current.y===goalPoint.y){
-              gameClear=true;
-              waveAnim=new Wave(goalPoint.x,goalPoint.y);
+              gameClear=true; waveAnim=new Wave(goalPoint.x,goalPoint.y);
             }
           }
         }
-        // add current position to trail
+        // トレイル更新（細い一本線）
         const pos=this.getPosition();
         this.trail.push({x:pos.x,y:pos.y});
-        if(this.trail.length>this.maxTrail)this.trail.shift();
+        if(this.trail.length>this.maxTrail) this.trail.shift();
       }
       getPosition(){
-        if(this.next)
-          return p.createVector(p.lerp(this.current.x,this.next.x,this.t),p.lerp(this.current.y,this.next.y,this.t));
+        if(this.next) return p.createVector(p.lerp(this.current.x,this.next.x,this.t), p.lerp(this.current.y,this.next.y,this.t));
         return this.current.copy();
       }
       display(){
-        // --- comet tail ---
+        // --- 細いトレイル（外側の太らせ層ナシ）---
         if(this.trail.length>1){
           for(let i=0;i<this.trail.length-1;i++){
             const a=this.trail[i], b=this.trail[i+1];
-            const alpha=p.map(i,0,this.trail.length-1,40,180);
-            const w=p.map(i,0,this.trail.length-1,1,6);
-            p.stroke(0,255,120,alpha);
+            const alpha=p.map(i,0,this.trail.length-1,20,100);   // 薄め
+            const w=p.map(i,0,this.trail.length-1,0.5,2.5);      // 細い最大2.5px
+            p.stroke(100,255,180,alpha);
             p.strokeWeight(w);
             p.line(a.x,a.y,b.x,b.y);
           }
         }
-        // --- head ---
+        // --- 先端（ヘッド）も控えめに ---
         const pos=this.getPosition();
-        p.noStroke(); p.fill(0,255,0); p.ellipse(pos.x,pos.y,10);
-        p.fill(0,255,120,60); p.ellipse(pos.x,pos.y,20);
+        p.noStroke(); p.fill(100,255,180,80); p.ellipse(pos.x,pos.y,14);
+        p.fill(80,255,160); p.ellipse(pos.x,pos.y,6);
       }
     }
 
-    // === Auto walkers ===
+    // ===== 自動Walker（黒点） =====
     class Walker{
       constructor(){
         let pt; do{ pt=p.random(points);}while(insideAnySafety(pt));
@@ -123,21 +115,21 @@
         let opt=adjacency.get(key)?.neighbors||[];
         opt=opt.filter(n=>!insideAnySafety(n));
         if(!opt.length)return cur;
-        let next;
-        do{ next=p.random(opt);}while(next.x===cur.x&&next.y===cur.y&&opt.length>1);
+        let next; do{ next=p.random(opt);}while(next.x===cur.x&&next.y===cur.y&&opt.length>1);
         return next;
       }
       update(){ this.t+=this.baseSpeed; if(this.t>=1){ this.current=this.next; this.next=this.chooseNext(this.current); this.t=0; } }
-      getPosition(){ return{x:p.lerp(this.current.x,this.next.x,this.t),y:p.lerp(this.current.y,this.next.y,this.t)}; }
+      getPosition(){ return {x:p.lerp(this.current.x,this.next.x,this.t), y:p.lerp(this.current.y,this.next.y,this.t)}; }
       display(){
         const pos=this.getPosition();
-        const size=6+p.sin(p.frameCount*0.05+this.phase)*2;
-        const glow=20+10*p.sin(p.frameCount*0.08+this.phase);
-        p.noStroke(); p.fill(0,0,0,25); p.ellipse(pos.x,pos.y,size+glow);
+        const size=5+p.sin(p.frameCount*0.05+this.phase)*1.5;
+        const glow=16+8*p.sin(p.frameCount*0.08+this.phase);
+        p.noStroke(); p.fill(0,0,0,20); p.ellipse(pos.x,pos.y,size+glow);
         p.fill(0); p.ellipse(pos.x,pos.y,size);
       }
     }
 
+    // ===== p5: setup / draw =====
     p.setup=()=>{
       const h=Math.max(document.body.scrollHeight,document.documentElement.scrollHeight);
       const cnv=p.createCanvas(p.windowWidth,h); cnv.position(0,0);
@@ -149,87 +141,117 @@
 
     p.draw=()=>{
       p.background(255);
-      p.noFill(); p.stroke(0,40);
+      // タイル
+      p.noFill(); p.stroke(0,35);
       for(const t of triangles){ p.beginShape(); for(const pt of t)p.vertex(pt.x,pt.y); p.endShape(p.CLOSE); }
 
+      // START/GOAL
       drawStartGoal();
+
+      // 黒点
       for(const w of walkers){ w.update(); w.display(); }
 
+      // 緑点（細いトレイル）
       manualWalker.update();
       manualWalker.display();
 
+      // 当たり判定
       if(!gameOver&&!gameClear&&checkCollision()){
         gameOver=true; drawBanner("GAME OVER","#ff2d2d"); p.noLoop(); return;
       }
 
+      // CLEAR 波紋
       if(gameClear && waveAnim){
         waveAnim.update(); waveAnim.display();
         if(!waveAnim.isAlive()){ drawBanner("CLEAR!","#00b86b"); }
       }
     };
 
+    // ===== START/GOAL配置 & 表示 =====
     function pickStartGoalFixed(){
+      // STARTを少し下げ気味
       startPoint=nearestVertex(60,250);
+      // 右下エリアの見えやすい位置（D-Pad撤去済みだが控えめに）
       goalPoint=nearestVertex(p.width-300,p.height-300);
     }
-    function nearestVertex(x,y){ let best=null,bestD=1e9; for(const pt of points){ const d=p.dist(x,y,pt.x,pt.y); if(d<bestD){bestD=d;best=pt;} } return best; }
-    function insideAnySafety(pt){ return (p.dist(pt.x,pt.y,startPoint.x,startPoint.y)<=SAFE_RADIUS)||(p.dist(pt.x,pt.y,goalPoint.x,goalPoint.y)<=SAFE_RADIUS); }
+    function nearestVertex(x,y){
+      let best=null,bestD=1e9;
+      for(const pt of points){ const d=p.dist(x,y,pt.x,pt.y); if(d<bestD){bestD=d;best=pt;} }
+      return best;
+    }
+    function insideAnySafety(pt){
+      return (p.dist(pt.x,pt.y,startPoint.x,startPoint.y)<=SAFE_RADIUS) ||
+             (p.dist(pt.x,pt.y,goalPoint.x,goalPoint.y)<=SAFE_RADIUS);
+    }
     function drawStartGoal(){
+      // START
       p.stroke(0,180,0,220); p.noFill(); p.ellipse(startPoint.x,startPoint.y,18);
       p.noStroke(); p.fill(0,180,0); p.text("START",startPoint.x+12,startPoint.y-10);
+      // GOAL（パルス）
       const pulse=22+6*Math.sin(p.frameCount*0.07);
       p.noFill(); p.stroke(0,120,255,220); p.ellipse(goalPoint.x,goalPoint.y,pulse);
       p.noStroke(); p.fill(0,120,255); p.text("GOAL",goalPoint.x+12,goalPoint.y-10);
     }
+
+    // ===== 当たり判定・バナー =====
     function checkCollision(){
       const mp=manualWalker.getPosition();
-      for(const w of walkers){ const pos=w.getPosition(); if(p.dist(mp.x,mp.y,pos.x,pos.y)<12)return true; }
+      for(const w of walkers){ const pos=w.getPosition(); if(p.dist(mp.x,mp.y,pos.x,pos.y)<12) return true; }
       return false;
     }
     function drawBanner(txt,c){ p.textAlign(p.CENTER,p.CENTER); p.textSize(64); p.fill(c); p.text(txt,p.width/2,p.height/2); }
 
+    // ===== グリッド生成 =====
     function generateTriangleGrid(){
       const h=sideLength*Math.sqrt(3)/2; triangles=[]; adjacency.clear();
       for(let y=0;y<p.height+h;y+=h){
         for(let x=0;x<p.width+sideLength;x+=sideLength){
           const xOffset=(Math.floor(y/h)%2)*(sideLength/2);
-          const p1=p.createVector(x+xOffset,y), p2=p.createVector(x+sideLength/2+xOffset,y+h), p3=p.createVector(x-sideLength/2+xOffset,y+h);
-          triangles.push([p1,p2,p3]); registerEdge(p1,p2); registerEdge(p2,p3); registerEdge(p3,p1);
+          const p1=p.createVector(x+xOffset,y),
+                p2=p.createVector(x+sideLength/2+xOffset,y+h),
+                p3=p.createVector(x-sideLength/2+xOffset,y+h);
+          triangles.push([p1,p2,p3]);
+          registerEdge(p1,p2); registerEdge(p2,p3); registerEdge(p3,p1);
         }
       }
       points=Array.from(adjacency.values()).map(o=>o.vec);
     }
     function registerEdge(a,b){
-      const ka=a.x+","+a.y,kb=b.x+","+b.y;
-      if(!adjacency.has(ka))adjacency.set(ka,{vec:a,neighbors:[]});
-      if(!adjacency.has(kb))adjacency.set(kb,{vec:b,neighbors:[]});
-      const A=adjacency.get(ka).neighbors,B=adjacency.get(kb).neighbors;
-      if(!A.some(n=>n.x===b.x&&n.y===b.y))A.push(adjacency.get(kb).vec);
-      if(!B.some(n=>n.x===a.x&&n.y===a.y))B.push(adjacency.get(ka).vec);
+      const ka=a.x+","+a.y, kb=b.x+","+b.y;
+      if(!adjacency.has(ka)) adjacency.set(ka,{vec:a,neighbors:[]});
+      if(!adjacency.has(kb)) adjacency.set(kb,{vec:b,neighbors:[]});
+      const A=adjacency.get(ka).neighbors, B=adjacency.get(kb).neighbors;
+      if(!A.some(n=>n.x===b.x&&n.y===b.y)) A.push(adjacency.get(kb).vec);
+      if(!B.some(n=>n.x===a.x&&n.y===a.y)) B.push(adjacency.get(ka).vec);
     }
 
+    // ===== フリック操作 =====
     function setupFlickControls(){
       let startX=0,startY=0,endX=0,endY=0;
       const threshold=40;
-      const getAngle=(dx,dy)=>{let ang=Math.atan2(-dy,dx)*180/Math.PI;if(ang<0)ang+=360;return ang;};
+      const getAngle=(dx,dy)=>{ let ang=Math.atan2(-dy,dx)*180/Math.PI; if(ang<0) ang+=360; return ang; };
 
-      window.addEventListener("touchstart",e=>{const t=e.touches[0];startX=t.clientX;startY=t.clientY;},{passive:true});
+      window.addEventListener("touchstart",e=>{
+        const t=e.touches[0]; startX=t.clientX; startY=t.clientY;
+      },{passive:true});
+
       window.addEventListener("touchend",e=>{
-        const t=e.changedTouches[0];endX=t.clientX;endY=t.clientY;
-        const dx=endX-startX,dy=endY-startY;
-        if(Math.hypot(dx,dy)<threshold)return;
-        const ang=getAngle(dx,dy);const snapped=Math.round(ang/60)*60%360;
+        const t=e.changedTouches[0]; endX=t.clientX; endY=t.clientY;
+        const dx=endX-startX, dy=endY-startY;
+        if(Math.hypot(dx,dy)<threshold) return;
+        const ang=getAngle(dx,dy); const snapped=Math.round(ang/60)*60%360;
         manualWalker.stepByAim(snapped);
       },{passive:true});
 
+      // マウスでも同様に
       let mouseDown=false;
-      window.addEventListener("mousedown",e=>{mouseDown=true;startX=e.clientX;startY=e.clientY;});
+      window.addEventListener("mousedown",e=>{ mouseDown=true; startX=e.clientX; startY=e.clientY; });
       window.addEventListener("mouseup",e=>{
-        if(!mouseDown)return;mouseDown=false;
-        endX=e.clientX;endY=e.clientY;
-        const dx=endX-startX,dy=endY-startY;
-        if(Math.hypot(dx,dy)<threshold)return;
-        const ang=getAngle(dx,dy);const snapped=Math.round(ang/60)*60%360;
+        if(!mouseDown) return; mouseDown=false;
+        endX=e.clientX; endY=e.clientY;
+        const dx=endX-startX, dy=endY-startY;
+        if(Math.hypot(dx,dy)<threshold) return;
+        const ang=getAngle(dx,dy); const snapped=Math.round(ang/60)*60%360;
         manualWalker.stepByAim(snapped);
       });
     }
