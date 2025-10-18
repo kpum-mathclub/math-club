@@ -5,7 +5,9 @@
   <title>京都府立医科大学数学研究部 | Math Club</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
   <style>
-    html, body { margin:0; padding:0; font-family:sans-serif; background:#fff; overflow-x:hidden; }
+    html, body {
+      margin:0; padding:0; font-family:sans-serif; background:#fff; overflow:hidden;
+    }
     nav {
       position:fixed; top:0; left:0; width:100%;
       background:#111; color:#fff; padding:12px 24px; z-index:999;
@@ -14,21 +16,6 @@
     nav a { color:#fff; text-decoration:none; }
     body { padding-top:70px; }
     canvas { position:fixed; top:0; left:0; pointer-events:none; z-index:-10; }
-
-    /* 六角D-Pad共通 */
-    .dpad {
-      position:fixed; width:260px; height:260px; z-index:1000;
-      user-select:none; -webkit-user-select:none;
-    }
-    .dpad svg { width:100%; height:100%; filter:drop-shadow(0 4px 10px rgba(0,0,0,.25)); }
-    .dpad .wedge { fill:#fff; stroke:#333; stroke-width:2; cursor:pointer; transition:fill .08s ease; }
-    .dpad .wedge:hover { fill:#f3f7ff; }
-    .dpad .wedge:active { fill:#e8f0ff; }
-    .dpad text { font-family:system-ui,sans-serif; font-size:24px; fill:#111; pointer-events:none; font-weight:700; }
-
-    /* 左右配置 */
-    #dpad-left  { left:20px; bottom:20px; transform:rotate(30deg); }
-    #dpad-right { right:20px; bottom:20px; transform:rotate(30deg); }
   </style>
 </head>
 <body>
@@ -43,161 +30,175 @@
     京都府立医科大学 数学研究部 公式HP
   </div>
 
-  <!-- 左コントローラー -->
-  <div class="dpad" id="dpad-left">
-    <svg viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
-      <polygon class="wedge" data-aim="120" points="130,130 34.7372,75 130,20"/>  <!-- ↖ -->
-      <polygon class="wedge" data-aim="180" points="130,130 34.7372,185 34.7372,75"/> <!-- ← -->
-      <polygon class="wedge" data-aim="240" points="130,130 130,240 34.7372,185"/>   <!-- ↙ -->
-      <text x="80"  y="80">↖</text>
-      <text x="45"  y="135">←</text>
-      <text x="80"  y="195">↙</text>
-    </svg>
-  </div>
-
-  <!-- 右コントローラー -->
-  <div class="dpad" id="dpad-right">
-    <svg viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
-      <polygon class="wedge" data-aim="0"   points="130,130 225.2628,75 225.2628,185"/>  <!-- → -->
-      <polygon class="wedge" data-aim="60"  points="130,130 130,20 225.2628,75"/>       <!-- ↗ -->
-      <polygon class="wedge" data-aim="300" points="130,130 225.2628,185 130,240"/>     <!-- ↘ -->
-      <text x="205" y="135">→</text>
-      <text x="175" y="80">↗</text>
-      <text x="175" y="195">↘</text>
-    </svg>
-  </div>
-
   <script>
-  new p5(p=>{
-    const sideLength=60, walkerCount=300, SAFE_RADIUS=20, SHOW_SAFE=false;
+  new p5(p => {
+    const sideLength = 60;
+    const walkerCount = 300;
+    const SAFE_RADIUS = 20;
     let triangles=[], points=[], adjacency=new Map(), walkers=[];
-    let startPoint=null, goalPoint=null, manualWalker, gameOver=false, gameClear=false;
+    let startPoint=null, goalPoint=null, manualWalker;
+    let gameOver=false, gameClear=false;
 
-    class ManualWalker{
-      constructor(v){this.current=v;this.next=null;this.t=0;}
-      isMoving(){return !!this.next;}
+    // --- Manual walker ---
+    class ManualWalker {
+      constructor(v){ this.current=v; this.next=null; this.t=0; }
+      isMoving(){ return !!this.next; }
       stepByAim(a){
         if(this.isMoving()||gameOver||gameClear)return;
-        const rad=a*Math.PI/180,aim={x:Math.cos(rad),y:-Math.sin(rad)};
-        const key=this.current.x+","+this.current.y,nbrs=adjacency.get(key)?.neighbors||[];
+        const rad=a*Math.PI/180, aim={x:Math.cos(rad), y:-Math.sin(rad)};
+        const key=this.current.x+","+this.current.y;
+        const nbrs=adjacency.get(key)?.neighbors||[];
         let best=null,bestDot=0.1;
         for(const n of nbrs){
           const vx=n.x-this.current.x,vy=n.y-this.current.y,len=Math.hypot(vx,vy)||1;
           const dot=(vx/len)*aim.x+(vy/len)*aim.y;
-          if(dot>bestDot){bestDot=dot;best=n;}
+          if(dot>bestDot){ bestDot=dot; best=n; }
         }
-        if(best){this.next=best;this.t=0;}
+        if(best){ this.next=best; this.t=0; }
       }
       update(){
         if(this.next){
           this.t+=0.08;
-          if(this.t>=1){this.current=this.next;this.next=null;this.t=0;
-            if(goalPoint&&this.current.x===goalPoint.x&&this.current.y===goalPoint.y){
-              gameClear=true;p.noLoop();
+          if(this.t>=1){
+            this.current=this.next; this.next=null; this.t=0;
+            if(goalPoint && this.current.x===goalPoint.x && this.current.y===goalPoint.y){
+              gameClear=true; p.noLoop();
             }
           }
         }
       }
       getPosition(){
-        if(this.next)return p.createVector(p.lerp(this.current.x,this.next.x,this.t),p.lerp(this.current.y,this.next.y,this.t));
+        if(this.next)
+          return p.createVector(p.lerp(this.current.x,this.next.x,this.t), p.lerp(this.current.y,this.next.y,this.t));
         return this.current.copy();
       }
       display(){
         const pos=this.getPosition();
-        p.noStroke();p.fill(0,255,0,60);p.ellipse(pos.x,pos.y,24);
-        p.fill(0,180,0);p.ellipse(pos.x,pos.y,8);
+        p.noStroke(); p.fill(0,255,0,60); p.ellipse(pos.x,pos.y,24);
+        p.fill(0,180,0); p.ellipse(pos.x,pos.y,8);
       }
     }
 
+    // --- Automatic walkers ---
     class Walker{
       constructor(){
-        let pt;do{pt=p.random(points);}while(insideAnySafety(pt));
-        this.current=pt;this.next=this.chooseNext(pt);this.t=0;
-        this.baseSpeed=p.random(0.003,0.008);this.phase=p.random(p.TWO_PI);
+        let pt; do{ pt=p.random(points);} while(insideAnySafety(pt));
+        this.current=pt; this.next=this.chooseNext(pt); this.t=0;
+        this.baseSpeed=p.random(0.003,0.008); this.phase=p.random(p.TWO_PI);
       }
       chooseNext(cur){
-        const key=cur.x+","+cur.y;let opt=adjacency.get(key)?.neighbors||[];
+        const key=cur.x+","+cur.y;
+        let opt=adjacency.get(key)?.neighbors||[];
         opt=opt.filter(n=>!insideAnySafety(n));
-        if(!opt.length)return cur;let next;
-        do{next=p.random(opt);}while(next.x===cur.x&&next.y===cur.y&&opt.length>1);
+        if(!opt.length)return cur;
+        let next;
+        do{ next=p.random(opt);}while(next.x===cur.x&&next.y===cur.y&&opt.length>1);
         return next;
       }
-      update(){this.t+=this.baseSpeed;if(this.t>=1){this.current=this.next;this.next=this.chooseNext(this.current);this.t=0;}}
-      getPosition(){return{x:p.lerp(this.current.x,this.next.x,this.t),y:p.lerp(this.current.y,this.next.y,this.t)};}
+      update(){ this.t+=this.baseSpeed; if(this.t>=1){ this.current=this.next; this.next=this.chooseNext(this.current); this.t=0; } }
+      getPosition(){ return {x:p.lerp(this.current.x,this.next.x,this.t), y:p.lerp(this.current.y,this.next.y,this.t)}; }
       display(){
-        const pos=this.getPosition(),size=6+p.sin(p.frameCount*0.05+this.phase)*2,glow=20+10*p.sin(p.frameCount*0.08+this.phase);
-        p.noStroke();p.fill(0,0,0,25);p.ellipse(pos.x,pos.y,size+glow);
-        p.fill(0);p.ellipse(pos.x,pos.y,size);
+        const pos=this.getPosition();
+        const size=6+p.sin(p.frameCount*0.05+this.phase)*2;
+        const glow=20+10*p.sin(p.frameCount*0.08+this.phase);
+        p.noStroke(); p.fill(0,0,0,25); p.ellipse(pos.x,pos.y,size+glow);
+        p.fill(0); p.ellipse(pos.x,pos.y,size);
       }
     }
 
     p.setup=()=>{
       const h=Math.max(document.body.scrollHeight,document.documentElement.scrollHeight);
-      const cnv=p.createCanvas(p.windowWidth,h);cnv.position(0,0);
-      generateTriangleGrid();pickStartGoalFixed();
-      for(let i=0;i<walkerCount;i++)walkers.push(new Walker());
+      const cnv=p.createCanvas(p.windowWidth,h); cnv.position(0,0);
+      generateTriangleGrid(); pickStartGoalFixed();
+      walkers=[]; for(let i=0;i<walkerCount;i++) walkers.push(new Walker());
       manualWalker=new ManualWalker(startPoint);
-      setupDpad();
+      setupFlickControls();
     };
 
     p.draw=()=>{
       p.background(255);
-      p.noFill();p.stroke(0,40);
-      for(const t of triangles){p.beginShape();for(const pt of t)p.vertex(pt.x,pt.y);p.endShape(p.CLOSE);}
-      if(SHOW_SAFE)drawSafetyDisks();
+      p.noFill(); p.stroke(0,40);
+      for(const t of triangles){ p.beginShape(); for(const pt of t)p.vertex(pt.x,pt.y); p.endShape(p.CLOSE); }
+
       drawStartGoal();
-      for(const w of walkers){w.update();w.display();}
-      manualWalker.update();manualWalker.display();
-      if(!gameOver&&!gameClear&&checkCollision()){gameOver=true;drawBanner("GAME OVER","#ff2d2d");p.noLoop();return;}
-      if(gameClear)drawBanner("CLEAR!","#00b86b");
+      for(const w of walkers){ w.update(); w.display(); }
+      manualWalker.update(); manualWalker.display();
+
+      if(!gameOver&&!gameClear&&checkCollision()){
+        gameOver=true; drawBanner("GAME OVER","#ff2d2d"); p.noLoop(); return;
+      }
+      if(gameClear){ drawBanner("CLEAR!","#00b86b"); }
     };
 
     function pickStartGoalFixed(){
-      startPoint=nearestVertex(60,220); // ← START下げた
-      goalPoint=nearestVertex(p.width-400,p.height-400);
+      startPoint=nearestVertex(60,250);
+      goalPoint=nearestVertex(p.width-300,p.height-300);
     }
-
-    function nearestVertex(x,y){let best=null,bestD=1e9;for(const pt of points){const d=p.dist(x,y,pt.x,pt.y);if(d<bestD){bestD=d;best=pt;}}return best;}
-    function insideAnySafety(pt){return(startPoint&&p.dist(pt.x,pt.y,startPoint.x,startPoint.y)<=SAFE_RADIUS)||(goalPoint&&p.dist(pt.x,pt.y,goalPoint.x,goalPoint.y)<=SAFE_RADIUS);}
-    function drawSafetyDisks(){p.noFill();p.stroke(0,160,110,100);p.ellipse(startPoint.x,startPoint.y,SAFE_RADIUS*2);}
+    function nearestVertex(x,y){ let best=null,bestD=1e9; for(const pt of points){ const d=p.dist(x,y,pt.x,pt.y); if(d<bestD){bestD=d;best=pt;} } return best; }
+    function insideAnySafety(pt){ return (p.dist(pt.x,pt.y,startPoint.x,startPoint.y)<=SAFE_RADIUS)||(p.dist(pt.x,pt.y,goalPoint.x,goalPoint.y)<=SAFE_RADIUS); }
     function drawStartGoal(){
-      p.stroke(0,180,0,220);p.noFill();p.ellipse(startPoint.x,startPoint.y,18);
-      p.noStroke();p.fill(0,180,0);p.text("START",startPoint.x+12,startPoint.y-10);
+      p.stroke(0,180,0,220); p.noFill(); p.ellipse(startPoint.x,startPoint.y,18);
+      p.noStroke(); p.fill(0,180,0); p.text("START",startPoint.x+12,startPoint.y-10);
       const pulse=22+6*Math.sin(p.frameCount*0.07);
-      p.noFill();p.stroke(0,120,255,220);p.ellipse(goalPoint.x,goalPoint.y,pulse);
-      p.noStroke();p.fill(0,120,255);p.text("GOAL",goalPoint.x+12,goalPoint.y-10);
+      p.noFill(); p.stroke(0,120,255,220); p.ellipse(goalPoint.x,goalPoint.y,pulse);
+      p.noStroke(); p.fill(0,120,255); p.text("GOAL",goalPoint.x+12,goalPoint.y-10);
     }
     function checkCollision(){
-      const mp=manualWalker.getPosition();for(const w of walkers){const pos=w.getPosition();if(p.dist(mp.x,mp.y,pos.x,pos.y)<12)return true;}return false;
+      const mp=manualWalker.getPosition();
+      for(const w of walkers){ const pos=w.getPosition(); if(p.dist(mp.x,mp.y,pos.x,pos.y)<12)return true; }
+      return false;
     }
-    function drawBanner(txt,c){p.textAlign(p.CENTER,p.CENTER);p.textSize(64);p.fill(c);p.text(txt,p.width/2,p.height/2);}
+    function drawBanner(txt,c){ p.textAlign(p.CENTER,p.CENTER); p.textSize(64); p.fill(c); p.text(txt,p.width/2,p.height/2); }
 
     function generateTriangleGrid(){
-      const h=sideLength*Math.sqrt(3)/2;triangles=[];adjacency.clear();
-      for(let y=0;y<p.height+h;y+=h){for(let x=0;x<p.width+sideLength;x+=sideLength){
-        const xOffset=(Math.floor(y/h)%2)*(sideLength/2);
-        const p1=p.createVector(x+xOffset,y),p2=p.createVector(x+sideLength/2+xOffset,y+h),p3=p.createVector(x-sideLength/2+xOffset,y+h);
-        triangles.push([p1,p2,p3]);registerEdge(p1,p2);registerEdge(p2,p3);registerEdge(p3,p1);
-      }}
+      const h=sideLength*Math.sqrt(3)/2; triangles=[]; adjacency.clear();
+      for(let y=0;y<p.height+h;y+=h){
+        for(let x=0;x<p.width+sideLength;x+=sideLength){
+          const xOffset=(Math.floor(y/h)%2)*(sideLength/2);
+          const p1=p.createVector(x+xOffset,y), p2=p.createVector(x+sideLength/2+xOffset,y+h), p3=p.createVector(x-sideLength/2+xOffset,y+h);
+          triangles.push([p1,p2,p3]); registerEdge(p1,p2); registerEdge(p2,p3); registerEdge(p3,p1);
+        }
+      }
       points=Array.from(adjacency.values()).map(o=>o.vec);
     }
     function registerEdge(a,b){
       const ka=a.x+","+a.y,kb=b.x+","+b.y;
-      if(!adjacency.has(ka))adjacency.set(ka,{vec:a,neighbors:[]});
-      if(!adjacency.has(kb))adjacency.set(kb,{vec:b,neighbors:[]});
+      if(!adjacency.has(ka)) adjacency.set(ka,{vec:a,neighbors:[]});
+      if(!adjacency.has(kb)) adjacency.set(kb,{vec:b,neighbors:[]});
       const A=adjacency.get(ka).neighbors,B=adjacency.get(kb).neighbors;
       if(!A.some(n=>n.x===b.x&&n.y===b.y))A.push(adjacency.get(kb).vec);
       if(!B.some(n=>n.x===a.x&&n.y===a.y))B.push(adjacency.get(ka).vec);
     }
 
-    function setupDpad(){
-      const handler=e=>{e.preventDefault();const aim=parseFloat(e.currentTarget.getAttribute('data-aim'));if(!isNaN(aim))manualWalker.stepByAim(aim);};
-      ["dpad-left","dpad-right"].forEach(id=>{
-        const pad=document.getElementById(id);
-        pad.querySelectorAll('.wedge').forEach(el=>{
-          el.addEventListener('click',handler,{passive:false});
-          el.addEventListener('touchstart',handler,{passive:false});
-        });
+    // --- フリック操作 ---
+    function setupFlickControls(){
+      let startX=0,startY=0,endX=0,endY=0;
+      const threshold=40; // 最低移動距離
+      const getAngle=(dx,dy)=>{ let ang=Math.atan2(-dy,dx)*180/Math.PI; if(ang<0)ang+=360; return ang; };
+
+      window.addEventListener("touchstart",e=>{
+        const t=e.touches[0]; startX=t.clientX; startY=t.clientY;
+      },{passive:true});
+      window.addEventListener("touchend",e=>{
+        const t=e.changedTouches[0]; endX=t.clientX; endY=t.clientY;
+        const dx=endX-startX, dy=endY-startY;
+        if(Math.hypot(dx,dy)<threshold)return;
+        const ang=getAngle(dx,dy);
+        const snapped=Math.round(ang/60)*60 % 360; // 6方向にスナップ
+        manualWalker.stepByAim(snapped);
+      },{passive:true});
+
+      // PC用マウス対応
+      let mouseDown=false;
+      window.addEventListener("mousedown",e=>{mouseDown=true;startX=e.clientX;startY=e.clientY;});
+      window.addEventListener("mouseup",e=>{
+        if(!mouseDown)return; mouseDown=false;
+        endX=e.clientX; endY=e.clientY;
+        const dx=endX-startX, dy=endY-startY;
+        if(Math.hypot(dx,dy)<threshold)return;
+        const ang=getAngle(dx,dy);
+        const snapped=Math.round(ang/60)*60 % 360;
+        manualWalker.stepByAim(snapped);
       });
     }
   });
