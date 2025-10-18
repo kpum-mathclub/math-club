@@ -53,20 +53,19 @@
 
     /* ===== BACKGROUND LAYERS ===== */
     .bg-gradient{
-      position:fixed; inset:0; z-index:-3;
+      position:fixed; inset:0; z-index:0;               /* 背景レイヤー */
       background:
         radial-gradient(1000px 600px at 15% 20%, rgba(84,214,163,.25), transparent 60%),
         radial-gradient(900px 700px at 85% 70%, rgba(93,168,255,.22), transparent 55%),
         linear-gradient(180deg, var(--bg) 0%, var(--bg) 100%);
     }
-    canvas{ position:fixed; inset:0; pointer-events:none; z-index:-2; }
+    canvas{ position:fixed; inset:0; pointer-events:none; z-index:1; } /* キャンバスは最背面+1 */
 
     /* ===== NAVBAR ===== */
     nav{
-      position:fixed; top:0; left:0; right:0; z-index:999;
+      position:fixed; top:0; left:0; right:0; z-index:10; /* コンテンツ前面に */
       backdrop-filter: blur(12px);
-      background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.10)) /* dark */
-                  ,var(--glass);
+      background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.10)), var(--glass);
       border-bottom:1px solid var(--border);
     }
     .nav-inner{
@@ -97,7 +96,7 @@
     }
 
     /* ===== LAYOUT ===== */
-    main{ padding-top:86px; }
+    main{ padding-top:86px; position:relative; z-index:10; } /* 前面 */
     .container{ max-width:1100px; margin:0 auto; padding:28px 24px 64px; }
 
     .hero{
@@ -138,7 +137,7 @@
 
     /* 操作ヒント */
     .control-hint{
-      position:fixed; right:18px; bottom:18px; z-index:50;
+      position:fixed; right:18px; bottom:18px; z-index:10;
       display:flex; gap:10px; align-items:center;
       background:var(--glass); border:1px solid var(--border);
       border-radius:12px; padding:10px 12px; backdrop-filter: blur(8px);
@@ -227,7 +226,7 @@
     <span>画面をフリック / ドラッグで操作</span>
   </div>
 
-  <!-- ===== p5.js (動きはそのまま・描画だけ上質に) ===== -->
+  <!-- ===== Theme & p5.js ===== -->
   <script>
     // テーマ切替
     (function(){
@@ -248,6 +247,11 @@
       let gameOver=false, gameClear=false;
       let trails=[]; // 軌跡
       let waveAnim=null; // CLEAR波紋
+
+      // テーマ状態参照
+      const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
+      const mo = new MutationObserver(()=>{}); // 参照だけでOK
+      mo.observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
 
       // --- Trail（軌跡） ---
       class Trail {
@@ -348,6 +352,7 @@
       p.setup=()=>{
         const h=Math.max(document.body.scrollHeight,document.documentElement.scrollHeight);
         const cnv=p.createCanvas(p.windowWidth,h); cnv.position(0,0);
+        // p.pixelDensity(1); // 必要ならレンダ負荷軽減
         generateTriangleGrid(); pickStartGoalFixed();
         for(let i=0;i<walkerCount;i++) walkers.push(new Walker());
         manualWalker=new ManualWalker(startPoint);
@@ -362,11 +367,14 @@
       };
 
       p.draw=()=>{
-        // 背景は透明化（上質なグラデを生かす）
+        // 背景は透明（上質グラデ活かす）
         p.clear();
 
-        // 三角タイル（白系の繊細な線）
-        p.noFill(); p.stroke(255,28);
+        // 三角タイル：テーマで線色切替
+        p.noFill();
+        p.strokeWeight(1);
+        if (isDark()) { p.stroke(255, 28); }  // ダーク：薄い白
+        else          { p.stroke(0,   40); }  // ライト：薄い黒
         for(const t of triangles){ p.beginShape(); for(const pt of t)p.vertex(pt.x,pt.y); p.endShape(p.CLOSE); }
 
         drawStartGoal();
@@ -404,7 +412,7 @@
         // GOAL
         const pulse=22+6*Math.sin(p.frameCount*0.07);
         p.noFill(); p.stroke(100,170,255,230); p.ellipse(goalPoint.x,goalPoint.y,pulse);
-        p.noStroke(); p.fill(150,200,255); p.text("GOAL",goalPoint.x+12,startPoint.y-10 + (goalPoint.y - startPoint.y));
+        p.noStroke(); p.fill(150,200,255); p.text("GOAL",goalPoint.x+12,goalPoint.y-10);  // ← 素直に
       }
       function checkCollision(){
         const mp=manualWalker.getPosition();
