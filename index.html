@@ -111,7 +111,7 @@
 
     footer{ margin-top:36px; padding:18px; text-align:center; color:var(--muted); font-size:13px; }
 
-    /* START OVERLAY（UIの最前面） */
+    /* START OVERLAY（初回のみ） */
     .start-overlay{
       position:fixed; inset:0; z-index:30; display:flex; align-items:center; justify-content:center;
       backdrop-filter: blur(12px);
@@ -125,6 +125,15 @@
     }
     .start-btn:active{ transform:translateY(1px); }
 
+    /* PLAY AGAIN（ホームに戻った時にだけ出す） */
+    .play-again-btn{
+      position:fixed; right:18px; bottom:80px; z-index:12;
+      display:none; align-items:center; gap:8px;
+      padding:10px 14px; border-radius:12px; border:1px solid var(--border);
+      background:linear-gradient(135deg, var(--accent), var(--accent-2));
+      color:#fff; font-weight:700; cursor:pointer; box-shadow: var(--shadow); letter-spacing:.02em;
+    }
+
     /* GAME-ONLY: UIだけ隠す（キャンバスは常時表示） */
     body.game-only #ui-layer { display:none !important; }
     body.game-only { overflow:hidden; }
@@ -137,7 +146,7 @@
   <!-- p5用キャンバスの専用レイヤー -->
   <div id="game-layer" aria-hidden="true"></div>
 
-  <!-- START Overlay -->
+  <!-- START Overlay（初回のみ表示） -->
   <div id="start-overlay" class="start-overlay">
     <button id="startBtn" class="start-btn">GAME START</button>
   </div>
@@ -192,6 +201,9 @@
       <div class="dot"></div>
       <span>画面をフリック / ドラッグで操作し、Greenの点をGoalに導こう。</span>
     </div>
+
+    <!-- ★ ホームに戻ったら出る「Play Again」 -->
+    <button id="playAgainBtn" class="play-again-btn">Play Again</button>
   </div>
 
   <script>
@@ -210,44 +222,53 @@
       }
     })();
 
-    // UI復帰（ホームに戻す）
+    // 共通：ゲーム開始関数（START & Play Again で使う）
+    function startGame(){
+      document.body.classList.add('game-only');
+      window.hideCanvasText = true;
+      const pa = document.getElementById('playAgainBtn');
+      pa.style.display = 'none';              // ホームのPlay Againを隠す
+      if (window.__game && typeof window.__game.loop === 'function') window.__game.loop();
+      if (window.__ensureGameAlive) window.__ensureGameAlive();
+      window.dispatchEvent(new Event('resize'));
+    }
+
+    // CLEAR後：UI復帰＋ホームのPlay Again ボタン表示（オーバーレイは出さない）
     window.__onGameClear = ()=>{
-      const overlay = document.getElementById('start-overlay');
-      const btn = document.getElementById('startBtn');
       setTimeout(()=>{
         document.body.classList.remove('game-only'); // UI復帰
-        window.hideCanvasText = false;               // キャンバステキストも復帰
-        overlay.style.display = '';                  // スタートオーバーレイ復活
-        btn.textContent = 'PLAY AGAIN';              // 次回用の文言
-        // 省電力：ホームでは止めておく（再スタート時に loop される）
-        if (window.__game && typeof window.__game.noLoop==='function') window.__game.noLoop();
+        window.hideCanvasText = false;               // キャンバステキストも復帰（ホームなので表示OK）
+        document.getElementById('start-overlay').style.display = 'none'; // ★二度とオーバーレイは表示しない
+        const pa = document.getElementById('playAgainBtn');
+        pa.style.display = 'inline-flex';            // ★ホーム右下にPlay Againを出す
+        if (window.__game && typeof window.__game.noLoop==='function') window.__game.noLoop(); // 省電力
         window.dispatchEvent(new Event('resize'));
-      }, 300); // 波紋の余韻を少しだけ
+      }, 200); // 波紋の余韻（短め）
     };
 
-    // START：UIを隠し、p5をloop、状況により再初期化
+    // STARTオーバーレイ（初回のみ）
     (function(){
       const btn = document.getElementById('startBtn');
       const overlay = document.getElementById('start-overlay');
       btn.addEventListener('click', ()=>{
-        document.body.classList.add('game-only');
-        overlay.style.display = 'none';
-        window.hideCanvasText = true;
-        if (window.__game && typeof window.__game.loop === 'function') window.__game.loop();
-        if (window.__ensureGameAlive) window.__ensureGameAlive();
-        window.dispatchEvent(new Event('resize'));
+        overlay.style.display = 'none'; // 初回オーバーレイ消す
+        startGame();
       });
 
-      // EscでUI復活（任意）
+      // EscでUI復帰（デバッグ用途）。オーバーレイは出さない / Play Againは出す
       window.addEventListener('keydown', (e)=>{
         if(e.key === 'Escape'){
           document.body.classList.remove('game-only');
-          overlay.style.display = '';
           window.hideCanvasText = false;
+          document.getElementById('start-overlay').style.display = 'none';
+          document.getElementById('playAgainBtn').style.display = 'inline-flex';
           if (window.__game && typeof window.__game.noLoop==='function') window.__game.noLoop();
           window.dispatchEvent(new Event('resize'));
         }
       });
+
+      // Play Again ボタン
+      document.getElementById('playAgainBtn').addEventListener('click', startGame);
     })();
 
     // ===== p5.js スケッチ =====
@@ -371,7 +392,7 @@
           if(!window.hideCanvasText){ p.noStroke(); p.fill(140,255,200); p.text("START",startPoint.x+12,startPoint.y-10); }
           const pulse=22+6*Math.sin(p.frameCount*0.07);
           p.noFill(); p.stroke(100,170,255,230); p.ellipse(goalPoint.x,goalPoint.y,pulse);
-          if(!window.hideCanvasText){ p.noStroke(); p.fill(150,200,255); p.text("GOAL",goalPoint.x+12,startPoint.y-10); } // （ラベルは消される想定）
+          if(!window.hideCanvasText){ p.noStroke(); p.fill(150,200,255); p.text("GOAL",goalPoint.x+12,goalPoint.y-10); }
         }
         function checkCollision(){
           const mp=manualWalker.getPosition();
@@ -389,7 +410,6 @@
           trails=[]; waveAnim=null;
         }
 
-        // 外から再構築できるように
         window.__ensureGameAlive = ()=>{
           if (!triangles.length || !points.length || !walkers.length || !startPoint || !goalPoint){
             rebuildAll();
@@ -433,8 +453,7 @@
               waveAnim.update(); waveAnim.display();
               if(!waveAnim.isAlive() && !clearHandled){
                 clearHandled = true;
-                // ★ ここでホームに戻す
-                if (typeof window.__onGameClear === 'function') window.__onGameClear();
+                if (typeof window.__onGameClear === 'function') window.__onGameClear(); // ← ホームへ戻す
               }
             }
           }
