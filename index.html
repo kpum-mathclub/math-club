@@ -117,6 +117,7 @@
       backdrop-filter: blur(12px);
       background: radial-gradient(40% 35% at 50% 50%, rgba(255,255,255,.12), transparent 60%);
     }
+    .start-actions{ display:flex; gap:12px; align-items:center; }
     .start-btn{
       font-family:"Inter","Noto Serif JP",serif; font-weight:800; letter-spacing:.08em;
       padding:18px 28px; border-radius:16px; border:1px solid var(--border);
@@ -124,6 +125,13 @@
       color:#fff; font-size:22px; cursor:pointer; box-shadow:0 14px 40px rgba(0,0,0,.35);
     }
     .start-btn:active{ transform:translateY(1px); }
+    .start-skip{
+      padding:14px 18px; border-radius:12px;
+      border:1px solid var(--border);
+      background:var(--glass); color:var(--fg);
+      font-weight:700; cursor:pointer; box-shadow: var(--shadow);
+    }
+    .start-skip:active{ transform:translateY(1px); }
 
     /* PLAY AGAIN（ホームに戻った時にだけ出す） */
     .play-again-btn{
@@ -173,9 +181,12 @@
   <!-- p5用キャンバスの専用レイヤー -->
   <div id="game-layer" aria-hidden="true"></div>
 
-  <!-- START Overlay（初回のみ表示） -->
+  <!-- START Overlay（初回のみ表示：Skip追加済み） -->
   <div id="start-overlay" class="start-overlay">
-    <button id="startBtn" class="start-btn">GAME START</button>
+    <div class="start-actions">
+      <button id="startBtn" class="start-btn">GAME START</button>
+      <button id="skipStartBtn" class="start-skip">Skip</button>
+    </div>
   </div>
 
   <!-- GAME OVER Overlay -->
@@ -248,6 +259,7 @@
     // ====== グローバル状態 ======
     window.hideCanvasText = false;           // キャンバス上のテキスト表示制御
     window.__appState = 'home';              // 'home' | 'game'
+
     // （p5から呼ぶ）ホームへ戻すアクション（CLEAR/Skip用）
     function switchToHomeUI(){
       document.body.classList.remove('game-only');
@@ -287,21 +299,23 @@
 
     // CLEAR後（p5側から呼ばれる）
     window.__onGameClear = ()=>{
-      // 波紋の余韻はp5側が管理。ここでは即ホーム化（少しだけdelayしてもOK）
-      switchToHomeUI(); // ★ホームに戻る（アンビエントモードで背景は動き続ける）
+      // 波紋の余韻はp5側で済ませてから呼ばれる。ここでは即ホーム化。
+      switchToHomeUI(); // ← アンビエント背景で自動回転
     };
 
     // STARTオーバーレイ（初回のみ）
     (function(){
       const btn = document.getElementById('startBtn');
+      const skipStart = document.getElementById('skipStartBtn');
       const overlay = document.getElementById('start-overlay');
+
       btn.addEventListener('click', ()=>{ overlay.style.display='none'; startGame(); });
+      skipStart.addEventListener('click', ()=>{ overlay.style.display='none'; switchToHomeUI(); });
 
       // EscでUI復帰（デバッグ用）。Play Againは出す
       window.addEventListener('keydown', (e)=>{
         if(e.key === 'Escape'){
           switchToHomeUI();
-          if (window.__game && typeof window.__game.noLoop==='function') window.__game.noLoop(); // 省電力したいならON
         }
       });
 
@@ -470,7 +484,7 @@
           }
         };
         window.__switchToHomeAmbient = ()=>{
-          // 余計な演出を切ってホーム用の「背景だけ動く」状態へ
+          // ホームの「背景だけ動く」状態へ
           gameOver=false; gameClear=false; clearHandled=false; gameOverShown=false;
           trails=[]; waveAnim=null;
           window.__appState='home';
@@ -499,7 +513,7 @@
           if (isDark()) { p.stroke(255,28); } else { p.stroke(0,40); }
           for(const t of triangles){ p.beginShape(); for(const pt of t) p.vertex(pt.x, pt.y); p.endShape(p.CLOSE); }
 
-          // ホームでは“背景だけ”＝オートウォーカーのみ動かす
+          // ホームでも常に：オートウォーカーだけ動かす
           for(const w of walkers){ w.update(); w.display(); }
 
           if (!isHome){
@@ -539,7 +553,7 @@
             }
           }else{
             // ==== HOMEモード（アンビエント） ====
-            // 何も描かない（Start/Goal/Trail/Manualを抑制）。オートウォーカーのみが背景で動く。
+            // Start/Goal/Trail/Manualは描かない。オートウォーカーのみ背景で動く。
           }
         };
 
