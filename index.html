@@ -443,7 +443,7 @@
        Google Sheets 読み込み部
        ============================ */
     const SHEET_ID   = '11h1ILZfrChHJv3NdUVzjKUHq2lgTsLKRWSN1p02TU5E';
-    const SHEET_NAME = '蔵書'; // タブ名
+    const SHEET_NAME = 'books'; // タブ名
     const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&t=${Date.now()}`;
 
     function setCatalogMsg(text, type='info'){
