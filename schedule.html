@@ -126,16 +126,16 @@
   <script>
     new p5(p => {
       /* =========================
-         1) 瞬く固定星（追加）
-         2) 既存の円運動（そのまま）
-         3) たまに流れ星（追加）
+         1) 瞬く固定星（上に重ねる）
+         2) 円運動（trailBuffer。サイズ小さめ）
+         3) たまに流れ星（上に重ねる）
          ========================= */
       let stars = [];
       const STAR_COUNT = 240;            // 固定星の数
-      const STAR_SIZE_MIN = 1.0;
-      const STAR_SIZE_MAX = 2.2;
+      const STAR_SIZE_MIN = 0.9;
+      const STAR_SIZE_MAX = 1.7;
 
-      // 既存の円運動データ（そのまま）
+      // 円運動（ベースはそのまま）
       let circles = [];
       const numRings = 20;
       const pointsPerRing = 5;
@@ -144,9 +144,13 @@
 
       // 流れ星
       const meteors = [];
-      const METEOR_RATE = 0.015; // 低確率（秒あたりの期待値）。多ければ値を上げる
-      const METEOR_SPEED = 12;   // 速度
-      const METEOR_TTL = 1200;   // ms 生存
+      const METEOR_RATE = 0.012; // 低確率（秒あたり）。多ければ上げる
+      const METEOR_SPEED = 12;
+      const METEOR_TTL = 1200;   // ms
+
+      // 円の点サイズ（小さく調整）
+      const ORBIT_DOT = 2.2;     // 残像の点
+      const ORBIT_CORE = 3.0;    // 中心の点
 
       p.setup = () => {
         const cnv = p.createCanvas(p.windowWidth, p.windowHeight);
@@ -174,7 +178,7 @@
             size: p.random(STAR_SIZE_MIN, STAR_SIZE_MAX),
             periodSec,
             phaseSec,
-            minA: p.random(110, 160),
+            minA: p.random(130, 170),
             maxA: p.random(210, 255)
           });
         }
@@ -202,16 +206,14 @@
         }
       }
 
-      // 流れ星生成
       function maybeSpawnMeteor(dtMs){
-        // 1フレーム中の発生確率（ポアソン近似）
         const prob = METEOR_RATE * (dtMs / 1000);
         if (Math.random() < prob) {
-          // 画面の上端/左端の外から右下へ流れる感じ
+          // 画面の外側から右下へ
           const fromTop = Math.random() < 0.5;
           const startX = fromTop ? p.random(-p.width*0.2, p.width*0.9) : -p.width*0.2;
           const startY = fromTop ? -p.height*0.15 : p.random(-p.height*0.1, p.height*0.7);
-          const angle = p.random(20, 35); // 右下方向（角度はお好みで）
+          const angle = p.random(20, 35); // 右下方向
           meteors.push({
             x: startX,
             y: startY,
@@ -226,8 +228,39 @@
         const nowSec = p.millis() / 1000;
         const dtMs = p.deltaTime;
 
-        // ---- 1) 背景：瞬く固定星
+        // 背景クリア（透明）
         p.clear();
+
+        // ---- 円運動（trailBufferへ描画）
+        // 残像フェード（黒で薄く）
+        trailBuffer.noStroke();
+        trailBuffer.fill(0, 18);          // ← 少しだけ暗く。濃ければ数値↑
+        trailBuffer.rect(0, 0, p.width, p.height);
+
+        for (let c of circles) {
+          let speedFactor = boosting ? 6 : 1.0;
+          c.currentSpeed = c.baseSpeed * speedFactor;
+
+          const x = c.centerX + p.cos(c.angle) * c.r;
+          const y = c.centerY + p.sin(c.angle) * c.r;
+
+          // 軌跡の細点
+          trailBuffer.noStroke();
+          trailBuffer.fill(255, 255, 255, 140);
+          trailBuffer.ellipse(x, y, ORBIT_DOT);
+
+          // 中心の点（小さめ）
+          trailBuffer.noStroke();
+          trailBuffer.fill(255);
+          trailBuffer.ellipse(x, y, ORBIT_CORE);
+
+          c.angle += c.currentSpeed;
+        }
+
+        // 一度、残像レイヤーを先に合成
+        p.image(trailBuffer, 0, 0);
+
+        // ---- 瞬く固定星（常に前面に）
         p.noStroke();
         for (const s of stars) {
           const u = ((nowSec + s.phaseSec) / s.periodSec) % 1;      // [0,1)
@@ -237,34 +270,7 @@
           p.circle(s.x, s.y, s.size);
         }
 
-        // ---- 2) 既存の円運動（そのまま・ trailBuffer に描く）
-        // 残像フェード（暗めの宇宙に馴染むよう、黒で薄くフェード）
-        trailBuffer.noStroke();
-        trailBuffer.fill(0, 20);
-        trailBuffer.rect(0, 0, p.width, p.height);
-
-        for (let c of circles) {
-          // ブースト判定
-          let speedFactor = boosting ? 6 : 1.0;
-          c.currentSpeed = c.baseSpeed * speedFactor;
-
-          const x = c.centerX + p.cos(c.angle) * c.r;
-          const y = c.centerY + p.sin(c.angle) * c.r;
-
-          // 軌跡
-          trailBuffer.noStroke();
-          trailBuffer.fill(255, 255, 255, 140);
-          trailBuffer.ellipse(x, y, 3.5);
-
-          // 中心点（やや明るめ）
-          trailBuffer.noStroke();
-          trailBuffer.fill(255);
-          trailBuffer.ellipse(x, y, 5);
-
-          c.angle += c.currentSpeed;
-        }
-
-        // ---- 3) たまに流れ星
+        // ---- 流れ星（固定星の上に）
         maybeSpawnMeteor(dtMs);
         for (let i = meteors.length - 1; i >= 0; i--) {
           const m = meteors[i];
@@ -274,27 +280,22 @@
 
           // 尾を引く
           const tailLen = 80;
-          const ax = m.x - (m.vx * 0.9);
-          const ay = m.y - (m.vy * 0.9);
           const alpha = p.map(age, 0, METEOR_TTL, 255, 0);
+          const tailX = m.x - tailLen;
+          const tailY = m.y - tailLen * (m.vy / (m.vx || 0.0001)); // 0割防止
 
           p.stroke(255, 255, 255, alpha);
           p.strokeWeight(2);
-          p.line(m.x, m.y, m.x - tailLen, m.y - tailLen * (m.vy / m.vx));
+          p.line(m.x, m.y, tailX, tailY);
 
-          // 本体
           p.noStroke();
           p.fill(255, 255, 255, alpha);
-          p.circle(m.x, m.y, 3.5);
+          p.circle(m.x, m.y, 3.2);
 
-          // 画面外 or 寿命
           if (age > METEOR_TTL || m.x > p.width + 100 || m.y > p.height + 100) {
             meteors.splice(i, 1);
           }
         }
-
-        // 合成
-        p.image(trailBuffer, 0, 0);
       };
 
       // 入力（既存のブースト操作は維持）
@@ -308,9 +309,7 @@
         trailBuffer = p.createGraphics(p.width, p.height);
         trailBuffer.clear();
         trailBuffer.angleMode(p.DEGREES);
-        // 固定星は再配置
-        initStars();
-        // 円運動は中心を更新して続行
+        initStars(); // 固定星は再配置
         const cx = p.width / 2, cy = p.height / 2;
         for (let c of circles) { c.centerX = cx; c.centerY = cy; }
       };
