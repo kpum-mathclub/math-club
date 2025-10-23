@@ -875,6 +875,89 @@
       // p5インスタンスを保持
       window.__game = new p5(sketch);
     })();
+    <!-- ▼ Google Sheets 連携（出版社 / Title / ISBN対応） -->
+<p id="catalogMsg" style="margin:6px 0 0; color:#9aa3af;">蔵書データを読み込み中…</p>
+<script>
+const SHEET_ID   = '11h1ILZfrChHJv3NdUVzjKUHq2lgTsLKRWSN1p02TU5E';
+const SHEET_NAME = '蔵書'; // ←タブ名が違う場合は変更
+
+const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&t=${Date.now()}`;
+
+function setCatalogMsg(text, type='info'){
+  const el = document.getElementById('catalogMsg');
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = type === 'error' ? '#ff8a8a' :
+                   type === 'warn'  ? '#ffd27a' : '#9aa3af';
+}
+
+// ===== Sheets → JSON =====
+async function fetchSheetRows(){
+  const res  = await fetch(GVIZ_URL, { cache: 'no-store' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const text = await res.text();
+  const json = JSON.parse(text.replace(/^[\s\S]*setResponse\(/, '').replace(/\);?\s*$/, ''));
+  const cols = json.table.cols.map(c => c.label || c.id);
+  const rows = json.table.rows.map(row => {
+    const obj = {};
+    cols.forEach((h, i) => obj[h] = row.c[i]?.v ?? '');
+    return obj;
+  });
+  return rows;
+}
+
+// ===== 列名マッピング =====
+const MAP = {
+  title:     ['タイトル','Title','書名','題名'],
+  author:    ['著者','Author','作者'],
+  publisher: ['出版社','Publisher','出版','発行元'],
+  isbn:      ['ISBN','ＩＳＢＮ','Isbn'],
+  category:  ['分類','カテゴリ','カテゴリー','ジャンル','Category'],
+  year:      ['年','刊行年','Year'],
+  memo:      ['メモ','備考','注記','Note'],
+  keyword:   ['キーワード','検索語','Keywords']
+};
+
+function pick(row, keys){
+  for(const k of keys){ if(k in row && row[k] !== '') return row[k]; }
+  return '';
+}
+
+// ===== SheetsデータをUI用オブジェクトに変換 =====
+function mapToCatalog(rows){
+  return rows.map(r=>{
+    const title     = pick(r, MAP.title);
+    const author    = pick(r, MAP.author);
+    const publisher = pick(r, MAP.publisher);
+    const isbn      = pick(r, MAP.isbn);
+    const category  = pick(r, MAP.category);
+    const yearRaw   = pick(r, MAP.year);
+    const memo      = pick(r, MAP.memo);
+    const keyword   = pick(r, MAP.keyword);
+    const year      = Number(yearRaw) || null;
+    return {
+      title, author, publisher, isbn, category, year, memo,
+      _q: [title, author, publisher, isbn, category, yearRaw, memo, keyword].filter(Boolean).join(' ')
+    };
+  });
+}
+
+// ===== メイン処理：ロードして検索UIに渡す =====
+async function loadCatalog(){
+  try{
+    setCatalogMsg('蔵書データを読み込み中…', 'info');
+    const rows = await fetchSheetRows();
+    const data = mapToCatalog(rows);
+    if (!Array.isArray(data) || !data.length) throw new Error('no rows');
+    window.books = data; // ← 既存の蔵書モーダルで再利用
+    setCatalogMsg('蔵書データを読み込みました。', 'info');
+  }catch(e){
+    console.error('Sheets read failed:', e);
+    setCatalogMsg('Sheetsの読み込みに失敗しました。', 'error');
+  }
+}
+document.addEventListener('DOMContentLoaded', loadCatalog);
+</script>
   </script>
 </body>
 </html>
