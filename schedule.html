@@ -1,185 +1,316 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="dark">
 <head>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>活動予定 | 京都府立医科大学 数学研究部</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- p5.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
-  <meta charset="UTF-8">
-  <title>活動予定 | 数学研究部</title>
+
   <style>
-    body {
-      font-family: sans-serif;
-      margin: 40px;
-      background-color: #fdfdfd;
-      color: #111;
+    :root{
+      --bg:#0b0d12; --fg:#e7e9ee; --muted:#9aa3af;
+      --accent:#54d6a3; --accent-2:#5da8ff;
+      --glass:rgba(255,255,255,.08); --border:rgba(255,255,255,.18);
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+      --card-radius:18px; --focus:0 0 0 3px rgba(93,168,255,.35);
     }
-    h1 {
-      color: #222;
+    *{box-sizing:border-box}
+    html,body{height:100%;}
+    html,body{
+      margin:0; padding:0; overflow-x:hidden;
+      background:var(--bg); color:var(--fg);
+      font-family:"Inter", system-ui, -apple-system, "Noto Serif JP", serif;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
     }
-    table {
-      border-collapse: collapse;
-      width: 80%;
-      margin-top: 20px;
+
+    /* 背景のネビュラ風グラデーション */
+    .bg-gradient{
+      position:fixed; inset:0; z-index:0; pointer-events:none;
+      background:
+        radial-gradient(900px 600px at 15% 20%, rgba(84,214,163,.18), transparent 60%),
+        radial-gradient(900px 700px at 85% 70%, rgba(93,168,255,.18), transparent 55%),
+        linear-gradient(180deg, #0b0d12 0%, #0b0d12 100%);
     }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 10px;
-      text-align: center;
+
+    /* p5 キャンバス（星空） */
+    #space-layer{ position:fixed; inset:0; z-index:1; pointer-events:none; }
+    #space-layer canvas{ position:absolute; inset:0; }
+
+    /* ===== ナビ（Homeと近いトーン） ===== */
+    nav{
+      position:fixed; top:0; left:0; right:0; z-index:10;
+      backdrop-filter: blur(12px);
+      background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.10)), var(--glass);
+      border-bottom:1px solid var(--border);
     }
-    a {
-      color: #0066cc;
-      text-decoration: none;
+    .nav-inner{
+      max-width:1100px; margin:0 auto;
+      display:flex; align-items:center; gap:20px; padding:14px 24px;
     }
-    a:hover {
-      text-decoration: underline;
+    .brand{ display:flex; align-items:center; gap:12px; font-weight:700; font-family:"Noto Serif JP", serif; letter-spacing:.02em; }
+    .brand-badge{ display:inline-grid; place-items:center; width:34px; height:34px; border-radius:10px;
+      background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:#fff; font-weight:800; box-shadow:0 6px 18px rgba(0,0,0,.25); }
+    .nav-links{ margin-left:auto; display:flex; gap:18px; flex-wrap:wrap; align-items:center;}
+    .nav-links a{ color:inherit; text-decoration:none; padding:8px 10px; border-radius:10px; opacity:.95; }
+    .nav-links a:hover{ background:var(--glass); }
+    a:focus-visible, button:focus-visible{outline:none; box-shadow:var(--focus); border-radius:10px}
+
+    main{ padding-top:86px; position:relative; z-index:5; }
+    .container{ max-width:1100px; margin:0 auto; padding:28px 24px 64px; }
+
+    /* ===== コンテンツカード ===== */
+    .panel{
+      border:1px solid var(--border); background:var(--glass); backdrop-filter: blur(10px);
+      box-shadow:var(--shadow); border-radius:var(--card-radius); padding:20px;
+    }
+    h1{ margin:0 0 10px; font-family:"Noto Serif JP",serif; }
+    p.lead{ margin:0; color:var(--muted); }
+
+    table{
+      width:100%; border-collapse:collapse; margin-top:16px; font-size:15px;
+      background:rgba(0,0,0,.12); border-radius:12px; overflow:hidden;
+    }
+    th, td{ border-bottom:1px solid var(--border); padding:12px 10px; text-align:left; }
+    th{ color:#cfd6e6; font-weight:700; background:rgba(255,255,255,.04); }
+    tr:last-child td{ border-bottom:none; }
+    a{ color:#8ec8ff; text-decoration:none; }
+    a:hover{ text-decoration:underline; }
+
+    /* 画面下の操作ヒント（ブースト用） */
+    .hint{
+      position:fixed; right:18px; bottom:18px; z-index:6;
+      color:var(--muted); font-size:13px;
+      background:var(--glass); border:1px solid var(--border); border-radius:10px; padding:8px 10px;
+      backdrop-filter: blur(8px); box-shadow:var(--shadow);
     }
   </style>
 </head>
 <body>
-  <!-- ナビゲーションバー -->
-<style>
-  nav {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background: #111;
-    color: white;
-    padding: 12px 24px;
-    z-index: 999;
-    font-size: 18px;
-    display: flex;
-    gap: 20px;
-     font-family: 'Noto Serif JP', serif; /* ← これを追加 */
-  }
-  nav a {
-    color: white;
-    text-decoration: none;
-  }
-  nav a:hover {
-    text-decoration: underline;
-  }
-  body {
-    padding-top: 60px;
-  }
-</style>
+  <div class="bg-gradient" aria-hidden="true"></div>
+  <div id="space-layer" aria-hidden="true"></div>
 
-<nav>
-  <a href="index.html">Home</a>
-  <a href="schedule.html">Schedule</a>
-  <a href="contact.html">Contact</a>
-  <a href="qa.html">Q&A</a>
-</nav>
-  <h1>数学研究部の活動予定</h1>
-  <p><a href="index.html">← トップページへ戻る</a></p>
+  <!-- Nav -->
+  <nav>
+    <div class="nav-inner">
+      <div class="brand">
+        <div class="brand-badge">∑</div>
+        <div>京都府立医科大学 数学研究部</div>
+      </div>
+      <div class="nav-links" role="navigation" aria-label="Main">
+        <a href="index.html">Home</a>
+        <a href="schedule.html" aria-current="page">Schedule</a>
+        <a href="contact.html">Contact</a>
+        <a href="qa.html">Q&amp;A</a>
+      </div>
+    </div>
+  </nav>
 
-  <table>
-    <tr>
-      <th>日付</th>
-      <th>内容</th>
-    </tr>
-    <tr>
-      <td>2025年11月までに</td>
-      <td>Trias祭の問題作製</td>
-    </tr>
-    <tr>
-      <td>2025/11/1,2</td>
-      <td>Trias Festival at KPUM</td>
-    </tr>
-  </table>
-  <!-- 幾何学模様用canvas -->
-<script>
-  new p5(p => {
-    let circles = [];
-    const numRings = 20;
-    const pointsPerRing = 5;
-    let trailBuffer;
-    let boosting = false;
+  <main>
+    <div class="container">
+      <section class="panel">
+        <h1>活動予定</h1>
+        <p class="lead"><a href="index.html">← トップページへ戻る</a></p>
 
-    p.setup = () => {
-      const cnv = p.createCanvas(p.windowWidth, p.windowHeight);
-      cnv.position(0, 0);
-      cnv.style('z-index', '-1');
-      cnv.style('pointer-events', 'none');
-      p.angleMode(p.DEGREES);
+        <table aria-label="活動予定">
+          <thead>
+            <tr><th style="width:36%">日付</th><th>内容</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2025年11月までに</td>
+              <td>Trias祭の問題作製</td>
+            </tr>
+            <tr>
+              <td>2025/11/1, 11/2</td>
+              <td>Trias Festival at KPUM</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </main>
 
-      trailBuffer = p.createGraphics(p.width, p.height);
-      trailBuffer.clear();
-      trailBuffer.angleMode(p.DEGREES);
+  <div class="hint">画面をタップ / クリック中は星の回転が早くなります（流れ星も出やすく）</div>
 
-      const centerX = p.width / 2;
-      const centerY = p.height / 2;
+  <!-- ===== 宇宙背景（円運動 + 瞬き + たまに流れ星） ===== -->
+  <script>
+    new p5(p => {
+      /* ==== 既存の円運動はキープ ==== */
+      let circles = [];
+      const numRings = 20;         // リング数（元コードと同じ）
+      const pointsPerRing = 5;     // 1リングの点の数（元コードと同じ）
+      let trailBuffer;
+      let boosting = false;
 
-      for (let r = 1; r <= numRings; r++) {
-        const radius = r * 40;
-        for (let i = 0; i < pointsPerRing; i++) {
-          const angle = p.random(360);
-          const baseSpeed = p.random(0.1, 0.5) * (r * 0.1);
-          circles.push({
-            r: radius,
-            angle: angle,
-            baseSpeed: baseSpeed,
-            currentSpeed: baseSpeed,
-            centerX,
-            centerY
+      /* ==== 星の瞬き（固定背景の星） ==== */
+      const stars = [];
+      const STAR_COUNT = 220;
+
+      /* ==== たまに流れ星 ==== */
+      const meteors = [];
+      function spawnMeteor(){
+        // 画面の上または左から入って、右下へ抜ける
+        const side = Math.random() < 0.6 ? 'top' : 'left';
+        const startX = side === 'top' ? p.random(-50, p.width*0.8) : -60;
+        const startY = side === 'top' ? -50 : p.random(0, p.height*0.6);
+        const speed = p.random(12, 20) * (boosting ? 1.4 : 1);
+        const angle = p.radians(p.random(20, 35)); // 右下へ
+        meteors.push({
+          x:startX, y:startY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 0,
+          maxLife: p.random(30, 45)
+        });
+      }
+
+      p.setup = () => {
+        const cnv = p.createCanvas(p.windowWidth, p.windowHeight);
+        cnv.parent('space-layer');
+        cnv.style('z-index', '1');
+        cnv.style('pointer-events', 'none');
+        p.angleMode(p.DEGREES);
+
+        trailBuffer = p.createGraphics(p.width, p.height);
+        trailBuffer.clear(); trailBuffer.angleMode(p.DEGREES);
+
+        // 円運動の初期化（元の動きはそのまま）
+        const centerX = p.width / 2;
+        const centerY = p.height / 2;
+        for (let r = 1; r <= numRings; r++) {
+          const radius = r * 40;
+          for (let i = 0; i < pointsPerRing; i++) {
+            const angle = p.random(360);
+            const baseSpeed = p.random(0.1, 0.5) * (r * 0.1);
+            circles.push({
+              r: radius,
+              angle: angle,
+              baseSpeed: baseSpeed,
+              currentSpeed: baseSpeed,
+              centerX,
+              centerY
+            });
+          }
+        }
+
+        // 瞬き用の固定星
+        for(let i=0;i<STAR_COUNT;i++){
+          stars.push({
+            x: p.random(p.width),
+            y: p.random(p.height),
+            size: p.random(1,2.2),
+            base: p.random(140, 220),
+            tw: p.random(0.8, 1.6),
+            phase: p.random(360)
           });
         }
-      }
-    };
+      };
 
-    p.draw = () => {
-      // フェードアウトで残像
-      trailBuffer.fill(255, 255, 255, 20);
-      trailBuffer.noStroke();
-      trailBuffer.rect(0, 0, p.width, p.height);
-
-      for (let c of circles) {
-        // ブースト判定
-        let speedFactor = boosting ? 6 : 1.0;
-        c.currentSpeed = c.baseSpeed * speedFactor;
-
-        const x = c.centerX + p.cos(c.angle) * c.r;
-        const y = c.centerY + p.sin(c.angle) * c.r;
-
-        // 軌跡
+      p.draw = () => {
+        // トレイルは黒でフェード（宇宙なので暗い残像）
         trailBuffer.noStroke();
-        trailBuffer.fill(0, 100);
-        trailBuffer.ellipse(x, y, 4);
+        trailBuffer.fill(0, 24);
+        trailBuffer.rect(0, 0, p.width, p.height);
 
-        // 中心点
+        // 背景の瞬く星
         p.noStroke();
-        p.fill(0);
-        p.ellipse(x, y, 6);
+        for(const s of stars){
+          const alpha = s.base + 35*Math.sin((p.frameCount*s.tw)+s.phase);
+          p.fill(255, 255, 255, p.constrain(alpha, 120, 255));
+          p.circle(s.x, s.y, s.size);
+        }
 
-        c.angle += c.currentSpeed;
-      }
+        // 既存の円運動（色は宇宙用に白に）
+        for (let c of circles) {
+          // ブースト判定
+          const speedFactor = boosting ? 6 : 1.0;
+          c.currentSpeed = c.baseSpeed * speedFactor;
 
-      p.image(trailBuffer, 0, 0);
-    };
+          const x = c.centerX + p.cos(c.angle) * c.r;
+          const y = c.centerY + p.sin(c.angle) * c.r;
 
-    p.touchStarted = () => {
-      boosting = true;
-    };
+          // 軌跡（発光気味）
+          trailBuffer.noStroke();
+          trailBuffer.fill(255, 220);
+          trailBuffer.ellipse(x, y, 2.5);
 
-    p.touchEnded = () => {
-      boosting = false;
-    };
+          // 現在位置の輝点
+          p.noStroke();
+          p.fill(255);
+          p.ellipse(x, y, 3.5);
 
-    p.mousePressed = () => { boosting = true; };   // PC対応
-    p.mouseReleased = () => { boosting = false; };
+          c.angle += c.currentSpeed;
+        }
 
-    p.windowResized = () => {
-      p.resizeCanvas(p.windowWidth, p.windowHeight);
-      trailBuffer = p.createGraphics(p.width, p.height);
-      trailBuffer.clear();
-      trailBuffer.angleMode(p.DEGREES);
-      const centerX = p.width / 2;
-      const centerY = p.height / 2;
-      for (let c of circles) {
-        c.centerX = centerX;
-        c.centerY = centerY;
-      }
-    };
-  });
-</script>
+        // 確率で流れ星スポーン（ブースト中は出やすく）
+        if (Math.random() < (boosting ? 0.03 : 0.008)) spawnMeteor();
+
+        // 流れ星の描画（尾は trailBuffer へ）
+        for(let i=meteors.length-1;i>=0;i--){
+          const m = meteors[i];
+          m.life++;
+
+          // 尾（だんだん薄く）
+          trailBuffer.push();
+          trailBuffer.stroke(180, 220, 255, 220 - m.life*4);
+          trailBuffer.strokeWeight(2);
+          trailBuffer.line(m.x - m.vx*0.8, m.y - m.vy*0.8, m.x, m.y);
+          trailBuffer.pop();
+
+          // 本体
+          p.noStroke();
+          p.fill(220, 240, 255);
+          p.circle(m.x, m.y, 3.2);
+
+          m.x += m.vx;
+          m.y += m.vy;
+
+          if(m.life > m.maxLife || m.x > p.width+80 || m.y > p.height+80){
+            meteors.splice(i,1);
+          }
+        }
+
+        // トレイル合成
+        p.image(trailBuffer, 0, 0);
+      };
+
+      // 入力でブースト（元の仕様＋流れ星出やすく）
+      p.touchStarted = () => { boosting = true; };
+      p.touchEnded   = () => { boosting = false; };
+      p.mousePressed = () => { boosting = true; };
+      p.mouseReleased= () => { boosting = false; };
+
+      p.windowResized = () => {
+        p.resizeCanvas(p.windowWidth, p.windowHeight);
+        // trailBufferはリサイズ時に作り直す
+        trailBuffer = p.createGraphics(p.width, p.height);
+        trailBuffer.clear(); trailBuffer.angleMode(p.DEGREES);
+
+        // 円運動の中心だけ再配置
+        const cx = p.width/2, cy = p.height/2;
+        for(const c of circles){ c.centerX = cx; c.centerY = cy; }
+
+        // 星も再生成しておく
+        stars.length = 0;
+        for(let i=0;i<STAR_COUNT;i++){
+          stars.push({
+            x: p.random(p.width),
+            y: p.random(p.height),
+            size: p.random(1,2.2),
+            base: p.random(140, 220),
+            tw: p.random(0.8, 1.6),
+            phase: p.random(360)
+          });
+        }
+      };
+    });
+  </script>
 </body>
 </html>
