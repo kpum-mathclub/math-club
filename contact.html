@@ -3,134 +3,86 @@
 <head>
   <meta charset="UTF-8">
   <title>Contact | 数学研究部</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP&display=swap" rel="stylesheet">
 
   <style>
-    :root {
-      --bg1: #050607;
-      --bg2: #0a0e10;
-      --fg: #e4e6ea;
-      --muted: #a2a6ab;
-      --accent: #3cd59b;
-      --accent-2: #3894ff;
-      --glass: rgba(255, 255, 255, 0.04);
-      --border: rgba(255, 255, 255, 0.08);
-      --shadow: 0 10px 25px rgba(0,0,0,0.45);
-    }
-
     body {
       font-family: "Noto Serif JP", serif;
       margin: 0;
       padding: 0;
-      background: linear-gradient(180deg, var(--bg1), var(--bg2) 60%, #000 100%);
-      color: var(--fg);
+      background: radial-gradient(circle at 50% 20%, #0a0a0d 0%, #000 100%);
+      color: #eaeaea;
       overflow-x: hidden;
-    }
-
-    /* 背景に静かな光の揺らぎ */
-    .bg {
-      position: fixed;
-      inset: 0;
-      z-index: -20;
-      background:
-        radial-gradient(800px 600px at 15% 25%, rgba(60, 213, 155, 0.12), transparent 70%),
-        radial-gradient(900px 600px at 85% 75%, rgba(56, 148, 255, 0.1), transparent 65%);
-      animation: subtleGlow 40s ease-in-out infinite alternate;
-    }
-    @keyframes subtleGlow {
-      0% { filter: brightness(1) hue-rotate(0deg); }
-      100% { filter: brightness(1.1) hue-rotate(40deg); }
     }
 
     nav {
       position: fixed;
       top: 0; left: 0; width: 100%;
-      background: rgba(10, 12, 15, 0.65);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.85);
+      color: #fff;
       padding: 12px 24px;
-      color: var(--fg);
+      z-index: 999;
+      font-size: 18px;
       display: flex;
       gap: 20px;
-      font-size: 18px;
-      z-index: 999;
-      box-shadow: var(--shadow);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
     }
+
     nav a {
-      color: var(--fg);
+      color: #fff;
       text-decoration: none;
-      position: relative;
-      padding: 8px 10px;
-      transition: color 0.3s ease;
+      transition: color 0.3s;
     }
+
     nav a:hover {
-      color: var(--accent);
+      color: #3cc9ff;
     }
 
     .container {
-      padding: 110px 20px 60px;
-      max-width: 880px;
+      padding: 100px 20px 40px;
+      max-width: 800px;
       margin: 0 auto;
     }
 
     h1 {
-      font-size: clamp(26px, 4vw, 34px);
-      margin-bottom: 16px;
-      letter-spacing: 0.02em;
-      color: #f0f1f3;
+      font-size: 28px;
+      margin-bottom: 24px;
+      border-bottom: 2px solid #3cc9ff;
+      display: inline-block;
+      padding-bottom: 6px;
     }
 
-    .card {
-      margin: 30px 0;
+    .contact-section, .email-section {
+      margin: 40px 0;
       padding: 20px;
-      border: 1px solid var(--border);
-      border-left: 4px solid var(--accent-2);
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
-      backdrop-filter: blur(8px);
-      border-radius: 12px;
-      box-shadow: var(--shadow);
-      transition: border-color 0.3s ease, transform 0.2s ease;
-    }
-    .card:hover {
-      border-color: var(--accent);
-      transform: translateY(-3px);
+      border-left: 4px solid #3cc9ff;
+      background-color: rgba(255, 255, 255, 0.04);
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+      border-radius: 8px;
     }
 
-    h2 {
-      margin: 0 0 10px;
-      font-size: 20px;
-      color: #f0f1f3;
-    }
-
-    p {
-      margin: 0;
-      line-height: 1.8;
-      color: var(--muted);
-    }
-
-    a {
-      color: var(--accent);
-      text-decoration: none;
+    .contact-section a, .email-section a {
+      color: #3cc9ff;
       font-weight: bold;
-    }
-    a:hover {
-      color: var(--accent-2);
+      text-decoration: none;
     }
 
-    canvas.p5-layer {
+    .contact-section a:hover, .email-section a:hover {
+      text-decoration: underline;
+    }
+
+    canvas {
       position: fixed;
-      inset: 0;
-      pointer-events: none;
+      top: 0;
+      left: 0;
       z-index: -10;
+      pointer-events: none;
     }
   </style>
 </head>
 
 <body>
-  <div class="bg" aria-hidden="true"></div>
-
   <nav>
     <a href="index.html">Home</a>
     <a href="schedule.html">Schedule</a>
@@ -141,15 +93,15 @@
   <div class="container">
     <h1>お問い合わせ・SNS</h1>
 
-    <div class="card">
+    <div class="contact-section">
       <h2>公式X（旧Twitter）</h2>
       <p>
         最新情報や活動報告を、京都府立医科大学 数学研究部の公式アカウントで発信しています。<br>
-        ▶ <a href="https://twitter.com/kpum_mathclub" target="_blank" rel="noopener">@kpum_mathclub</a>
+        ▶ <a href="https://twitter.com/kpum_mathclub" target="_blank">@kpum_mathclub</a>
       </p>
     </div>
 
-    <div class="card">
+    <div class="email-section">
       <h2>メールでのお問い合わせ</h2>
       <p>
         ご質問・連絡などは以下のアドレスまでご連絡ください：<br>
@@ -160,60 +112,67 @@
 
   <script>
   new p5(p => {
-    const balls = [];
     const ballCount = 40;
+    const balls = [];
     let isPressing = false;
-    let hueBase = 180;
 
     class Ball {
       constructor() {
-        this.r = p.random(10, 25);
+        this.r = p.random(10, 30);
         this.x = p.random(this.r, p.windowWidth - this.r);
         this.y = p.random(this.r, p.windowHeight - this.r);
         this.vx = p.random(-1, 1);
         this.vy = p.random(-1, 1);
-        this.hueShift = p.random(-20, 20);
+        this.color = p.color(p.random(150, 200), p.random(150, 200), p.random(255), 150);
       }
 
       move() {
-        const boost = isPressing ? 3 : 1;
-        this.x += this.vx * boost;
-        this.y += this.vy * boost;
+        const speed = isPressing ? 3 : 1;
+        this.x += this.vx * speed;
+        this.y += this.vy * speed;
 
-        if (this.x < this.r || this.x > p.width - this.r) this.vx *= -1;
-        if (this.y < this.r || this.y > p.height - this.r) this.vy *= -1;
+        // 反射処理
+        if (this.x - this.r < 0) {
+          this.x = this.r;
+          this.vx *= -1;
+        }
+        if (this.x + this.r > p.width) {
+          this.x = p.width - this.r;
+          this.vx *= -1;
+        }
+        if (this.y - this.r < 0) {
+          this.y = this.r;
+          this.vy *= -1;
+        }
+        if (this.y + this.r > p.height) {
+          this.y = p.height - this.r;
+          this.vy *= -1;
+        }
       }
 
       draw() {
-        const h = (hueBase + this.hueShift + 360) % 360;
         p.noStroke();
-
-        // 尾を残すようにグロー
-        p.fill(`hsla(${h}, 80%, 60%, 0.08)`);
-        p.ellipse(this.x, this.y, this.r * 4);
-        p.fill(`hsla(${h}, 90%, 70%, 0.35)`);
+        p.fill(this.color);
         p.ellipse(this.x, this.y, this.r * 2);
-        p.fill(`hsla(${h}, 100%, 85%, 0.8)`);
-        p.ellipse(this.x, this.y, this.r * 0.8);
       }
     }
 
     p.setup = () => {
       const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
-      canvas.addClass('p5-layer');
       canvas.position(0, 0);
-      p.colorMode(p.HSL);
-      p.blendMode(p.ADD);
-      for (let i = 0; i < ballCount; i++) balls.push(new Ball());
+      canvas.style('z-index', '-10');
+      canvas.style('pointer-events', 'none');
+      for (let i = 0; i < ballCount; i++) {
+        balls.push(new Ball());
+      }
+      p.noStroke();
     };
 
     p.draw = () => {
-      hueBase = (hueBase + 0.08) % 360;
-      p.fill(0, 0, 0, 0.15);
-      p.rect(0, 0, p.width, p.height);
-      for (let b of balls) {
-        b.move();
-        b.draw();
+      p.background(0); // 真っ黒に塗りつぶし（尾なし）
+      for (let ball of balls) {
+        ball.move();
+        ball.draw();
       }
     };
 
@@ -221,10 +180,10 @@
       p.resizeCanvas(p.windowWidth, p.windowHeight);
     };
 
-    p.mousePressed = () => (isPressing = true);
-    p.mouseReleased = () => (isPressing = false);
-    p.touchStarted = () => (isPressing = true);
-    p.touchEnded = () => (isPressing = false);
+    p.mousePressed = () => { isPressing = true; };
+    p.mouseReleased = () => { isPressing = false; };
+    p.touchStarted = () => { isPressing = true; };
+    p.touchEnded = () => { isPressing = false; };
   });
   </script>
 </body>
