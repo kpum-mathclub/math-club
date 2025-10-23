@@ -41,7 +41,10 @@
     a{color:inherit; text-decoration:none}
     a:focus-visible, button:focus-visible{outline:none; box-shadow:var(--focus); border-radius:10px}
 
-    body.dragging, body.dragging *{ user-select:none; cursor:grabbing!important; }
+    body.dragging, body.dragging *{
+      user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
+      cursor: grabbing !important;
+    }
 
     /* ===== LAYERS ===== */
     .bg-gradient{
@@ -52,7 +55,9 @@
         linear-gradient(180deg, var(--bg) 0%, var(--bg) 100%);
     }
     /* p5キャンバス（専用レイヤー） */
-    #game-layer{ position:fixed; inset:0; z-index:2; pointer-events:none; }
+    #game-layer{
+      position:fixed; inset:0; z-index:2; pointer-events:none;
+    }
     #game-layer canvas{ position:absolute; inset:0; }
 
     /* ===== UI LAYER ===== */
@@ -72,10 +77,11 @@
     .nav-links a:hover{ background:var(--glass); }
     .theme-toggle{ margin-left:6px; border:1px solid var(--border); background:var(--glass); border-radius:12px; padding:8px 12px; cursor:pointer; box-shadow:var(--shadow); font-weight:600; }
 
-    /* 難易度（Walker数）コントロール） */
+    /* 難易度（Walker数）コントロール */
     .difficulty{
       display:flex; gap:10px; align-items:center; padding:8px 12px; border-radius:12px;
-      background:var(--glass); border:1px solid var(--border); box-shadow:var(--shadow); font-size:13px;
+      background:var(--glass); border:1px solid var(--border); box-shadow:var(--shadow);
+      font-size:13px;
     }
     .difficulty input[type="range"]{ width:160px; accent-color: var(--accent-2); }
 
@@ -86,15 +92,19 @@
       background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); backdrop-filter: blur(10px);
       padding:44px 36px; box-shadow: var(--shadow);
     }
-    .hero h1{ margin:0 0 10px; font-size:clamp(26px, 4vw, 40px); font-family:"Noto Serif JP", serif; }
+    .hero h1{ margin:0 0 10px; font-size:clamp(26px, 4vw, 40px); font-family:"Noto Serif JP", serif; letter-spacing:.02em; }
     .hero p{ margin:0 0 24px; color:var(--muted); font-size:clamp(14px, 2vw, 16px); }
     .badge{ display:inline-flex; gap:10px; align-items:center; padding:8px 12px; border-radius:999px; font-weight:600;
       background:linear-gradient(135deg, rgba(84,214,163,.2), rgba(93,168,255,.2)); border:1px solid var(--border); margin-bottom:10px; }
     .cta-grid{ display:grid; gap:16px; grid-template-columns:repeat(3, minmax(0,1fr)); }
     @media (max-width:820px){ .cta-grid{ grid-template-columns:1fr; } }
-    .card{ display:block; padding:20px; border-radius:var(--card-radius); border:1px solid var(--border); background:var(--glass);
-      box-shadow: var(--shadow); transition: transform .2s ease, border-color .2s ease; }
-    .card:hover{ transform: translateY(-2px); border-color: rgba(93,168,255,.45); }
+    .card{
+      display:block; padding:20px; border-radius:var(--card-radius); border:1px solid var(--border); background:var(--glass);
+      backdrop-filter: blur(8px); box-shadow: var(--shadow); transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    .card:hover{ transform: translateY(-2px); border-color: rgba(93,168,255,.45); box-shadow:0 14px 40px rgba(0,0,0,.35); }
+    .card h3{ margin:0 0 6px; font-size:18px; }
+    .card p{ margin:0; color:var(--muted); font-size:14px; }
 
     .control-hint{
       position:fixed; right:18px; bottom:18px; z-index:12;
@@ -104,29 +114,38 @@
     .dot{ width:10px; height:10px; border-radius:50%; background: radial-gradient(circle at 40% 35%, rgba(0,255,120,.9), rgba(0,255,120,.3)); box-shadow:0 0 18px rgba(0,255,120,.55); }
 
     .section{ margin-top:28px; display:grid; gap:16px; grid-template-columns:1fr 1fr; }
-    .section .panel{ padding:20px; border-radius:var(--card-radius); border:1px solid var(--border); background:var(--glass); box-shadow: var(--shadow); }
+    .section .panel{ padding:20px; border-radius:var(--card-radius); border:1px solid var(--border); background:var(--glass); backdrop-filter: blur(8px); box-shadow: var(--shadow); }
     @media (max-width:920px){ .section{ grid-template-columns:1fr; } }
 
     footer{ margin-top:36px; padding:18px; text-align:center; color:var(--muted); font-size:13px; }
 
-    /* ===== START OVERLAY（重厚木製の扉） ===== */
+    /* ===== START OVERLAY（扉演出：重厚木製版） ===== */
     .start-overlay{
       position:fixed; inset:0; z-index:30; display:flex; flex-direction:column; align-items:center; justify-content:center;
-      gap:28px; backdrop-filter: blur(12px);
+      gap:28px;
+      backdrop-filter: blur(12px);
       background:
         radial-gradient(40% 35% at 50% 50%, rgba(0,0,0,.25), transparent 60%),
         radial-gradient(60% 50% at 50% 40%, rgba(255,255,255,.08), transparent 70%);
     }
     .door-scene{
       position:relative; width:min(860px, 92vw); height:min(360px, 58vh);
-      perspective:1400px; border-radius:16px; border:1px solid var(--border);
-      background:linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.15));
-      box-shadow: var(--shadow); overflow:hidden;
+      perspective:1400px;
+      border-radius:16px;
+      border:1px solid var(--border);
+      background:
+        linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.15));
+      box-shadow: var(--shadow);
+      overflow:hidden;
     }
     .door{
-      position:absolute; top:0; bottom:0; width:50%; transform-style: preserve-3d;
+      position:absolute; top:0; bottom:0; width:50%;
+      transform-style: preserve-3d;
       background:
-        repeating-linear-gradient(90deg, rgba(30,18,10,.35) 0px, rgba(30,18,10,.35) 1px, rgba(30,18,10,.15) 1px, rgba(30,18,10,.15) 3px),
+        repeating-linear-gradient( 90deg,
+          rgba(30,18,10,.35) 0px, rgba(30,18,10,.35) 1px,
+          rgba(30,18,10,.15) 1px, rgba(30,18,10,.15) 3px
+        ),
         linear-gradient(180deg, rgba(255,255,255,.03) 0%, rgba(0,0,0,.12) 100%),
         linear-gradient(180deg, #3b2618 0%, #2a1a10 100%);
       box-shadow:
@@ -140,19 +159,26 @@
       border-right:1px solid rgba(0,0,0,.35);
     }
     .door::after{
-      content:""; position:absolute; top:0; bottom:0; width:14px; transform: translateZ(-1px);
+      content:"";
+      position:absolute; top:0; bottom:0;
+      width:14px;
+      transform: translateZ(-1px);
       background: linear-gradient(180deg, #2b1d12, #1d130c);
       box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
     }
-    .door.left{ left:0; transform-origin:left center; }
-    .door.right{ right:0; transform-origin:right center; }
-    .door.left::after{ right:-14px; } .door.right::after{ left:-14px; }
+    .door.left::after{ right:-14px; }
+    .door.right::after{ left:-14px; }
 
     .door::before{
-      content:""; position:absolute; inset:14px; border-radius:8px;
+      content:"";
+      position:absolute; inset:14px;
+      border-radius:8px;
       background:
         linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.25)),
-        repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0, rgba(255,255,255,.03) 2px, rgba(0,0,0,.08) 2px, rgba(0,0,0,.08) 4px),
+        repeating-linear-gradient( 90deg,
+          rgba(255,255,255,.03) 0, rgba(255,255,255,.03) 2px,
+          rgba(0,0,0,.08) 2px, rgba(0,0,0,.08) 4px
+        ),
         linear-gradient(180deg, #3a2417, #2a1a10 60%, #24160e 100%);
       border:1px solid rgba(0,0,0,.5);
       box-shadow:
@@ -160,21 +186,45 @@
         inset 0 10px 20px rgba(0,0,0,.35),
         inset 0 -10px 25px rgba(0,0,0,.45);
     }
+    .door.left{ left:0; transform-origin:left center; }
+    .door.right{ right:0; transform-origin:right center; }
+
     .handle{
-      position:absolute; top:50%; width:22px; height:22px; border-radius:50%; transform: translateY(-50%);
-      background: radial-gradient(circle at 35% 35%, #fff, rgba(255,255,255,.5) 45%, rgba(230,210,120,.6) 60%, rgba(120,90,20,.9) 100%);
-      box-shadow: 0 6px 14px rgba(0,0,0,.45), inset 0 0 2px rgba(255,255,255,.6);
+      position:absolute; top:50%; width:22px; height:22px; border-radius:50%;
+      transform: translateY(-50%);
+      background:
+        radial-gradient(circle at 35% 35%, #fff, rgba(255,255,255,.5) 45%, rgba(230,210,120,.6) 60%, rgba(120,90,20,.9) 100%);
+      box-shadow:
+        0 6px 14px rgba(0,0,0,.45),
+        inset 0 0 2px rgba(255,255,255,.6);
       border:1px solid rgba(255,255,255,.25);
     }
-    .door.left .handle{ right:22px; } .door.right .handle{ left:22px; }
+    .door.left .handle{ right:22px; }
+    .door.right .handle{ left:22px; }
     .handle::after{
-      content:""; position:absolute; inset:-10px; border-radius:12px;
+      content:"";
+      position:absolute; inset:-10px;
+      border-radius:12px;
       background: linear-gradient(135deg, rgba(255,255,255,.15), rgba(0,0,0,.35));
-      border:1px solid rgba(255,255,255,.08); box-shadow: inset 0 0 0 1px rgba(0,0,0,.5); z-index:-1;
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.5);
+      z-index:-1;
     }
-    .door-copy{ position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; font-family:"Noto Serif JP", serif; text-align:center; }
-    .door-copy h2{ margin:0; font-weight:800; letter-spacing:.04em; font-size:clamp(22px, 3.5vw, 36px); text-shadow:0 10px 30px rgba(0,0,0,.5); }
-    .door-copy p{ margin:10px 0 0; color:rgba(255,255,255,.7); font-size:clamp(13px, 1.8vw, 15px); }
+
+    .door-copy{
+      position:absolute; inset:0; display:grid; place-items:center; pointer-events:none;
+      font-family:"Noto Serif JP", serif; text-align:center;
+    }
+    .door-copy h2{
+      margin:0; font-weight:800; letter-spacing:.04em;
+      font-size:clamp(22px, 3.5vw, 36px);
+      text-shadow:0 10px 30px rgba(0,0,0,.5);
+    }
+    .door-copy p{
+      margin:10px 0 0; color:rgba(255,255,255,.7);
+      font-size:clamp(13px, 1.8vw, 15px);
+    }
+
     .start-overlay.opening .door.left{  transform: rotateY(-96deg); }
     .start-overlay.opening .door.right{ transform: rotateY( 96deg); }
     .start-overlay.opening .door-copy{ opacity:0; transition: opacity .45s ease .25s; }
@@ -188,9 +238,12 @@
     }
     .start-btn:active{ transform:translateY(1px); }
     .start-skip{
-      padding:14px 18px; border-radius:12px; border:1px solid var(--border);
-      background:var(--glass); color:var(--fg); font-weight:700; cursor:pointer; box-shadow: var(--shadow);
+      padding:14px 18px; border-radius:12px;
+      border:1px solid var(--border);
+      background:var(--glass); color:var(--fg);
+      font-weight:700; cursor:pointer; box-shadow: var(--shadow);
     }
+    .start-skip:active{ transform:translateY(1px); }
 
     /* PLAY AGAIN（ホーム右下） */
     .play-again-btn{
@@ -204,34 +257,47 @@
     /* GAME OVER OVERLAY */
     .gameover-overlay{
       position:fixed; inset:0; z-index:35; display:none; align-items:center; justify-content:center;
-      backdrop-filter: blur(10px); background: rgba(0,0,0,.25);
+      backdrop-filter: blur(10px);
+      background: rgba(0,0,0,.25);
     }
     .gameover-card{
-      background: var(--glass); border:1px solid var(--border); border-radius:16px; padding:20px; box-shadow: var(--shadow);
-      min-width:240px; display:flex; flex-direction:column; gap:14px; align-items:center;
+      background: var(--glass);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:20px;
+      box-shadow: var(--shadow);
+      min-width:240px;
+      display:flex; flex-direction:column; gap:14px; align-items:center;
     }
-    .gameover-title{ font-weight:800; font-size:20px; letter-spacing:.05em; }
+    .gameover-title{ font-weight:800; font-size:20px; }
     .btn-row{ display:flex; gap:10px; }
     .btn{ padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:700; }
     .btn.primary{ background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:#fff; border:1px solid var(--border); box-shadow: var(--shadow); }
     .btn.ghost{ background:var(--glass); color:var(--fg); border:1px solid var(--border); }
 
-    /* GAME-ONLY */
+    /* GAME-ONLY: UIだけ隠す（キャンバスは常時表示） */
     body.game-only #ui-layer { display:none !important; }
     body.game-only { overflow:hidden; }
 
     /* ===== 蔵書モーダル ===== */
-    .modal{ position:fixed; inset:0; z-index:40; display:none; align-items:center; justify-content:center; background: rgba(0,0,0,.35); backdrop-filter: blur(6px); }
-    .modal .panel{ width:min(1000px, 94vw); max-height:80vh; overflow:auto; background: var(--glass); border:1px solid var(--border); border-radius:16px; padding:16px; box-shadow: var(--shadow); }
+    .modal{
+      position:fixed; inset:0; z-index:40; display:none; align-items:center; justify-content:center;
+      background: rgba(0,0,0,.35); backdrop-filter: blur(6px);
+    }
+    .modal .panel{
+      width:min(900px, 92vw); max-height:80vh; overflow:auto;
+      background: var(--glass); border:1px solid var(--border);
+      border-radius:16px; padding:16px; box-shadow: var(--shadow);
+    }
     .modal h3{ margin:4px 0 10px; font-family:"Noto Serif JP",serif; }
     .modal .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .modal input, .modal select{
+    .modal input{
       background: var(--bg); color:var(--fg); border:1px solid var(--border); border-radius:10px; padding:8px 10px;
     }
     .modal table{ width:100%; border-collapse: collapse; margin-top:10px; font-size:14px; }
     .modal th, .modal td{ border-bottom:1px solid var(--border); padding:8px; text-align:left; }
     .modal .close{ margin-left:auto; padding:8px 10px; border-radius:10px; border:1px solid var(--border); background:var(--glass); cursor:pointer; }
-    .muted{ color:var(--muted); font-size:12px; margin:6px 0 0; }
+    .status{ margin-top:8px; color:var(--muted); font-size:13px; }
   </style>
 </head>
 <body>
@@ -270,7 +336,7 @@
     </div>
   </div>
 
-  <!-- UIレイヤー -->
+  <!-- UIレイヤー（ゲーム開始で消す） -->
   <div id="ui-layer">
     <nav>
       <div class="nav-inner">
@@ -332,50 +398,47 @@
       <span>画面をフリック / ドラッグで操作し、Greenの点をGoalに導こう。</span>
     </div>
 
+    <!-- ホームに戻ったら出る「Play Again」 -->
     <button id="playAgainBtn" class="play-again-btn">Play Again</button>
   </div>
 
-  <!-- 蔵書モーダル -->
+  <!-- 蔵書モーダル（出版社 / タイトル / ISBN） -->
   <div id="booksModal" class="modal" aria-modal="true" role="dialog" aria-label="蔵書検索">
     <div class="panel">
       <div class="row" style="justify-content:space-between;">
         <h3>蔵書検索</h3>
         <button class="close" id="closeBooks">閉じる</button>
       </div>
-
-      <!-- 検索行（出版社/タイトル/ISBN） -->
       <div class="row" style="margin-top:6px;">
-        <input type="search" id="q" placeholder="キーワード（タイトル/著者/出版社/分類/メモ）" style="flex:1; min-width:220px;">
-        <input type="text" id="titleInput" placeholder="タイトル">
-        <input type="text" id="publisherInput" placeholder="出版社">
-        <input type="text" id="isbnInput" placeholder="ISBN（ハイフン不要）" inputmode="numeric">
-        <select id="year">
-          <option value="">年（すべて）</option>
-        </select>
+        <input type="search" id="q" placeholder="キーワード（出版社 / タイトル / ISBN）" style="flex:1; min-width:220px;">
+        <input type="text" id="publisher" placeholder="出版社">
+        <input type="text" id="title" placeholder="タイトル">
+        <input type="text" id="isbn" placeholder="ISBN（ハイフン不要）">
         <button class="theme-toggle" id="searchBtn" style="padding:8px 12px;">検索</button>
       </div>
-      <p id="catalogMsg" class="muted">蔵書データを読み込み中…</p>
+      <div id="catalogStatus" class="status">蔵書データを読み込み中…</div>
       <div id="results"></div>
     </div>
   </div>
 
-  <!-- ===== JavaScript（全部この1つのタグで完結） ===== -->
   <script>
-    // ====== グローバル状態 ======
+    /* ====== グローバル状態 ====== */
     window.hideCanvasText = false;
     window.__appState = 'home';
     const DEFAULT_WALKERS = parseInt(localStorage.getItem('walkerCount') || '300', 10);
 
-    // ====== 共通UI ======
     function switchToHomeUI(){
       document.body.classList.remove('game-only');
       window.__appState = 'home';
       window.hideCanvasText = false;
       document.getElementById('start-overlay').style.display = 'none';
       document.getElementById('gameover-overlay').style.display = 'none';
-      document.getElementById('playAgainBtn').style.display = 'inline-flex';
+      const pa = document.getElementById('playAgainBtn');
+      pa.style.display = 'inline-flex';
       window.dispatchEvent(new Event('resize'));
     }
+
+    // テーマ切替
     (function(){
       const saved = localStorage.getItem('theme');
       if(saved) document.documentElement.setAttribute('data-theme', saved);
@@ -387,6 +450,7 @@
       }
     })();
 
+    // ゲーム開始
     function startGame(){
       document.body.classList.add('game-only');
       window.__appState = 'game';
@@ -398,10 +462,10 @@
       if (window.__ensureGameAlive) window.__ensureGameAlive();
       window.dispatchEvent(new Event('resize'));
     }
-
     window.__onGameClear = ()=>{ switchToHomeUI(); };
 
-    (function(){ // Start overlay & buttons
+    // STARTオーバーレイ（扉演出 & Skip）
+    (function(){
       const startBtn = document.getElementById('startBtn');
       const skipStart = document.getElementById('skipStartBtn');
       const overlay = document.getElementById('start-overlay');
@@ -418,14 +482,26 @@
           opening = false;
         }, 920);
       });
-      skipStart.addEventListener('click', ()=>{ overlay.style.display = 'none'; switchToHomeUI(); });
-      window.addEventListener('keydown', (e)=>{ if(e.key === 'Escape'){ overlay.style.display = 'none'; switchToHomeUI(); }});
+
+      skipStart.addEventListener('click', ()=>{
+        overlay.style.display = 'none';
+        switchToHomeUI();
+      });
+
+      window.addEventListener('keydown', (e)=>{
+        if(e.key === 'Escape'){
+          overlay.style.display = 'none';
+          switchToHomeUI();
+        }
+      });
+
       document.getElementById('playAgainBtn').addEventListener('click', startGame);
       document.getElementById('retryBtn').addEventListener('click', startGame);
       document.getElementById('skipBtn').addEventListener('click', switchToHomeUI);
     })();
 
-    (function(){ // 難易度UI
+    /* ====== 難易度（Walker数）UI ====== */
+    (function(){
       const range = document.getElementById('walkerRange');
       const val = document.getElementById('walkerValue');
       const apply = document.getElementById('applyWalker');
@@ -438,202 +514,18 @@
         if (window.__setWalkerCount) window.__setWalkerCount(n);
       });
     })();
+  </script>
 
-    /* ============================
-       Google Sheets 読み込み部
-       ============================ */
-    const SHEET_ID   = '11h1ILZfrChHJv3NdUVzjKUHq2lgTsLKRWSN1p02TU5E';
-    const SHEET_NAME = 'books'; // タブ名
-    const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&t=${Date.now()}`;
-
-    function setCatalogMsg(text, type='info'){
-      const el = document.getElementById('catalogMsg');
-      if (!el) return;
-      el.textContent = text;
-      el.style.color = type === 'error' ? '#ff8a8a' : (type === 'warn' ? '#ffd27a' : 'var(--muted)');
-    }
-
-    async function fetchSheetRows(){
-      const res  = await fetch(GVIZ_URL, { cache: 'no-store' });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const text = await res.text();
-      // gviz JSON をパース
-      const json = JSON.parse(text.replace(/^[\s\S]*setResponse\(/, '').replace(/\);?\s*$/, ''));
-      const cols = json.table.cols.map(c => c.label || c.id);
-      const rows = json.table.rows.map(row => {
-        const obj = {};
-        cols.forEach((h, i) => obj[h] = row.c[i]?.v ?? '');
-        return obj;
-      });
-      return rows;
-    }
-
-    const MAP = {
-      title:     ['タイトル','Title','書名','題名'],
-      author:    ['著者','Author','作者'],
-      publisher: ['出版社','Publisher','出版','発行元'],
-      isbn:      ['ISBN','ＩＳＢＮ','Isbn'],
-      category:  ['分類','カテゴリ','カテゴリー','ジャンル','Category'],
-      year:      ['年','刊行年','Year'],
-      memo:      ['メモ','備考','注記','Note'],
-      keyword:   ['キーワード','検索語','Keywords']
-    };
-    function pick(row, keys){ for(const k of keys){ if(k in row && row[k] !== '') return row[k]; } return ''; }
-
-    function mapToCatalog(rows){
-      return rows.map(r=>{
-        const title     = pick(r, MAP.title);
-        const author    = pick(r, MAP.author);
-        const publisher = pick(r, MAP.publisher);
-        const isbn      = pick(r, MAP.isbn);
-        const category  = pick(r, MAP.category);
-        const yearRaw   = pick(r, MAP.year);
-        const memo      = pick(r, MAP.memo);
-        const keyword   = pick(r, MAP.keyword);
-        const year      = Number(yearRaw) || null;
-        return {
-          title, author, publisher, isbn, category, year, memo,
-          _q: [title, author, publisher, isbn, category, yearRaw, memo, keyword].filter(Boolean).join(' ')
-        };
-      });
-    }
-
-    async function loadCatalog(){
-      try{
-        setCatalogMsg('蔵書データを読み込み中…', 'info');
-        const rows = await fetchSheetRows();
-        const data = mapToCatalog(rows).filter(x => Object.values(x).some(v => v && String(v).trim() !== ''));
-        if (!data.length) throw new Error('no rows');
-        window.__catalog = data; // グローバルに供給
-        setCatalogMsg(`蔵書データを読み込みました（${data.length}件）。`, 'info');
-      }catch(e){
-        console.error('Sheets read failed:', e);
-        setCatalogMsg('Sheetsの読み込みに失敗しました。シートを公開（リンク所持者が閲覧可）にしてください。', 'error');
-        window.__catalog = [];
-      }
-    }
-    // 起動時ロード
-    document.addEventListener('DOMContentLoaded', loadCatalog);
-
-    /* ============================
-       検索（モーダル）ロジック
-       ============================ */
-    (function(){
-      const open = document.getElementById('openBooks');
-      const close = document.getElementById('closeBooks');
-      const modal = document.getElementById('booksModal');
-      const q = document.getElementById('q');
-      const titleInput = document.getElementById('titleInput');
-      const publisherInput = document.getElementById('publisherInput');
-      const isbnInput = document.getElementById('isbnInput');
-      const yearSel = document.getElementById('year');
-      const btn = document.getElementById('searchBtn');
-      const results = document.getElementById('results');
-
-      // --- 正規化（全角→半角、空白除去、小文字化） ---
-      const Z2H = (s)=> s.replace(/[！-～]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0));
-      function normalizeBase(s){ return Z2H(String(s||'')).toLowerCase().replace(/\s+/g,''); }
-      function normalizePublisher(s){
-        return normalizeBase(s).replace(/（株）|㈱|株式会社|（有）|㈲|有限会社|出版局|出版/g,''); // ゆるめ
-      }
-      function normalizeISBN(s){ return String(s||'').replace(/[^\dxX]/g,'').toLowerCase(); }
-
-      // --- レンダリング ---
-      function render(list){
-        if(!list.length){
-          results.innerHTML = '<p class="muted">該当なし</p>'; return;
-        }
-        const rows = list.map(b=>`
-          <tr>
-            <td>${escapeHtml(b.title||'')}</td>
-            <td>${escapeHtml(b.author||'')}</td>
-            <td>${escapeHtml(b.publisher||'')}</td>
-            <td>${escapeHtml(b.year||'')}</td>
-            <td>${escapeHtml(b.isbn||'')}</td>
-            <td>${escapeHtml(b.category||'')}</td>
-            <td>${escapeHtml(b.memo||'')}</td>
-          </tr>`).join('');
-        results.innerHTML = `
-          <table>
-            <thead><tr>
-              <th>タイトル</th><th>著者</th><th>出版社</th><th>年</th><th>ISBN</th><th>分類</th><th>メモ</th>
-            </tr></thead>
-            <tbody>${rows}</tbody>
-          </table>`;
-      }
-      function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
-
-      // --- 検索 ---
-      function doSearch(){
-        const all = window.__catalog || [];
-        const kw = normalizeBase(q.value);
-        const tkw = normalizeBase(titleInput.value);
-        const pkw = normalizePublisher(publisherInput.value);
-        const iskw = normalizeISBN(isbnInput.value);
-        const yr = yearSel.value.trim();
-
-        const out = all.filter(b=>{
-          const t = normalizeBase(b.title);
-          const a = normalizeBase(b.author);
-          const p = normalizePublisher(b.publisher);
-          const n = normalizeBase(b.memo);
-          const c = normalizeBase(b.category);
-          const y = (b.year == null ? '' : String(b.year));
-          const is = normalizeISBN(b.isbn);
-
-          // フリーワード（タイトル/著者/出版社/分類/メモ）部分一致
-          if (kw && !(t.includes(kw) || a.includes(kw) || p.includes(kw) || c.includes(kw) || n.includes(kw))) return false;
-          // 個別欄（AND）
-          if (tkw && !t.includes(tkw)) return false;
-          if (pkw && !p.includes(pkw)) return false;
-          if (iskw && !is.includes(iskw)) return false;
-          if (yr && y !== yr) return false;
-          return true;
-        });
-        render(out);
-      }
-
-      // --- 年プルダウンの構築 ---
-      function buildYears(){
-        const all = window.__catalog || [];
-        const years = Array.from(new Set(all.map(b=> String(b.year||'').trim()).filter(Boolean))).sort();
-        yearSel.innerHTML = '<option value="">年（すべて）</option>' + years.map(y=>`<option value="${y}">${y}</option>`).join('');
-      }
-
-      async function ensureLoadedAndRender(){
-        if (!Array.isArray(window.__catalog)) {
-          await loadCatalog();
-        }
-        buildYears();
-        if (Array.isArray(window.__catalog) && window.__catalog.length){
-          render(window.__catalog.slice(0,50));
-        }else{
-          results.innerHTML = '<p class="muted">蔵書データが読み込めませんでした。</p>';
-        }
-      }
-
-      // --- イベント ---
-      open.addEventListener('click', (e)=>{ e.preventDefault(); modal.style.display='flex'; ensureLoadedAndRender(); });
-      close.addEventListener('click', ()=> modal.style.display='none');
-      btn.addEventListener('click', doSearch);
-      q.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
-      titleInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
-      publisherInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
-      isbnInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
-    })();
-
-    /* ============================
-       p5.js スケッチ
-       ============================ */
+  <script>
+    /* ====== p5.js スケッチ ====== */
     (function(){
       const sketch = (p)=>{
         const sideLength=60;
-        let walkerCount = DEFAULT_WALKERS;
+        let walkerCount = parseInt(localStorage.getItem('walkerCount')||'300',10);
         let triangles=[], points=[], adjacency=new Map(), walkers=[];
         let startPoint=null, goalPoint=null, manualWalker=null;
-        let gameOver=false, gameClear=false, clearHandled=false;
+        let gameOver=false, gameClear=false, clearHandled=false, gameOverShown=false;
         let trails=[]; let waveAnim=null;
-
         const SAFE_RADIUS = 20;
         const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
         new MutationObserver(()=>{}).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
@@ -704,8 +596,7 @@
             const pos=this.getPosition();
             const size=5 + p.sin(p.frameCount*0.05+this.phase)*1.5;
             const glow=16 + 8*p.sin(p.frameCount*0.08+this.phase);
-            p.noStroke();
-            p.fill(255,255,255, isDark()?42:28); p.ellipse(pos.x, pos.y, size + glow);
+            p.noStroke(); p.fill(255,255,255, isDark()?42:28); p.ellipse(pos.x, pos.y, size + glow);
             p.fill(255); p.ellipse(pos.x, pos.y, size);
           }
         }
@@ -757,7 +648,7 @@
           walkers.length=0;
           for(let i=0;i<walkerCount;i++) walkers.push(new Walker());
           manualWalker=new ManualWalker(startPoint);
-          gameOver=false; gameClear=false; clearHandled=false;
+          gameOver=false; gameClear=false; clearHandled=false; gameOverShown=false;
           trails=[]; waveAnim=null;
         }
 
@@ -766,20 +657,28 @@
           localStorage.setItem('walkerCount', String(walkerCount));
           rebuildAll();
         };
+
         window.__resetGame = ()=>{ rebuildAll(); window.__appState='game'; };
         window.__ensureGameAlive = ()=>{
           if (!triangles.length || !points.length || !walkers.length || !startPoint || !goalPoint){ rebuildAll(); }
         };
         window.__switchToHomeAmbient = ()=>{
-          gameOver=false; gameClear=false; clearHandled=false; trails=[]; waveAnim=null; window.__appState='home';
+          gameOver=false; gameClear=false; clearHandled=false; gameOverShown=false;
+          trails=[]; waveAnim=null; window.__appState='home';
         };
 
         p.setup=()=>{
           const cnv=p.createCanvas(window.innerWidth, window.innerHeight);
-          cnv.parent('game-layer'); cnv.style('pointer-events','none');
-          rebuildAll(); setupFlickControls();
+          cnv.parent('game-layer');
+          cnv.style('pointer-events','none');
+          rebuildAll();
+          setupFlickControls();
         };
-        p.windowResized=()=>{ p.resizeCanvas(window.innerWidth, window.innerHeight); rebuildAll(); };
+
+        p.windowResized=()=>{
+          p.resizeCanvas(window.innerWidth, window.innerHeight);
+          rebuildAll();
+        };
 
         p.draw=()=>{
           const isHome = (window.__appState === 'home');
@@ -791,26 +690,38 @@
           else { p.stroke(255,28); }
           for(const t of triangles){ p.beginShape(); for(const pt of t) p.vertex(pt.x, pt.y); p.endShape(p.CLOSE); }
 
-          // 背景ウォーカー
+          // 背景の黒点（常時）
           for(const w of walkers){ w.update(); w.display(); }
 
           if (!isHome){
             drawStartGoal();
-            for(const t of trails) t.update(); trails=trails.filter(t=>t.isAlive()); for(const t of trails) t.display();
+
+            for(const t of trails) t.update();
+            trails=trails.filter(t=>t.isAlive());
+            for(const t of trails) t.display();
+
             if (manualWalker){ manualWalker.update(); manualWalker.display(); }
+
             if(!gameOver && !gameClear && checkCollision()){
-              gameOver = true; document.getElementById('gameover-overlay').style.display = 'flex';
+              gameOver = true;
+              const ov = document.getElementById('gameover-overlay');
+              ov.style.display = 'flex';
             }
+
             if(gameClear){
               if(!waveAnim) waveAnim = new Wave(goalPoint.x,goalPoint.y);
               waveAnim.update(); waveAnim.display();
-              if(!waveAnim.isAlive()){ window.__switchToHomeAmbient(); if (typeof window.__onGameClear === 'function') window.__onGameClear(); }
+              if(!waveAnim.isAlive()){
+                window.__switchToHomeAmbient();
+                if (typeof window.__onGameClear === 'function') window.__onGameClear();
+              }
             }
           }
         };
 
         function setupFlickControls(){
-          let startX=0,startY=0,endX=0,endY=0; let dragging=false, mouseDown=false;
+          let startX=0,startY=0,endX=0,endY=0;
+          let dragging=false, mouseDown=false;
           const threshold=40, blockThreshold=12;
           const getAngle=(dx,dy)=>{let ang=Math.atan2(-dy,dx)*180/Math.PI;if(ang<0)ang+=360;return ang;};
 
@@ -855,7 +766,136 @@
           window.addEventListener("mouseleave",()=>{ mouseDown=false; dragging=false; document.body.classList.remove('dragging'); });
         }
       };
+
       window.__game = new p5(sketch);
+    })();
+  </script>
+
+  <!-- ===== Google Sheets 連携（books タブ / 出版社・title・ISBN だけ） ===== -->
+  <script>
+    (function(){
+      const SHEET_ID   = '11h1ILZfrChHJv3NdUVzjKUHq2lgTsLKRWSN1p02TU5E';
+      const SHEET_NAME = 'books';
+
+      // gviz URL（※シートを「リンクを知っている全員：閲覧可」に）
+      const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&t=${Date.now()}`;
+
+      const open = document.getElementById('openBooks');
+      const close = document.getElementById('closeBooks');
+      const modal = document.getElementById('booksModal');
+      const q = document.getElementById('q');
+      const title = document.getElementById('title');
+      const publisher = document.getElementById('publisher');
+      const isbn = document.getElementById('isbn');
+      const btn = document.getElementById('searchBtn');
+      const results = document.getElementById('results');
+      const status = document.getElementById('catalogStatus');
+
+      let books = null;
+
+      // 全角→半角、小文字化、空白除去
+      const normalize = (s)=> String(s||'')
+        .replace(/[Ａ-Ｚａ-ｚ０-９]/g, ch=> String.fromCharCode(ch.charCodeAt(0)-0xFEE0))
+        .toLowerCase()
+        .replace(/\s+/g,'')
+        .trim();
+      const normISBN = (s)=> normalize(s).replace(/-/g,'');
+
+      function setStatus(msg, type='info'){
+        status.textContent = msg;
+        status.style.color = (type==='error') ? '#ff8a8a' : (type==='warn' ? '#ffd27a' : 'var(--muted)');
+      }
+      function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+
+      function render(list){
+        if(!list.length){ results.innerHTML = '<p style="color:var(--muted);margin-top:12px;">該当なし</p>'; return; }
+        const rows = list.map(b=>`
+          <tr>
+            <td>${escapeHtml(b.publisher||'')}</td>
+            <td>${escapeHtml(b.title||'')}</td>
+            <td>${escapeHtml(b.isbn||'')}</td>
+          </tr>`).join('');
+        results.innerHTML = `
+          <table>
+            <thead><tr><th>出版社</th><th>タイトル</th><th>ISBN</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+      }
+
+      function doSearch(){
+        if(!books){ setStatus('データ未読込です。', 'warn'); return; }
+        const k  = normalize(q.value);
+        const tt = normalize(title.value);
+        const pb = normalize(publisher.value);
+        const is = normISBN(isbn.value);
+
+        const out = books.filter(b=>{
+          if(k && !(b._all.includes(k))) return false;       // キーワード（出版社/タイトル/ISBN のどれか）
+          if(tt && !b._title.includes(tt)) return false;     // タイトル部分一致
+          if(pb && !b._publisher.includes(pb)) return false; // 出版社部分一致
+          if(is && !b._isbn.includes(is)) return false;      // ISBN部分一致（ハイフン無視）
+          return true;
+        });
+        render(out);
+      }
+
+      async function fetchSheetRows(){
+        const res  = await fetch(GVIZ_URL, { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const text = await res.text();
+        const json = JSON.parse(text.replace(/^[\s\S]*setResponse\(/, '').replace(/\);?\s*$/, ''));
+        const rows = json.table.rows.map(r => (r.c||[]).map(c => c?.v ?? ''));
+        return rows;
+      }
+
+      // 1列目=出版社、2=title、3=ISBN 固定
+      function mapToCatalog(rows){
+        if(!rows.length) return [];
+        const head = rows[0].map(v=>String(v).toLowerCase());
+        const looksHeader = head.some(v => /publisher|出版社|title|タイトル|isbn/.test(v));
+        const startIndex = looksHeader ? 1 : 0;
+
+        const out = [];
+        for(let i=startIndex;i<rows.length;i++){
+          const r = rows[i] || [];
+          const publisher = String(r[0] ?? '').trim();
+          const title     = String(r[1] ?? '').trim();
+          const isbn      = String(r[2] ?? '').trim();
+          if(!(publisher || title || isbn)) continue;
+          out.push({
+            publisher, title, isbn,
+            _publisher: normalize(publisher),
+            _title:     normalize(title),
+            _isbn:      normISBN(isbn),
+            _all:       normalize([publisher, title, isbn].join(' '))
+          });
+        }
+        return out;
+      }
+
+      async function loadCatalog(){
+        try{
+          setStatus('蔵書データを読み込み中…', 'info');
+          const rows = await fetchSheetRows();
+          books = mapToCatalog(rows);
+          if (!books.length) throw new Error('no rows');
+          setStatus(`読み込み完了：${books.length}件`, 'info');
+          render(books.slice(0,50));
+        }catch(e){
+          console.error('Sheets read failed:', e);
+          setStatus('Sheetsの読み込みに失敗。シートを「リンクを知っている全員：閲覧可」にしてください。', 'error');
+          results.innerHTML = '';
+        }
+      }
+
+      // モーダル開閉 & イベント
+      open.addEventListener('click', (e)=>{ e.preventDefault(); modal.style.display='flex'; if(!books) loadCatalog(); });
+      close.addEventListener('click', ()=> modal.style.display='none');
+      document.getElementById('searchBtn').addEventListener('click', doSearch);
+      ['q','title','publisher','isbn'].forEach(id=>{
+        const el = document.getElementById(id);
+        el.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
+      });
     })();
   </script>
 </body>
