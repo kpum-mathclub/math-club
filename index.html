@@ -338,33 +338,11 @@
 
   <!-- UIレイヤー（ゲーム開始で消す） -->
   <div id="ui-layer">
-    <nav>
-      <div class="nav-inner">
-        <div class="brand">
-          <div class="brand-badge">∑</div>
-          <div>京都府立医科大学 数学研究部</div>
-        </div>
+   <body>
+  <div id="site-nav"></div>
+  <script src="nav.js" data-base="./"></script>
 
-        <div class="nav-links" role="navigation" aria-label="Main">
-          <a href="index.html">Home</a>
-          <a href="activity.html">活動報告</a> 
-          <a href="schedule.html">Schedule</a>
-          <a href="contact.html">Contact</a>
-          <a href="#" id="openBooks">蔵書</a>
-          <a href="qa.html">Q&amp;A</a>
-
-          <!-- 難易度（Walker数） -->
-          <div class="difficulty" title="黒点（Walker）の数">
-            <span>Difficulty</span>
-            <input id="walkerRange" type="range" min="50" max="600" step="10" />
-            <span id="walkerValue"></span>
-            <button id="applyWalker" class="theme-toggle" style="padding:6px 10px;">Apply</button>
-          </div>
-
-          <button class="theme-toggle" onclick="toggleTheme()">Theme</button>
-        </div>
-      </div>
-    </nav>
+  <!-- 既存の要素（bg-gradient や game-layer など）はこの下に続く -->
 
     <main>
       <div class="container">
