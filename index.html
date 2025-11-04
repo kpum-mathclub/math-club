@@ -46,6 +46,33 @@
       cursor: grabbing !important;
     }
 
+    /* ===== 共通ナビ（partials/nav.html を nav.js が差し込み） ===== */
+    .site-nav{
+      position:fixed; top:0; left:0; right:0; z-index:20;
+      backdrop-filter: blur(12px);
+      background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.10)), var(--glass);
+      border-bottom:1px solid var(--border);
+    }
+    .site-nav .nav-inner{
+      max-width:1100px; margin:0 auto; display:flex; align-items:center; gap:20px; padding:14px 24px;
+    }
+    .site-nav .brand{ display:flex; align-items:center; gap:12px; font-weight:700; font-family:"Noto Serif JP", serif; letter-spacing:.02em; }
+    .site-nav .brand-badge{
+      display:inline-grid; place-items:center; width:34px; height:34px; border-radius:10px;
+      background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:#fff; font-weight:800;
+      box-shadow:0 6px 18px rgba(0,0,0,.25);
+    }
+    .site-nav .nav-links{ margin-left:auto; display:flex; gap:18px; flex-wrap:wrap; align-items:center; }
+    .site-nav .nav-links a{ padding:8px 10px; border-radius:10px; opacity:.95; }
+    .site-nav .nav-links a:hover{ background:var(--glass); }
+    .site-nav .nav-links a.active{
+      color: var(--accent);
+      text-shadow: 0 0 10px rgba(94,241,255,.6);
+      background: rgba(94,241,255,.10);
+      border: 1px solid rgba(94,241,255,.22);
+      border-radius: 10px;
+    }
+
     /* ===== LAYERS ===== */
     .bg-gradient{
       position:fixed; inset:0; z-index:0;
@@ -63,9 +90,9 @@
     /* ===== UI LAYER ===== */
     #ui-layer{ position:relative; z-index:10; }
 
-    /* （共通ナビは nav.js が差し込み。見た目は nav.html 側または共通CSSに依存） */
+    /* （共通ナビは上で差し込み） */
 
-    main{ padding-top:86px; }
+    main{ padding-top:86px; } /* 固定ナビ分の余白 */
     .container{ max-width:1100px; margin:0 auto; padding:28px 24px 64px; }
     .hero{
       position:relative; overflow:hidden; border:1px solid var(--border); border-radius:24px;
@@ -281,7 +308,7 @@
   </style>
 </head>
 <body>
-  <!-- ✅ 共通ナビ（nav.js が partials/nav.html を差し込み） -->
+  <!-- ✅ 共通ナビ -->
   <div id="site-nav"></div>
   <script src="nav.js" data-base="./"></script>
 
@@ -354,7 +381,7 @@
             <p style="margin:0;color:var(--muted);">数学力や基本的なサイエンス力の底上げを図り、医学を多角的に学ぶ。</p>
           </div>
           <div class="panel">
-            <h3 style="margin:0 0 8px;font-family:'Noto Serif JP',serif;">Works</h3>
+            <h3 style="margin:0 0 8px;font-family:'Noto Serif JP',serif;'>Works</h3>
             <p style="margin:0;color:var(--muted);">p5.js / JavaScript / LaTeX / GeoGebra。作品やスライドは定期的に公開予定。</p>
           </div>
         </section>
@@ -370,25 +397,6 @@
 
     <!-- ホームに戻ったら出る「Play Again」 -->
     <button id="playAgainBtn" class="play-again-btn">Play Again</button>
-  </div>
-
-  <!-- 蔵書モーダル（出版社 / タイトル / ISBN） -->
-  <div id="booksModal" class="modal" aria-modal="true" role="dialog" aria-label="蔵書検索">
-    <div class="panel">
-      <div class="row" style="justify-content:space-between;">
-        <h3>蔵書検索</h3>
-        <button class="close" id="closeBooks">閉じる</button>
-      </div>
-      <div class="row" style="margin-top:6px;">
-        <input type="search" id="q" placeholder="キーワード（出版社 / タイトル / ISBN）" style="flex:1; min-width:220px;">
-        <input type="text" id="publisher" placeholder="出版社">
-        <input type="text" id="title" placeholder="タイトル">
-        <input type="text" id="isbn" placeholder="ISBN（ハイフン不要）">
-        <button class="theme-toggle" id="searchBtn" style="padding:8px 12px;">検索</button>
-      </div>
-      <div id="catalogStatus" class="status">蔵書データを読み込み中…</div>
-      <div id="results"></div>
-    </div>
   </div>
 
   <script>
@@ -491,7 +499,7 @@
   </script>
 
   <script>
-    /* ====== p5.js スケッチ ====== */
+    /* ====== p5.js スケッチ（そのまま） ====== */
     (function(){
       const sketch = (p)=>{
         const sideLength=60;
