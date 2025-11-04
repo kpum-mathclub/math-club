@@ -2,92 +2,95 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Contact | 数学研究部</title>
+
+  <!-- p5.js（背景アニメ用） -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP&display=swap" rel="stylesheet">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
 
   <style>
-    body {
-      font-family: "Noto Serif JP", serif;
-      margin: 0;
-      padding: 0;
+    :root{
+      --bg:#000;
+      --fg:#eaeaea;
+      --muted:#a8b3c0;
+      --glass:rgba(255,255,255,.08);
+      --border:rgba(255,255,255,.18);
+      --accent:#5ef1ff;
+      --accent2:#8a63ff;
+    }
+
+    /* ===== Base ===== */
+    html,body{height:100%}
+    body{
+      font-family:"Inter", system-ui, -apple-system, "Noto Serif JP", serif;
+      margin:0; padding:0; overflow-x:hidden; color:var(--fg);
       background: radial-gradient(circle at 50% 20%, #0a0a0d 0%, #000 100%);
-      color: #eaeaea;
-      overflow-x: hidden;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+    a{ color:inherit; text-decoration:none }
+
+    /* ===== Shared Nav (partials/nav.html を nav.js で挿入) ===== */
+    .site-nav{
+      position:fixed; top:0; left:0; right:0; z-index:20;
+      backdrop-filter: blur(12px);
+      background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.10)), var(--glass);
+      border-bottom:1px solid var(--border);
+    }
+    .site-nav .nav-inner{
+      max-width:1100px; margin:0 auto; display:flex; align-items:center; gap:20px; padding:14px 24px;
+    }
+    .site-nav .brand{ display:flex; align-items:center; gap:12px; font-weight:700; font-family:"Noto Serif JP", serif; letter-spacing:.02em; }
+    .site-nav .brand-badge{
+      display:inline-grid; place-items:center; width:34px; height:34px; border-radius:10px;
+      background:linear-gradient(135deg, var(--accent), var(--accent2)); color:#fff; font-weight:800;
+      box-shadow:0 6px 18px rgba(0,0,0,.25);
+    }
+    .site-nav .nav-links{ margin-left:auto; display:flex; gap:18px; flex-wrap:wrap; align-items:center; }
+    .site-nav .nav-links a{ padding:8px 10px; border-radius:10px; opacity:.95; }
+    .site-nav .nav-links a:hover{ background:var(--glass); }
+    .site-nav .nav-links a.active{
+      color: var(--accent);
+      text-shadow: 0 0 10px rgba(94,241,255,.6);
+      background: rgba(94,241,255,.10);
+      border: 1px solid rgba(94,241,255,.22);
+      border-radius: 10px;
     }
 
-    nav {
-      position: fixed;
-      top: 0; left: 0; width: 100%;
-      background: rgba(0, 0, 0, 0.85);
-      color: #fff;
-      padding: 12px 24px;
-      z-index: 999;
-      font-size: 18px;
-      display: flex;
-      gap: 20px;
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
-    }
-
-    nav a {
-      color: #fff;
-      text-decoration: none;
-      transition: color 0.3s;
-    }
-
-    nav a:hover {
-      color: #3cc9ff;
-    }
-
-    .container {
+    /* ===== Page Content ===== */
+    .container{
+      /* 固定ナビ分の上余白（高さ目安 86px） */
       padding: 100px 20px 40px;
-      max-width: 800px;
-      margin: 0 auto;
+      max-width: 800px; margin: 0 auto;
     }
-
-    h1 {
-      font-size: 28px;
-      margin-bottom: 24px;
-      border-bottom: 2px solid #3cc9ff;
-      display: inline-block;
-      padding-bottom: 6px;
+    h1{
+      font-family:"Noto Serif JP", serif;
+      font-size: 28px; margin-bottom: 24px;
+      border-bottom: 2px solid var(--accent);
+      display: inline-block; padding-bottom: 6px;
     }
-
-    .contact-section, .email-section {
-      margin: 40px 0;
-      padding: 20px;
-      border-left: 4px solid #3cc9ff;
-      background-color: rgba(255, 255, 255, 0.04);
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+    .contact-section, .email-section{
+      margin: 40px 0; padding: 20px; border-left: 4px solid var(--accent);
+      background-color: rgba(255,255,255,0.04);
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
       border-radius: 8px;
     }
-
-    .contact-section a, .email-section a {
-      color: #3cc9ff;
-      font-weight: bold;
-      text-decoration: none;
+    .contact-section a, .email-section a{
+      color: var(--accent); font-weight: 700; text-decoration: none;
     }
+    .contact-section a:hover, .email-section a:hover{ text-decoration: underline; }
 
-    .contact-section a:hover, .email-section a:hover {
-      text-decoration: underline;
-    }
-
-    canvas {
-      position: fixed;
-      top: 0;
-      left: 0;
-      z-index: -10;
-      pointer-events: none;
-    }
+    /* p5 canvas は背面固定 */
+    canvas{ position:fixed; inset:0; z-index:-10; pointer-events:none; }
   </style>
 </head>
 
 <body>
- <body>
+  <!-- 共通ナビ（nav.js が partials/nav.html をここへ差し込み） -->
   <div id="site-nav"></div>
   <script src="nav.js" data-base="./"></script>
-
-  <!-- 既存の要素（bg-gradient や game-layer など）はこの下に続く -->
 
   <div class="container">
     <h1>お問い合わせ・SNS</h1>
@@ -96,7 +99,7 @@
       <h2>公式X（旧Twitter）</h2>
       <p>
         最新情報や活動報告を、京都府立医科大学 数学研究部の公式アカウントで発信しています。<br>
-        ▶ <a href="https://twitter.com/kpum_mathclub" target="_blank">@kpum_mathclub</a>
+        ▶ <a href="https://twitter.com/kpum_mathclub" target="_blank" rel="noopener">@kpum_mathclub</a>
       </p>
     </div>
 
@@ -109,81 +112,53 @@
     </div>
   </div>
 
+  <!-- 背景アニメ（バウンドする球） -->
   <script>
-  new p5(p => {
-    const ballCount = 40;
-    const balls = [];
-    let isPressing = false;
+    new p5(p => {
+      const ballCount = 40;
+      const balls = [];
+      let isPressing = false;
 
-    class Ball {
-      constructor() {
-        this.r = p.random(10, 30);
-        this.x = p.random(this.r, p.windowWidth - this.r);
-        this.y = p.random(this.r, p.windowHeight - this.r);
-        this.vx = p.random(-1, 1);
-        this.vy = p.random(-1, 1);
-        this.color = p.color(p.random(150, 200), p.random(150, 200), p.random(255), 150);
+      class Ball {
+        constructor() {
+          this.r = p.random(10, 30);
+          this.x = p.random(this.r, p.windowWidth - this.r);
+          this.y = p.random(this.r, p.windowHeight - this.r);
+          this.vx = p.random(-1, 1);
+          this.vy = p.random(-1, 1);
+          this.color = p.color(p.random(150, 200), p.random(150, 200), p.random(255), 150);
+        }
+        move() {
+          const speed = isPressing ? 3 : 1;
+          this.x += this.vx * speed;
+          this.y += this.vy * speed;
+          // 反射
+          if (this.x - this.r < 0) { this.x = this.r; this.vx *= -1; }
+          if (this.x + this.r > p.width) { this.x = p.width - this.r; this.vx *= -1; }
+          if (this.y - this.r < 0) { this.y = this.r; this.vy *= -1; }
+          if (this.y + this.r > p.height) { this.y = p.height - this.r; this.vy *= -1; }
+        }
+        draw() { p.noStroke(); p.fill(this.color); p.ellipse(this.x, this.y, this.r * 2); }
       }
 
-      move() {
-        const speed = isPressing ? 3 : 1;
-        this.x += this.vx * speed;
-        this.y += this.vy * speed;
-
-        // 反射処理
-        if (this.x - this.r < 0) {
-          this.x = this.r;
-          this.vx *= -1;
-        }
-        if (this.x + this.r > p.width) {
-          this.x = p.width - this.r;
-          this.vx *= -1;
-        }
-        if (this.y - this.r < 0) {
-          this.y = this.r;
-          this.vy *= -1;
-        }
-        if (this.y + this.r > p.height) {
-          this.y = p.height - this.r;
-          this.vy *= -1;
-        }
-      }
-
-      draw() {
+      p.setup = () => {
+        const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+        canvas.style('z-index', '-10');
+        canvas.style('pointer-events', 'none');
+        for (let i = 0; i < ballCount; i++) balls.push(new Ball());
         p.noStroke();
-        p.fill(this.color);
-        p.ellipse(this.x, this.y, this.r * 2);
-      }
-    }
+      };
+      p.draw = () => {
+        p.background(0);  // 背景を黒で塗りつぶし（尾なし）
+        for (const b of balls) { b.move(); b.draw(); }
+      };
+      p.windowResized = () => { p.resizeCanvas(p.windowWidth, p.windowHeight); };
 
-    p.setup = () => {
-      const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
-      canvas.position(0, 0);
-      canvas.style('z-index', '-10');
-      canvas.style('pointer-events', 'none');
-      for (let i = 0; i < ballCount; i++) {
-        balls.push(new Ball());
-      }
-      p.noStroke();
-    };
-
-    p.draw = () => {
-      p.background(0); // 真っ黒に塗りつぶし（尾なし）
-      for (let ball of balls) {
-        ball.move();
-        ball.draw();
-      }
-    };
-
-    p.windowResized = () => {
-      p.resizeCanvas(p.windowWidth, p.windowHeight);
-    };
-
-    p.mousePressed = () => { isPressing = true; };
-    p.mouseReleased = () => { isPressing = false; };
-    p.touchStarted = () => { isPressing = true; };
-    p.touchEnded = () => { isPressing = false; };
-  });
+      p.mousePressed = () => { isPressing = true; };
+      p.mouseReleased = () => { isPressing = false; };
+      p.touchStarted = () => { isPressing = true; };
+      p.touchEnded = () => { isPressing = false; };
+    });
   </script>
 </body>
 </html>
