@@ -22,17 +22,17 @@
       --accent2:#8a63ff;
     }
 
-    /* ===== Base ===== */
     html,body{height:100%}
     body{
       font-family:"Inter", system-ui, -apple-system, "Noto Serif JP", serif;
       margin:0; padding:0; overflow-x:hidden; color:var(--fg);
       background: radial-gradient(circle at 50% 20%, #0a0a0d 0%, #000 100%);
       -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+      padding-top:86px; /* 固定ナビ */
     }
     a{ color:inherit; text-decoration:none }
 
-    /* ===== Shared Nav (partials/nav.html を nav.js で挿入) ===== */
+    /* 共通ナビ（index と同スタイル） */
     .site-nav{
       position:fixed; top:0; left:0; right:0; z-index:20;
       backdrop-filter: blur(12px);
@@ -59,11 +59,9 @@
       border-radius: 10px;
     }
 
-    /* ===== Page Content ===== */
     .container{
-      /* 固定ナビ分の上余白（高さ目安 86px） */
-      padding: 100px 20px 40px;
       max-width: 800px; margin: 0 auto;
+      padding: 28px 20px 40px;
     }
     h1{
       font-family:"Noto Serif JP", serif;
@@ -88,7 +86,7 @@
 </head>
 
 <body>
-  <!-- 共通ナビ（nav.js が partials/nav.html をここへ差し込み） -->
+  <!-- ✅ 共通ナビ -->
   <div id="site-nav"></div>
   <script src="nav.js" data-base="./"></script>
 
@@ -132,7 +130,6 @@
           const speed = isPressing ? 3 : 1;
           this.x += this.vx * speed;
           this.y += this.vy * speed;
-          // 反射
           if (this.x - this.r < 0) { this.x = this.r; this.vx *= -1; }
           if (this.x + this.r > p.width) { this.x = p.width - this.r; this.vx *= -1; }
           if (this.y - this.r < 0) { this.y = this.r; this.vy *= -1; }
@@ -149,7 +146,7 @@
         p.noStroke();
       };
       p.draw = () => {
-        p.background(0);  // 背景を黒で塗りつぶし（尾なし）
+        p.background(0);
         for (const b of balls) { b.move(); b.draw(); }
       };
       p.windowResized = () => { p.resizeCanvas(p.windowWidth, p.windowHeight); };
