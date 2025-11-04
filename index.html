@@ -62,28 +62,8 @@
 
     /* ===== UI LAYER ===== */
     #ui-layer{ position:relative; z-index:10; }
-    nav{
-      position:fixed; top:0; left:0; right:0; z-index:11;
-      backdrop-filter: blur(12px);
-      background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.10)), var(--glass);
-      border-bottom:1px solid var(--border);
-    }
-    .nav-inner{ max-width:1100px; margin:0 auto; display:flex; align-items:center; gap:20px; padding:14px 24px; }
-    .brand{ display:flex; align-items:center; gap:12px; font-weight:700; font-family:"Noto Serif JP", serif; letter-spacing:.02em; }
-    .brand-badge{ display:inline-grid; place-items:center; width:34px; height:34px; border-radius:10px;
-      background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:#fff; font-weight:800; box-shadow:0 6px 18px rgba(0,0,0,.25); }
-    .nav-links{ margin-left:auto; display:flex; gap:18px; flex-wrap:wrap; align-items:center;}
-    .nav-links a{ padding:8px 10px; border-radius:10px; opacity:.95; }
-    .nav-links a:hover{ background:var(--glass); }
-    .theme-toggle{ margin-left:6px; border:1px solid var(--border); background:var(--glass); border-radius:12px; padding:8px 12px; cursor:pointer; box-shadow:var(--shadow); font-weight:600; }
 
-    /* 難易度（Walker数）コントロール */
-    .difficulty{
-      display:flex; gap:10px; align-items:center; padding:8px 12px; border-radius:12px;
-      background:var(--glass); border:1px solid var(--border); box-shadow:var(--shadow);
-      font-size:13px;
-    }
-    .difficulty input[type="range"]{ width:160px; accent-color: var(--accent-2); }
+    /* （共通ナビは nav.js が差し込み。見た目は nav.html 側または共通CSSに依存） */
 
     main{ padding-top:86px; }
     .container{ max-width:1100px; margin:0 auto; padding:28px 24px 64px; }
@@ -301,6 +281,10 @@
   </style>
 </head>
 <body>
+  <!-- ✅ 共通ナビ（nav.js が partials/nav.html を差し込み） -->
+  <div id="site-nav"></div>
+  <script src="nav.js" data-base="./"></script>
+
   <!-- 背景 -->
   <div class="bg-gradient"></div>
 
@@ -338,18 +322,25 @@
 
   <!-- UIレイヤー（ゲーム開始で消す） -->
   <div id="ui-layer">
-   <body>
-  <div id="site-nav"></div>
-  <script src="nav.js" data-base="./"></script>
-
-  <!-- 既存の要素（bg-gradient や game-layer など）はこの下に続く -->
-
     <main>
       <div class="container">
         <section class="hero">
           <div class="badge">Official Site</div>
           <h1>京都府立医科大学 数学研究部 公式HP</h1>
           <p>幾何と動きの美しさで数学をもっと身近に。三角タイル上のウォーカーを操作して、<br/>START から GOAL へ。画面をフリック / ドラッグで進行方向を指示できます。</p>
+
+          <!-- ✅ Home-only Controls -->
+          <section class="home-controls card" aria-label="site controls" style="margin:16px 0;">
+            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+              <strong>Difficulty</strong>
+              <input id="walkerRangeHome" type="range" min="50" max="600" step="10" style="width:180px;">
+              <span id="walkerValueHome"></span>
+              <button id="applyWalkerHome" class="theme-toggle" style="padding:6px 10px;">Apply</button>
+              <span style="flex:1"></span>
+              <button id="themeToggleHome" class="theme-toggle">Theme</button>
+            </div>
+          </section>
+
           <div class="cta-grid">
             <a class="card" href="schedule.html"><h3>Schedule</h3><p>例会 / 勉強会 / イベントの予定をチェック。</p></a>
             <a class="card" href="contact.html"><h3>Contact</h3><p>参加希望・見学の希望はこちら。</p></a>
@@ -417,7 +408,7 @@
       window.dispatchEvent(new Event('resize'));
     }
 
-    // テーマ切替
+    // テーマ切替（保存）
     (function(){
       const saved = localStorage.getItem('theme');
       if(saved) document.documentElement.setAttribute('data-theme', saved);
@@ -479,19 +470,23 @@
       document.getElementById('skipBtn').addEventListener('click', switchToHomeUI);
     })();
 
-    /* ====== 難易度（Walker数）UI ====== */
+    /* ====== Home-only: Difficulty / Theme 連携 ====== */
     (function(){
-      const range = document.getElementById('walkerRange');
-      const val = document.getElementById('walkerValue');
-      const apply = document.getElementById('applyWalker');
-      range.value = DEFAULT_WALKERS;
-      val.textContent = DEFAULT_WALKERS;
-      range.addEventListener('input', ()=> val.textContent = range.value);
-      apply.addEventListener('click', ()=>{
-        const n = parseInt(range.value,10);
-        localStorage.setItem('walkerCount', String(n));
-        if (window.__setWalkerCount) window.__setWalkerCount(n);
-      });
+      const range = document.getElementById('walkerRangeHome');
+      const val = document.getElementById('walkerValueHome');
+      const apply = document.getElementById('applyWalkerHome');
+      if (range && val && apply) {
+        range.value = DEFAULT_WALKERS;
+        val.textContent = DEFAULT_WALKERS;
+        range.addEventListener('input', ()=> val.textContent = range.value);
+        apply.addEventListener('click', ()=>{
+          const n = parseInt(range.value,10);
+          localStorage.setItem('walkerCount', String(n));
+          if (window.__setWalkerCount) window.__setWalkerCount(n);
+        });
+      }
+      const themeBtn = document.getElementById('themeToggleHome');
+      themeBtn?.addEventListener('click', () => window.toggleTheme());
     })();
   </script>
 
@@ -755,11 +750,8 @@
     (function(){
       const SHEET_ID   = '11h1ILZfrChHJv3NdUVzjKUHq2lgTsLKRWSN1p02TU5E';
       const SHEET_NAME = 'books';
-
-      // gviz URL（※シートを「リンクを知っている全員：閲覧可」に）
       const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&t=${Date.now()}`;
 
-      const open = document.getElementById('openBooks');
       const close = document.getElementById('closeBooks');
       const modal = document.getElementById('booksModal');
       const q = document.getElementById('q');
@@ -809,10 +801,10 @@
         const is = normISBN(isbn.value);
 
         const out = books.filter(b=>{
-          if(k && !(b._all.includes(k))) return false;       // キーワード（出版社/タイトル/ISBN のどれか）
-          if(tt && !b._title.includes(tt)) return false;     // タイトル部分一致
-          if(pb && !b._publisher.includes(pb)) return false; // 出版社部分一致
-          if(is && !b._isbn.includes(is)) return false;      // ISBN部分一致（ハイフン無視）
+          if(k && !(b._all.includes(k))) return false;
+          if(tt && !b._title.includes(tt)) return false;
+          if(pb && !b._publisher.includes(pb)) return false;
+          if(is && !b._isbn.includes(is)) return false;
           return true;
         });
         render(out);
@@ -867,10 +859,20 @@
         }
       }
 
-      // モーダル開閉 & イベント
-      open.addEventListener('click', (e)=>{ e.preventDefault(); modal.style.display='flex'; if(!books) loadCatalog(); });
+      // ✅ 公開関数：nav.js から呼ばれてモーダルを開く
+      window.__openBooksModal = function(){
+        if (!modal) { location.href = 'index.html#books'; return; }
+        modal.style.display = 'flex';
+        if (!window.__booksLoaded) {
+          loadCatalog().finally(()=>{ window.__booksLoaded = true; });
+        }
+      };
+
+      // モーダル閉じる
       close.addEventListener('click', ()=> modal.style.display='none');
-      document.getElementById('searchBtn').addEventListener('click', doSearch);
+
+      // 検索イベント
+      btn.addEventListener('click', doSearch);
       ['q','title','publisher','isbn'].forEach(id=>{
         const el = document.getElementById(id);
         el.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
