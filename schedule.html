@@ -25,36 +25,36 @@
         linear-gradient(180deg, #0b0d12, #0b0d12 100%);
       font-family: "Inter", system-ui, -apple-system, "Noto Serif JP", serif;
       -webkit-font-smoothing: antialiased;
-      padding-top: 64px; /* navのぶん */
       overflow-x: hidden;
+      padding-top:86px; /* 固定ナビ */
     }
-    /* Nav */
-    nav {
-      position: fixed; inset: 0 0 auto 0; z-index: 999;
-      display:flex; gap:20px; align-items:center;
-      padding: 12px 24px;
-      color:#fff;
-      background: linear-gradient(180deg, rgba(0,0,0,.38), rgba(0,0,0,.08)), var(--glass);
-      backdrop-filter: blur(10px);
-      border-bottom:1px solid var(--border);
-      font-size: 16px;
-      box-shadow: var(--shadow);
+
+    /* 共通ナビ（index と同スタイル） */
+    .site-nav{
+      position:fixed; top:0; left:0; right:0; z-index:20;
+      backdrop-filter: blur(12px);
+      background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.10)), var(--glass);
+      border-bottom:1px solid rgba(255,255,255,.18);
     }
-    nav .brand{
-      display:flex; align-items:center; gap:12px; font-weight:800; letter-spacing:.02em;
-      font-family:"Noto Serif JP", serif;
+    .site-nav .nav-inner{
+      max-width:1100px; margin:0 auto; display:flex; align-items:center; gap:20px; padding:14px 24px;
     }
-    nav .brand-badge{
-      width:30px; height:30px; display:grid; place-items:center; border-radius:9px;
-      background:linear-gradient(135deg, var(--accent), var(--accent-2));
-      font-weight:900;
+    .site-nav .brand{ display:flex; align-items:center; gap:12px; font-weight:700; font-family:"Noto Serif JP", serif; letter-spacing:.02em; }
+    .site-nav .brand-badge{
+      display:inline-grid; place-items:center; width:34px; height:34px; border-radius:10px;
+      background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:#fff; font-weight:800;
       box-shadow:0 6px 18px rgba(0,0,0,.25);
     }
-    nav a{
-      color:#fff; text-decoration:none; opacity:.95; border-radius:10px; padding:6px 8px;
+    .site-nav .nav-links{ margin-left:auto; display:flex; gap:18px; flex-wrap:wrap; align-items:center; }
+    .site-nav .nav-links a{ padding:8px 10px; border-radius:10px; opacity:.95; color:#ddebff; text-decoration:none; }
+    .site-nav .nav-links a:hover{ background:var(--glass); }
+    .site-nav .nav-links a.active{
+      color: var(--accent);
+      text-shadow: 0 0 10px rgba(94,241,255,.6);
+      background: rgba(94,241,255,.10);
+      border: 1px solid rgba(94,241,255,.22);
+      border-radius: 10px;
     }
-    nav a:hover{ background: rgba(255,255,255,.08); }
-    nav .spacer{ flex:1; }
 
     main{ max-width: 1100px; margin: 0 auto; padding: 24px; }
     h1{
@@ -84,12 +84,10 @@
     }
   </style>
 </head>
-  <!-- ナビゲーションバー -->
 <body>
+  <!-- ✅ 共通ナビ -->
   <div id="site-nav"></div>
   <script src="nav.js" data-base="./"></script>
-
-  <!-- 既存の要素（bg-gradient や game-layer など）はこの下に続く -->
 
   <main>
     <h1>数学研究部の活動予定</h1>
@@ -114,36 +112,28 @@
     </section>
   </main>
 
-  <!-- ===== 背景：宇宙（固定星の点滅 + 既存の円運動 + たまに流れ星） ===== -->
+  <!-- 背景：宇宙（固定星＋軌道＋たまに流れ星） -->
   <div id="bg-canvas"></div>
   <script>
     new p5(p => {
-      /* =========================
-         1) 瞬く固定星（上に重ねる）
-         2) 円運動（trailBuffer。サイズ小さめ）
-         3) たまに流れ星（上に重ねる）
-         ========================= */
       let stars = [];
-      const STAR_COUNT = 240;            // 固定星の数
+      const STAR_COUNT = 240;
       const STAR_SIZE_MIN = 0.9;
       const STAR_SIZE_MAX = 1.7;
 
-      // 円運動（ベースはそのまま）
       let circles = [];
       const numRings = 20;
       const pointsPerRing = 5;
       let trailBuffer;
       let boosting = false;
 
-      // 流れ星
       const meteors = [];
-      const METEOR_RATE = 0.012; // 低確率（秒あたり）。多ければ上げる
+      const METEOR_RATE = 0.012;
       const METEOR_SPEED = 12;
-      const METEOR_TTL = 1200;   // ms
+      const METEOR_TTL = 1200;
 
-      // 円の点サイズ（小さく調整）
-      const ORBIT_DOT = 2.2;     // 残像の点
-      const ORBIT_CORE = 3.0;    // 中心の点
+      const ORBIT_DOT = 2.2;
+      const ORBIT_CORE = 3.0;
 
       p.setup = () => {
         const cnv = p.createCanvas(p.windowWidth, p.windowHeight);
@@ -163,7 +153,7 @@
       function initStars(){
         stars.length = 0;
         for (let i = 0; i < STAR_COUNT; i++) {
-          const periodSec = p.random(1.2, 5.0); // 星ごとに異なる点滅周期
+          const periodSec = p.random(1.2, 5.0);
           const phaseSec  = p.random(0, periodSec);
           stars.push({
             x: p.random(p.width),
@@ -202,11 +192,10 @@
       function maybeSpawnMeteor(dtMs){
         const prob = METEOR_RATE * (dtMs / 1000);
         if (Math.random() < prob) {
-          // 画面の外側から右下へ
           const fromTop = Math.random() < 0.5;
           const startX = fromTop ? p.random(-p.width*0.2, p.width*0.9) : -p.width*0.2;
           const startY = fromTop ? -p.height*0.15 : p.random(-p.height*0.1, p.height*0.7);
-          const angle = p.random(20, 35); // 右下方向
+          const angle = p.random(20, 35);
           meteors.push({
             x: startX,
             y: startY,
@@ -221,13 +210,11 @@
         const nowSec = p.millis() / 1000;
         const dtMs = p.deltaTime;
 
-        // 背景クリア（透明）
         p.clear();
 
-        // ---- 円運動（trailBufferへ描画）
-        // 残像フェード（黒で薄く）
+        // 軌道レイヤ（trailBuffer）
         trailBuffer.noStroke();
-        trailBuffer.fill(0, 18);          // ← 少しだけ暗く。濃ければ数値↑
+        trailBuffer.fill(0, 18);
         trailBuffer.rect(0, 0, p.width, p.height);
 
         for (let c of circles) {
@@ -237,12 +224,10 @@
           const x = c.centerX + p.cos(c.angle) * c.r;
           const y = c.centerY + p.sin(c.angle) * c.r;
 
-          // 軌跡の細点
           trailBuffer.noStroke();
           trailBuffer.fill(255, 255, 255, 140);
           trailBuffer.ellipse(x, y, ORBIT_DOT);
 
-          // 中心の点（小さめ）
           trailBuffer.noStroke();
           trailBuffer.fill(255);
           trailBuffer.ellipse(x, y, ORBIT_CORE);
@@ -250,20 +235,19 @@
           c.angle += c.currentSpeed;
         }
 
-        // 一度、残像レイヤーを先に合成
         p.image(trailBuffer, 0, 0);
 
-        // ---- 瞬く固定星（常に前面に）
+        // 瞬く固定星
         p.noStroke();
         for (const s of stars) {
-          const u = ((nowSec + s.phaseSec) / s.periodSec) % 1;      // [0,1)
-          const blink = 0.5 * (1 - Math.cos(p.TWO_PI * u));          // 0→1→0
+          const u = ((nowSec + s.phaseSec) / s.periodSec) % 1;
+          const blink = 0.5 * (1 - Math.cos(p.TWO_PI * u));
           const alpha = p.lerp(s.minA, s.maxA, blink);
           p.fill(255, 255, 255, alpha);
           p.circle(s.x, s.y, s.size);
         }
 
-        // ---- 流れ星（固定星の上に）
+        // 流れ星
         maybeSpawnMeteor(dtMs);
         for (let i = meteors.length - 1; i >= 0; i--) {
           const m = meteors[i];
@@ -271,11 +255,10 @@
           m.x += m.vx;
           m.y += m.vy;
 
-          // 尾を引く
           const tailLen = 80;
           const alpha = p.map(age, 0, METEOR_TTL, 255, 0);
           const tailX = m.x - tailLen;
-          const tailY = m.y - tailLen * (m.vy / (m.vx || 0.0001)); // 0割防止
+          const tailY = m.y - tailLen * (m.vy / (m.vx || 0.0001));
 
           p.stroke(255, 255, 255, alpha);
           p.strokeWeight(2);
@@ -291,7 +274,6 @@
         }
       };
 
-      // 入力（既存のブースト操作は維持）
       p.touchStarted = () => { boosting = true; };
       p.touchEnded   = () => { boosting = false; };
       p.mousePressed = () => { boosting = true; };
@@ -302,7 +284,8 @@
         trailBuffer = p.createGraphics(p.width, p.height);
         trailBuffer.clear();
         trailBuffer.angleMode(p.DEGREES);
-        initStars(); // 固定星は再配置
+        stars = [];
+        initStars();
         const cx = p.width / 2, cy = p.height / 2;
         for (let c of circles) { c.centerX = cx; c.centerY = cy; }
       };
