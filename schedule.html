@@ -1,207 +1,298 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="dark">
 <head>
-  <meta charset="UTF-8">
-  <title>活動予定 | 数学研究部</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>活動報告 & 予定 | 京都府立医科大学 数学研究部</title>
+
   <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+
   <!-- p5.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+
   <style>
     :root{
       --bg:#0b0d12; --fg:#e7e9ee; --muted:#9aa3af;
-      --glass:rgba(255,255,255,.06); --border:rgba(255,255,255,.16);
-      --shadow:0 10px 30px rgba(0,0,0,.35);
       --accent:#54d6a3; --accent-2:#5da8ff;
+      --glass:rgba(255,255,255,.08); --border:rgba(255,255,255,.18);
+      --shadow:0 10px 30px rgba(0,0,0,.35); --card-radius:18px;
+      --focus:0 0 0 3px rgba(93,168,255,.35);
     }
-    html,body{height:100%}
-    body {
-      margin: 0;
-      color: var(--fg);
+    [data-theme="light"]{
+      --bg:#f7f8fb; --fg:#0c111a; --muted:#4b5563;
+      --accent:#1ea972; --accent-2:#2f7cff;
+      --glass:rgba(255,255,255,.7); --border:rgba(17,24,39,.08);
+      --shadow:0 10px 30px rgba(0,0,0,.08);
+      --focus:0 0 0 3px rgba(47,124,255,.25);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%;}
+    html, body {
+      margin:0; padding:0; overflow-x:hidden;
+      background:var(--bg); color:var(--fg);
+      font-family:"Inter", system-ui, -apple-system, "Noto Serif JP", serif;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+      overscroll-behavior: none;
+    }
+    a{color:inherit; text-decoration:none}
+    a:focus-visible, button:focus-visible{outline:none; box-shadow:var(--focus); border-radius:10px}
+
+    /* 背景グラデ＋星演出 */
+    .bg-gradient{
+      position:fixed; inset:0; z-index:0;
       background:
         radial-gradient(1000px 600px at 15% 20%, rgba(84,214,163,.18), transparent 60%),
         radial-gradient(900px 700px at 85% 70%, rgba(93,168,255,.16), transparent 55%),
-        linear-gradient(180deg, #0b0d12, #0b0d12 100%);
-      font-family: "Inter", system-ui, -apple-system, "Noto Serif JP", serif;
-      -webkit-font-smoothing: antialiased;
-      padding-top: 64px; /* navのぶん */
-      overflow-x: hidden;
+        linear-gradient(180deg, var(--bg) 0%, var(--bg) 100%);
     }
-    /* Nav */
-    nav {
-      position: fixed; inset: 0 0 auto 0; z-index: 999;
-      display:flex; gap:20px; align-items:center;
-      padding: 12px 24px;
-      color:#fff;
-      background: linear-gradient(180deg, rgba(0,0,0,.38), rgba(0,0,0,.08)), var(--glass);
-      backdrop-filter: blur(10px);
-      border-bottom:1px solid var(--border);
-      font-size: 16px;
-      box-shadow: var(--shadow);
-    }
-    nav .brand{
-      display:flex; align-items:center; gap:12px; font-weight:800; letter-spacing:.02em;
-      font-family:"Noto Serif JP", serif;
-    }
-    nav .brand-badge{
-      width:30px; height:30px; display:grid; place-items:center; border-radius:9px;
-      background:linear-gradient(135deg, var(--accent), var(--accent-2));
-      font-weight:900;
-      box-shadow:0 6px 18px rgba(0,0,0,.25);
-    }
-    nav a{
-      color:#fff; text-decoration:none; opacity:.95; border-radius:10px; padding:6px 8px;
-    }
-    nav a:hover{ background: rgba(255,255,255,.08); }
-    nav .spacer{ flex:1; }
+    #bg-canvas{ position:fixed; inset:0; z-index:1; pointer-events:none; }
 
-    main{ max-width: 1100px; margin: 0 auto; padding: 24px; }
-    h1{
-      margin: 4px 0 8px; font-size: clamp(24px, 3vw, 34px);
-      font-family: "Noto Serif JP", serif; letter-spacing:.02em;
+    /* ===== UI LAYER ===== */
+    #ui-layer{ position:relative; z-index:10; }
+    nav{
+      position:fixed; top:0; left:0; right:0; z-index:11;
+      backdrop-filter: blur(12px);
+      background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.10)), var(--glass);
+      border-bottom:1px solid var(--border);
     }
-    p a{ color:#9dc4ff; text-decoration:none }
-    p a:hover{ text-decoration:underline }
+    .nav-inner{ max-width:1100px; margin:0 auto; display:flex; align-items:center; gap:20px; padding:14px 24px; }
+    .brand{ display:flex; align-items:center; gap:12px; font-weight:700; font-family:"Noto Serif JP", serif; letter-spacing:.02em; }
+    .brand-badge{ display:inline-grid; place-items:center; width:34px; height:34px; border-radius:10px;
+      background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:#fff; font-weight:800; box-shadow:0 6px 18px rgba(0,0,0,.25); }
+    .nav-links{ margin-left:auto; display:flex; gap:18px; flex-wrap:wrap; align-items:center;}
+    .nav-links a{ padding:8px 10px; border-radius:10px; opacity:.95; }
+    .nav-links a:hover{ background:var(--glass); }
+    .theme-toggle{ margin-left:6px; border:1px solid var(--border); background:var(--glass); border-radius:12px; padding:8px 12px; cursor:pointer; box-shadow:var(--shadow); font-weight:600; }
+
+    /* Difficulty（Homeと同一UI。home不在でも安全にno-op） */
+    .difficulty{
+      display:flex; gap:10px; align-items:center; padding:8px 12px; border-radius:12px;
+      background:var(--glass); border:1px solid var(--border); box-shadow:var(--shadow);
+      font-size:13px;
+    }
+    .difficulty input[type="range"]{ width:160px; accent-color: var(--accent-2); }
+
+    main{ padding-top:86px; }
+    .container{ max-width:1100px; margin:0 auto; padding:28px 24px 64px; }
+
+    .hgroup{ margin-bottom:14px; }
+    .hgroup h1{ margin:0 0 6px; font-size:clamp(24px,3.5vw,34px); font-family:"Noto Serif JP",serif; }
+    .hgroup p{ margin:0; color:var(--muted); }
+
+    .grid{ display:grid; gap:16px; grid-template-columns:1fr 1fr; }
+    @media (max-width:960px){ .grid{ grid-template-columns:1fr; } }
 
     .card{
       border:1px solid var(--border); border-radius:16px; background:var(--glass);
       box-shadow: var(--shadow); overflow:hidden;
     }
-    table{
-      width:100%; border-collapse:collapse; color:var(--fg); font-size:15px;
-    }
+    .card h2{ margin:16px 16px 0; font-family:"Noto Serif JP",serif; font-size:20px; }
+    .card .body{ padding:16px; }
+
+    table{ width:100%; border-collapse:collapse; font-size:15px; }
     thead{ background: rgba(255,255,255,.06); }
-    th, td{
-      border-bottom:1px solid var(--border); padding:12px 14px; text-align:center;
-    }
+    th, td{ border-bottom:1px solid var(--border); padding:12px 14px; text-align:center; }
     th{ font-weight:700; }
     tr:last-child td{ border-bottom:none; }
 
-    /* p5 canvas は背面 */
-    #bg-canvas{
-      position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    .log{ display:grid; gap:10px; padding:0 16px 16px; }
+    .log-item{
+      display:flex; gap:12px; align-items:flex-start; padding:12px; border:1px solid var(--border); border-radius:12px; background:rgba(0,0,0,.06);
     }
+    .log-date{ font-weight:700; min-width:96px; text-align:center; padding:6px 10px; border-radius:10px; background:linear-gradient(135deg, rgba(84,214,163,.2), rgba(93,168,255,.2)); border:1px solid var(--border); }
+    .log-body{ color:var(--fg); }
+    .muted{ color:var(--muted); }
+
+    footer{ margin-top:36px; padding:18px; text-align:center; color:var(--muted); font-size:13px; }
+
+    /* 蔵書モーダル（Homeと同一） */
+    .modal{
+      position:fixed; inset:0; z-index:40; display:none; align-items:center; justify-content:center;
+      background: rgba(0,0,0,.35); backdrop-filter: blur(6px);
+    }
+    .modal .panel{
+      width:min(900px, 92vw); max-height:80vh; overflow:auto;
+      background: var(--glass); border:1px solid var(--border);
+      border-radius:16px; padding:16px; box-shadow: var(--shadow);
+    }
+    .modal h3{ margin:4px 0 10px; font-family:"Noto Serif JP",serif; }
+    .modal .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .modal input{
+      background: var(--bg); color:var(--fg); border:1px solid var(--border); border-radius:10px; padding:8px 10px;
+    }
+    .modal table{ width:100%; border-collapse: collapse; margin-top:10px; font-size:14px; }
+    .modal th, .modal td{ border-bottom:1px solid var(--border); padding:8px; text-align:left; }
+    .modal .close{ margin-left:auto; padding:8px 10px; border-radius:10px; border:1px solid var(--border); background:var(--glass); cursor:pointer; }
+    .status{ margin-top:8px; color:var(--muted); font-size:13px; }
   </style>
 </head>
 <body>
-  <!-- ナビゲーションバー -->
-  <nav>
-    <div class="brand">
-      <div class="brand-badge">∑</div>
-      <div>京都府立医科大学 数学研究部</div>
-    </div>
-    <div class="spacer"></div>
-    <a href="index.html">Home</a>
-    <a href="schedule.html">Schedule</a>
-    <a href="contact.html">Contact</a>
-    <a href="qa.html">Q&amp;A</a>
-  </nav>
+  <!-- 背景 -->
+  <div class="bg-gradient"></div>
+  <div id="bg-canvas" aria-hidden="true"></div>
 
-  <main>
-    <h1>数学研究部の活動予定</h1>
-    <p><a href="index.html">← トップページへ戻る</a></p>
+  <!-- UIレイヤー -->
+  <div id="ui-layer">
+    <nav>
+      <div class="nav-inner">
+        <div class="brand">
+          <div class="brand-badge">∑</div>
+          <div>京都府立医科大学 数学研究部</div>
+        </div>
 
-    <section class="card">
-      <table>
-        <thead>
-          <tr><th>日付</th><th>内容</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>2025年11月までに</td>
-            <td>Trias祭の問題作製</td>
-          </tr>
-          <tr>
-            <td>2025/11/1,2</td>
-            <td>Trias Festival at KPUM</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-  </main>
+        <div class="nav-links" role="navigation" aria-label="Main">
+          <a href="index.html">Home</a>
+          <a href="activity.html">活動報告</a>
+          <a href="schedule.html">Schedule</a>
+          <a href="contact.html">Contact</a>
+          <a href="#" id="openBooks">蔵書</a>
+          <a href="qa.html">Q&amp;A</a>
 
-  <!-- ===== 背景：宇宙（固定星の点滅 + 既存の円運動 + たまに流れ星） ===== -->
-  <div id="bg-canvas"></div>
+          <!-- Difficulty（Home互換） -->
+          <div class="difficulty" title="黒点（Walker）の数">
+            <span>Difficulty</span>
+            <input id="walkerRange" type="range" min="50" max="600" step="10" />
+            <span id="walkerValue"></span>
+            <button id="applyWalker" class="theme-toggle" style="padding:6px 10px;">Apply</button>
+          </div>
+
+          <button class="theme-toggle" onclick="toggleTheme()">Theme</button>
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      <div class="container">
+        <div class="hgroup">
+          <h1>活動報告 & 予定</h1>
+          <p class="muted">活動報告のUIをベースに、Scheduleも同ページに統合。</p>
+        </div>
+
+        <div class="grid">
+          <!-- 予定（Schedule） -->
+          <section class="card" aria-labelledby="sch-title">
+            <h2 id="sch-title">今後の予定</h2>
+            <div class="body" style="padding-top:0">
+              <table>
+                <thead><tr><th>日付</th><th>内容</th></tr></thead>
+                <tbody>
+                  <tr><td>2025年11月までに</td><td>Trias祭の問題作製</td></tr>
+                  <tr><td>2025/11/1,2</td><td>Trias Festival at KPUM</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- 活動報告（Activity Log） -->
+          <section class="card" aria-labelledby="act-title">
+            <h2 id="act-title">活動報告</h2>
+            <div class="log">
+              <!-- 例：必要に応じて増やしてね -->
+              <div class="log-item">
+                <div class="log-date">2025/10/xx</div>
+                <div class="log-body">
+                  勉強会（幾何 &amp; p5.js）を実施。サイトの扉演出の試作を共有。
+                  <div class="muted">メモ：資料はDriveに保管。</div>
+                </div>
+              </div>
+              <div class="log-item">
+                <div class="log-date">2025/09/xx</div>
+                <div class="log-body">
+                  Trias祭に向けた問題草案をレビュー。TikZ 図面の統一方針を決定。
+                </div>
+              </div>
+              <!-- 空の場合はこの1行だけでもOK -->
+            </div>
+          </section>
+        </div>
+
+        <footer>© Kyoto Prefectural University of Medicine Math Club Established in 2024</footer>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== Theme切替（Homeと同じ） & Difficulty（Home互換、安全にno-op） ===== -->
+  <script>
+    (function(){
+      const saved = localStorage.getItem('theme');
+      if(saved) document.documentElement.setAttribute('data-theme', saved);
+      window.toggleTheme = function(){
+        const root = document.documentElement;
+        const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        root.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+      }
+    })();
+
+    (function(){ // Difficultyスライダー：Homeがある時だけ反映
+      const DEFAULT_WALKERS = parseInt(localStorage.getItem('walkerCount') || '300', 10);
+      const range = document.getElementById('walkerRange');
+      const val = document.getElementById('walkerValue');
+      const apply = document.getElementById('applyWalker');
+      range.value = DEFAULT_WALKERS;
+      val.textContent = DEFAULT_WALKERS;
+      range.addEventListener('input', ()=> val.textContent = range.value);
+      apply.addEventListener('click', ()=>{
+        const n = parseInt(range.value,10);
+        localStorage.setItem('walkerCount', String(n));
+        if (window.__setWalkerCount) window.__setWalkerCount(n); // Home側のみ反応
+      });
+    })();
+  </script>
+
+  <!-- ===== 背景：星＋円運動＋流れ星（scheduleの演出を維持） ===== -->
   <script>
     new p5(p => {
-      /* =========================
-         1) 瞬く固定星（上に重ねる）
-         2) 円運動（trailBuffer。サイズ小さめ）
-         3) たまに流れ星（上に重ねる）
-         ========================= */
       let stars = [];
-      const STAR_COUNT = 240;            // 固定星の数
-      const STAR_SIZE_MIN = 0.9;
-      const STAR_SIZE_MAX = 1.7;
+      const STAR_COUNT = 240, STAR_SIZE_MIN = 0.9, STAR_SIZE_MAX = 1.7;
 
-      // 円運動（ベースはそのまま）
       let circles = [];
-      const numRings = 20;
-      const pointsPerRing = 5;
-      let trailBuffer;
-      let boosting = false;
+      const numRings = 20, pointsPerRing = 5;
+      let trailBuffer, boosting = false;
 
-      // 流れ星
       const meteors = [];
-      const METEOR_RATE = 0.012; // 低確率（秒あたり）。多ければ上げる
-      const METEOR_SPEED = 12;
-      const METEOR_TTL = 1200;   // ms
+      const METEOR_RATE = 0.012, METEOR_SPEED = 12, METEOR_TTL = 1200;
 
-      // 円の点サイズ（小さく調整）
-      const ORBIT_DOT = 2.2;     // 残像の点
-      const ORBIT_CORE = 3.0;    // 中心の点
+      const ORBIT_DOT = 2.2, ORBIT_CORE = 3.0;
 
       p.setup = () => {
         const cnv = p.createCanvas(p.windowWidth, p.windowHeight);
         cnv.parent('bg-canvas');
-        cnv.style('z-index', '-1');
+        cnv.style('z-index', '1');
         cnv.style('pointer-events', 'none');
         p.angleMode(p.DEGREES);
 
         trailBuffer = p.createGraphics(p.width, p.height);
-        trailBuffer.clear();
-        trailBuffer.angleMode(p.DEGREES);
+        trailBuffer.clear(); trailBuffer.angleMode(p.DEGREES);
 
-        initStars();
-        initCircles();
+        initStars(); initCircles();
       };
 
       function initStars(){
         stars.length = 0;
         for (let i = 0; i < STAR_COUNT; i++) {
-          const periodSec = p.random(1.2, 5.0); // 星ごとに異なる点滅周期
-          const phaseSec  = p.random(0, periodSec);
+          const periodSec = p.random(1.2, 5.0), phaseSec = p.random(0, periodSec);
           stars.push({
-            x: p.random(p.width),
-            y: p.random(p.height),
+            x: p.random(p.width), y: p.random(p.height),
             size: p.random(STAR_SIZE_MIN, STAR_SIZE_MAX),
-            periodSec,
-            phaseSec,
-            minA: p.random(130, 170),
-            maxA: p.random(210, 255)
+            periodSec, phaseSec, minA: p.random(130,170), maxA: p.random(210,255)
           });
         }
       }
 
       function initCircles(){
         circles.length = 0;
-        const centerX = p.width / 2;
-        const centerY = p.height / 2;
-
+        const cx = p.width/2, cy = p.height/2;
         for (let r = 1; r <= numRings; r++) {
           const radius = r * 40;
           for (let i = 0; i < pointsPerRing; i++) {
             const angle = p.random(360);
             const baseSpeed = p.random(0.1, 0.5) * (r * 0.1);
-            circles.push({
-              r: radius,
-              angle: angle,
-              baseSpeed: baseSpeed,
-              currentSpeed: baseSpeed,
-              centerX,
-              centerY
-            });
+            circles.push({ r: radius, angle, baseSpeed, currentSpeed: baseSpeed, centerX: cx, centerY: cy });
           }
         }
       }
@@ -209,96 +300,53 @@
       function maybeSpawnMeteor(dtMs){
         const prob = METEOR_RATE * (dtMs / 1000);
         if (Math.random() < prob) {
-          // 画面の外側から右下へ
           const fromTop = Math.random() < 0.5;
           const startX = fromTop ? p.random(-p.width*0.2, p.width*0.9) : -p.width*0.2;
           const startY = fromTop ? -p.height*0.15 : p.random(-p.height*0.1, p.height*0.7);
-          const angle = p.random(20, 35); // 右下方向
-          meteors.push({
-            x: startX,
-            y: startY,
-            vx: METEOR_SPEED * Math.cos(p.radians(angle)),
-            vy: METEOR_SPEED * Math.sin(p.radians(angle)),
-            born: p.millis()
-          });
+          const angle = p.random(20, 35);
+          meteors.push({ x:startX, y:startY, vx:METEOR_SPEED*Math.cos(p.radians(angle)), vy:METEOR_SPEED*Math.sin(p.radians(angle)), born:p.millis() });
         }
       }
 
       p.draw = () => {
-        const nowSec = p.millis() / 1000;
-        const dtMs = p.deltaTime;
-
-        // 背景クリア（透明）
+        const nowSec = p.millis() / 1000, dtMs = p.deltaTime;
         p.clear();
 
-        // ---- 円運動（trailBufferへ描画）
-        // 残像フェード（黒で薄く）
-        trailBuffer.noStroke();
-        trailBuffer.fill(0, 18);          // ← 少しだけ暗く。濃ければ数値↑
+        // 円運動（残像）
+        trailBuffer.noStroke(); trailBuffer.fill(0, 18);
         trailBuffer.rect(0, 0, p.width, p.height);
-
         for (let c of circles) {
-          let speedFactor = boosting ? 6 : 1.0;
-          c.currentSpeed = c.baseSpeed * speedFactor;
-
-          const x = c.centerX + p.cos(c.angle) * c.r;
-          const y = c.centerY + p.sin(c.angle) * c.r;
-
-          // 軌跡の細点
-          trailBuffer.noStroke();
-          trailBuffer.fill(255, 255, 255, 140);
-          trailBuffer.ellipse(x, y, ORBIT_DOT);
-
-          // 中心の点（小さめ）
-          trailBuffer.noStroke();
-          trailBuffer.fill(255);
-          trailBuffer.ellipse(x, y, ORBIT_CORE);
-
+          c.currentSpeed = c.baseSpeed * (boosting ? 6 : 1);
+          const x = c.centerX + p.cos(c.angle)*c.r;
+          const y = c.centerY + p.sin(c.angle)*c.r;
+          trailBuffer.noStroke(); trailBuffer.fill(255,255,255,140); trailBuffer.ellipse(x,y,ORBIT_DOT);
+          trailBuffer.noStroke(); trailBuffer.fill(255); trailBuffer.ellipse(x,y,ORBIT_CORE);
           c.angle += c.currentSpeed;
         }
-
-        // 一度、残像レイヤーを先に合成
         p.image(trailBuffer, 0, 0);
 
-        // ---- 瞬く固定星（常に前面に）
+        // 瞬く星
         p.noStroke();
         for (const s of stars) {
-          const u = ((nowSec + s.phaseSec) / s.periodSec) % 1;      // [0,1)
-          const blink = 0.5 * (1 - Math.cos(p.TWO_PI * u));          // 0→1→0
+          const u = ((nowSec + s.phaseSec) / s.periodSec) % 1;
+          const blink = 0.5 * (1 - Math.cos(p.TWO_PI * u));
           const alpha = p.lerp(s.minA, s.maxA, blink);
-          p.fill(255, 255, 255, alpha);
-          p.circle(s.x, s.y, s.size);
+          p.fill(255,255,255,alpha); p.circle(s.x, s.y, s.size);
         }
 
-        // ---- 流れ星（固定星の上に）
+        // 流れ星
         maybeSpawnMeteor(dtMs);
         for (let i = meteors.length - 1; i >= 0; i--) {
-          const m = meteors[i];
-          const age = p.millis() - m.born;
-          m.x += m.vx;
-          m.y += m.vy;
-
-          // 尾を引く
-          const tailLen = 80;
-          const alpha = p.map(age, 0, METEOR_TTL, 255, 0);
-          const tailX = m.x - tailLen;
-          const tailY = m.y - tailLen * (m.vy / (m.vx || 0.0001)); // 0割防止
-
-          p.stroke(255, 255, 255, alpha);
-          p.strokeWeight(2);
-          p.line(m.x, m.y, tailX, tailY);
-
-          p.noStroke();
-          p.fill(255, 255, 255, alpha);
-          p.circle(m.x, m.y, 3.2);
-
-          if (age > METEOR_TTL || m.x > p.width + 100 || m.y > p.height + 100) {
-            meteors.splice(i, 1);
-          }
+          const m = meteors[i], age = p.millis() - m.born;
+          m.x += m.vx; m.y += m.vy;
+          const tailLen = 80, alpha = p.map(age, 0, METEOR_TTL, 255, 0);
+          const tailX = m.x - tailLen, tailY = m.y - tailLen*(m.vy/(m.vx||0.0001));
+          p.stroke(255,255,255,alpha); p.strokeWeight(2); p.line(m.x,m.y,tailX,tailY);
+          p.noStroke(); p.fill(255,255,255,alpha); p.circle(m.x,m.y,3.2);
+          if (age > METEOR_TTL || m.x > p.width+100 || m.y > p.height+100) meteors.splice(i,1);
         }
       };
 
-      // 入力（既存のブースト操作は維持）
       p.touchStarted = () => { boosting = true; };
       p.touchEnded   = () => { boosting = false; };
       p.mousePressed = () => { boosting = true; };
@@ -307,13 +355,151 @@
       p.windowResized = () => {
         p.resizeCanvas(p.windowWidth, p.windowHeight);
         trailBuffer = p.createGraphics(p.width, p.height);
-        trailBuffer.clear();
-        trailBuffer.angleMode(p.DEGREES);
-        initStars(); // 固定星は再配置
-        const cx = p.width / 2, cy = p.height / 2;
+        trailBuffer.clear(); trailBuffer.angleMode(p.DEGREES);
+        initStars();
+        const cx = p.width/2, cy = p.height/2;
         for (let c of circles) { c.centerX = cx; c.centerY = cy; }
       };
     });
+  </script>
+
+  <!-- ===== 蔵書モーダル（Homeと同じ動作） ===== -->
+  <div id="booksModal" class="modal" aria-modal="true" role="dialog" aria-label="蔵書検索">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;">
+        <h3>蔵書検索</h3>
+        <button class="close" id="closeBooks">閉じる</button>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <input type="search" id="q" placeholder="キーワード（出版社 / タイトル / ISBN）" style="flex:1; min-width:220px;">
+        <input type="text" id="publisher" placeholder="出版社">
+        <input type="text" id="title" placeholder="タイトル">
+        <input type="text" id="isbn" placeholder="ISBN（ハイフン不要）">
+        <button class="theme-toggle" id="searchBtn" style="padding:8px 12px;">検索</button>
+      </div>
+      <div id="catalogStatus" class="status">蔵書データを読み込み中…</div>
+      <div id="results"></div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const SHEET_ID   = '11h1ILZfrChHJv3NdUVzjKUHq2lgTsLKRWSN1p02TU5E';
+      const SHEET_NAME = 'books';
+      const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&t=${Date.now()}`;
+
+      const open = document.getElementById('openBooks');
+      const close = document.getElementById('closeBooks');
+      const modal = document.getElementById('booksModal');
+      const q = document.getElementById('q');
+      const title = document.getElementById('title');
+      const publisher = document.getElementById('publisher');
+      const isbn = document.getElementById('isbn');
+      const btn = document.getElementById('searchBtn');
+      const results = document.getElementById('results');
+      const status = document.getElementById('catalogStatus');
+      let books = null;
+
+      const normalize = (s)=> String(s||'')
+        .replace(/[Ａ-Ｚａ-ｚ０-９]/g, ch=> String.fromCharCode(ch.charCodeAt(0)-0xFEE0))
+        .toLowerCase()
+        .replace(/\s+/g,'')
+        .trim();
+      const normISBN = (s)=> normalize(s).replace(/-/g,'');
+
+      function setStatus(msg, type='info'){
+        status.textContent = msg;
+        status.style.color = (type==='error') ? '#ff8a8a' : (type==='warn' ? '#ffd27a' : 'var(--muted)');
+      }
+      function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+
+      function render(list){
+        if(!list.length){ results.innerHTML = '<p style="color:var(--muted);margin-top:12px;">該当なし</p>'; return; }
+        const rows = list.map(b=>`
+          <tr>
+            <td>${escapeHtml(b.publisher||'')}</td>
+            <td>${escapeHtml(b.title||'')}</td>
+            <td>${escapeHtml(b.isbn||'')}</td>
+          </tr>`).join('');
+        results.innerHTML = `
+          <table>
+            <thead><tr><th>出版社</th><th>タイトル</th><th>ISBN</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+      }
+
+      function doSearch(){
+        if(!books){ setStatus('データ未読込です。', 'warn'); return; }
+        const k  = normalize(q.value);
+        const tt = normalize(title.value);
+        const pb = normalize(publisher.value);
+        const is = normISBN(isbn.value);
+        const out = books.filter(b=>{
+          if(k && !(b._all.includes(k))) return false;
+          if(tt && !b._title.includes(tt)) return false;
+          if(pb && !b._publisher.includes(pb)) return false;
+          if(is && !b._isbn.includes(is)) return false;
+          return true;
+        });
+        render(out);
+      }
+
+      async function fetchSheetRows(){
+        const res  = await fetch(GVIZ_URL, { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const text = await res.text();
+        const json = JSON.parse(text.replace(/^[\s\S]*setResponse\(/, '').replace(/\);?\s*$/, ''));
+        const rows = json.table.rows.map(r => (r.c||[]).map(c => c?.v ?? ''));
+        return rows;
+      }
+
+      function mapToCatalog(rows){
+        if(!rows.length) return [];
+        const head = rows[0].map(v=>String(v).toLowerCase());
+        const looksHeader = head.some(v => /publisher|出版社|title|タイトル|isbn/.test(v));
+        const startIndex = looksHeader ? 1 : 0;
+
+        const out = [];
+        for(let i=startIndex;i<rows.length;i++){
+          const r = rows[i] || [];
+          const publisher = String(r[0] ?? '').trim();
+          const title     = String(r[1] ?? '').trim();
+          const isbn      = String(r[2] ?? '').trim();
+          if(!(publisher || title || isbn)) continue;
+          out.push({
+            publisher, title, isbn,
+            _publisher: normalize(publisher),
+            _title:     normalize(title),
+            _isbn:      normISBN(isbn),
+            _all:       normalize([publisher, title, isbn].join(' '))
+          });
+        }
+        return out;
+      }
+
+      async function loadCatalog(){
+        try{
+          setStatus('蔵書データを読み込み中…', 'info');
+          const rows = await fetchSheetRows();
+          books = mapToCatalog(rows);
+          if (!books.length) throw new Error('no rows');
+          setStatus(`読み込み完了：${books.length}件`, 'info');
+          render(books.slice(0,50));
+        }catch(e){
+          console.error('Sheets read failed:', e);
+          setStatus('Sheetsの読み込みに失敗。シートを「リンクを知っている全員：閲覧可」にしてください。', 'error');
+          results.innerHTML = '';
+        }
+      }
+
+      open.addEventListener('click', (e)=>{ e.preventDefault(); document.getElementById('booksModal').style.display='flex'; if(!books) loadCatalog(); });
+      close.addEventListener('click', ()=> document.getElementById('booksModal').style.display='none');
+      document.getElementById('searchBtn').addEventListener('click', doSearch);
+      ['q','title','publisher','isbn'].forEach(id=>{
+        const el = document.getElementById(id);
+        el.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
+      });
+    })();
   </script>
 </body>
 </html>
