@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
 
-  <!-- p5.js（背景アニメに使用） -->
+  <!-- p5.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
 
   <style>
@@ -42,7 +42,7 @@
     a{ color:inherit; text-decoration:none }
     a:focus-visible, button:focus-visible{ outline:none; box-shadow:var(--focus); border-radius:10px }
 
-    /* 背景グラデ（indexと同系） */
+    /* 背景（下層） */
     .bg-gradient{
       position:fixed; inset:0; z-index:0;
       background:
@@ -50,12 +50,14 @@
         radial-gradient(900px 700px at 85% 70%, rgba(93,168,255,.22), transparent 55%),
         linear-gradient(180deg, var(--bg) 0%, var(--bg) 100%);
     }
-    /* p5キャンバス */
-    #bg-canvas{ position:fixed; inset:0; z-index:1; pointer-events:none; }
+    #bg-canvas{ position:fixed; inset:0; z-index:2; pointer-events:none; }
 
-    /* ===== 固定ナビ（indexと同一） ===== */
+    /* ===== UIレイヤー（上層にまとめる：indexと同じ） ===== */
+    #ui-layer{ position:relative; z-index:10; }
+
+    /* 固定ナビ（indexと同一） */
     nav{
-      position:fixed; top:0; left:0; right:0; z-index:1000;
+      position:fixed; top:0; left:0; right:0; z-index:11;
       backdrop-filter: blur(12px);
       background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.10)), var(--glass);
       border-bottom:1px solid var(--border);
@@ -103,10 +105,9 @@
     }
     .difficulty input[type="range"]{ width:160px; accent-color: var(--accent-2); }
 
-    /* ===== レイアウト ===== */
+    /* コンテンツ */
     main{ padding-top:86px; }
     .container{ max-width:1100px; margin:0 auto; padding:28px 24px 64px; }
-
     h1{
       font-size:28px; margin:0 0 24px;
       border-bottom:2px solid var(--accent); display:inline-block; padding-bottom:6px;
@@ -127,64 +128,69 @@
 </head>
 
 <body>
-  <!-- 背景 -->
+  <!-- 下層背景 -->
   <div class="bg-gradient"></div>
   <div id="bg-canvas" aria-hidden="true"></div>
 
-  <!-- index と同一ナビ -->
-  <nav>
-    <div class="nav-inner">
-      <div class="brand">
-        <div class="brand-badge">∑</div>
-        <div>京都府立医科大学 数学研究部</div>
-      </div>
-
-      <div class="nav-links" role="navigation" aria-label="Main">
-        <a href="index.html">Home</a>
-        <a href="activity.html">活動報告</a>
-        <a href="schedule.html">Schedule</a>
-        <a href="contact.html" class="active">Contact</a>
-        <a href="#" id="openBooks">蔵書</a>
-        <a href="qa.html">Q&amp;A</a>
-
-        <!-- Difficulty（Home互換：他ページではno-opでOK） -->
-        <div class="difficulty" title="黒点（Walker）の数">
-          <span>Difficulty</span>
-          <input id="walkerRange" type="range" min="50" max="600" step="10" />
-          <span id="walkerValue"></span>
-          <button id="applyWalker" class="theme-toggle" style="padding:6px 10px;">Apply</button>
+  <!-- 上層UI（ここに nav と main をまとめる） -->
+  <div id="ui-layer">
+    <!-- ナビ（indexと同一） -->
+    <nav>
+      <div class="nav-inner">
+        <div class="brand">
+          <div class="brand-badge">∑</div>
+          <div>京都府立医科大学 数学研究部</div>
         </div>
 
-        <button class="theme-toggle" onclick="toggleTheme()">Theme</button>
+        <div class="nav-links" role="navigation" aria-label="Main">
+          <a href="index.html">Home</a>
+          <a href="activity.html">活動報告</a>
+          <a href="schedule.html">Schedule</a>
+          <a href="contact.html" class="active">Contact</a>
+          <a href="#" id="openBooks">蔵書</a>
+          <a href="qa.html">Q&amp;A</a>
+
+          <!-- Difficulty（Home互換：他ページではno-opでもOK） -->
+          <div class="difficulty" title="黒点（Walker）の数">
+            <span>Difficulty</span>
+            <input id="walkerRange" type="range" min="50" max="600" step="10" />
+            <span id="walkerValue"></span>
+            <button id="applyWalker" class="theme-toggle" style="padding:6px 10px;">Apply</button>
+          </div>
+
+          <button class="theme-toggle" onclick="toggleTheme()">Theme</button>
+        </div>
       </div>
-    </div>
-  </nav>
+    </nav>
 
-  <main>
-    <div class="container">
-      <h1>お問い合わせ・SNS</h1>
+    <main>
+      <div class="container">
+        <h1>お問い合わせ・SNS</h1>
 
-      <section class="panel">
-        <h2 style="margin:0 0 8px; font-family:'Noto Serif JP',serif;">公式X（旧Twitter）</h2>
-        <p style="margin:0;">
-          最新情報や活動報告を、京都府立医科大学 数学研究部の公式アカウントで発信しています。<br/>
-          ▶ <a href="https://twitter.com/kpum_mathclub" target="_blank" rel="noopener">@kpum_mathclub</a>
-        </p>
-      </section>
+        <!-- 元の連絡先：X -->
+        <section class="panel">
+          <h2 style="margin:0 0 8px; font-family:'Noto Serif JP',serif;">公式X（旧Twitter）</h2>
+          <p style="margin:0;">
+            最新情報や活動報告を、京都府立医科大学 数学研究部の公式アカウントで発信しています。<br/>
+            ▶ <a href="https://twitter.com/kpum_mathclub" target="_blank" rel="noopener">@kpum_mathclub</a>
+          </p>
+        </section>
 
-      <section class="panel">
-        <h2 style="margin:0 0 8px; font-family:'Noto Serif JP',serif;">メールでのお問い合わせ</h2>
-        <p style="margin:0;">
-          ご質問・連絡などは以下のアドレスまでご連絡ください：<br/>
-          ▶ <a href="mailto:mb221010@stu.kpu-m.ac.jp">mb221010@stu.kpu-m.ac.jp</a>
-        </p>
-      </section>
+        <!-- 元の連絡先：メール -->
+        <section class="panel">
+          <h2 style="margin:0 0 8px; font-family:'Noto Serif JP',serif;">メールでのお問い合わせ</h2>
+          <p style="margin:0;">
+            ご質問・連絡などは以下のアドレスまでご連絡ください：<br/>
+            ▶ <a href="mailto:mb221010@stu.kpu-m.ac.jp">mb221010@stu.kpu-m.ac.jp</a>
+          </p>
+        </section>
 
-      <footer>© Kyoto Prefectural University of Medicine Math Club Established in 2024</footer>
-    </div>
-  </main>
+        <footer>© Kyoto Prefectural University of Medicine Math Club Established in 2024</footer>
+      </div>
+    </main>
+  </div>
 
-  <!-- ===== Theme切替（indexと同じ） & Difficulty（Home互換でno-op可） ===== -->
+  <!-- ===== Theme切替（indexと同じ） & Difficulty（Home互換） ===== -->
   <script>
     (function(){
       const saved = localStorage.getItem('theme');
@@ -227,7 +233,7 @@
     })();
   </script>
 
-  <!-- ===== 背景：バウンドする球（indexの雰囲気を壊さないよう透明キャンバス上で描画） ===== -->
+  <!-- ===== 背景：バウンドする球 ===== -->
   <script>
     new p5(p => {
       const ballCount = 40;
@@ -247,31 +253,23 @@
           const speed = isPressing ? 3 : 1;
           this.x += this.vx * speed;
           this.y += this.vy * speed;
-          // 反射
           if (this.x - this.r < 0) { this.x = this.r; this.vx *= -1; }
           if (this.x + this.r > p.width) { this.x = p.width - this.r; this.vx *= -1; }
           if (this.y - this.r < 0) { this.y = this.r; this.vy *= -1; }
           if (this.y + this.r > p.height) { this.y = p.height - this.r; this.vy *= -1; }
         }
-        draw() {
-          p.noStroke(); p.fill(this.color); p.ellipse(this.x, this.y, this.r * 2);
-        }
+        draw() { p.noStroke(); p.fill(this.color); p.ellipse(this.x, this.y, this.r * 2); }
       }
 
       p.setup = () => {
         const cnv = p.createCanvas(p.windowWidth, p.windowHeight);
-        cnv.parent('bg-canvas');
-        cnv.style('z-index', '1');
+        cnv.parent('bg-canvas');            // 背景レイヤー
+        cnv.style('z-index', '2');
         cnv.style('pointer-events', 'none');
         for (let i = 0; i < ballCount; i++) balls.push(new Ball());
       };
 
-      p.draw = () => {
-        // 透明クリアで下の .bg-gradient を活かす
-        p.clear();
-        for (const b of balls){ b.move(); b.draw(); }
-      };
-
+      p.draw = () => { p.clear(); for (const b of balls){ b.move(); b.draw(); } };
       p.windowResized = () => { p.resizeCanvas(p.windowWidth, p.windowHeight); };
       p.mousePressed = () => { isPressing = true; };
       p.mouseReleased = () => { isPressing = false; };
