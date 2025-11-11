@@ -11,7 +11,11 @@
     :root{
       --bg:#0b0f1a; --panel:#0e1525cc; --text:#e6f1ff; --muted:#9fb2c8;
       --accent:#5ef1ff; --accent2:#8a63ff;
+      --glass: rgba(255,255,255,.08);
+      --border: rgba(255,255,255,.18);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
     }
+
     body.activity-page{
       margin:0; color:var(--text);
       background:
@@ -29,28 +33,48 @@
       mask-image: radial-gradient(ellipse at 50% 0%, black 40%, transparent 80%);
     }
 
-    /* ヘッダ＆ナビ（このページ内だけ適用） */
-    header{ position:relative; z-index:1; }
-    .activity-page .nav-links{
-      max-width:1100px; margin:14px auto 0; padding:10px 12px;
-      display:flex; flex-wrap:wrap; gap:12px 18px; align-items:center;
-      background: linear-gradient(180deg, rgba(14,21,37,.65), rgba(14,21,37,.35));
-      border:1px solid rgba(94,241,255,.18); border-radius:12px; backdrop-filter: blur(8px);
+    /* ====== 固定ナビ（Homeと統一デザイン） ====== */
+    nav{
+      position:fixed; top:0; left:0; right:0; z-index:10;
+      backdrop-filter: blur(12px);
+      background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.10)), var(--glass);
+      border-bottom:1px solid var(--border);
     }
-    .activity-page .nav-links a{
-      color:#ddebff; text-decoration:none; padding:8px 10px; border-radius:8px; line-height:1;
-      transition: color .15s ease, background .15s ease, text-shadow .15s ease;
+    .nav-inner{
+      max-width:1100px; margin:0 auto;
+      display:flex; align-items:center; gap:20px; padding:14px 24px;
     }
-    .activity-page .nav-links a:hover{
-      color:var(--accent); background:rgba(94,241,255,.08);
+    .brand{
+      display:flex; align-items:center; gap:12px;
+      font-weight:700; letter-spacing:.02em;
+    }
+    .brand-badge{
+      display:inline-grid; place-items:center;
+      width:34px; height:34px; border-radius:10px;
+      background:linear-gradient(135deg, var(--accent), var(--accent2));
+      color:#0a0f1a; font-weight:800; box-shadow:0 6px 18px rgba(0,0,0,.25);
+    }
+    .nav-links{
+      margin-left:auto; display:flex; gap:18px; flex-wrap:wrap; align-items:center;
+    }
+    .nav-links a{
+      color:#ddebff; text-decoration:none; padding:8px 10px; border-radius:10px; line-height:1;
+      transition: color .15s ease, background .15s ease, text-shadow .15s ease, border-color .15s ease;
+    }
+    .nav-links a:hover{
+      color:var(--accent);
+      background:rgba(94,241,255,.08);
       text-shadow:0 0 10px rgba(94,241,255,.5);
     }
-    .activity-page .nav-links a.active{
-      color:var(--accent); text-shadow:0 0 10px rgba(94,241,255,.6);
-      background:rgba(94,241,255,.10); border:1px solid rgba(94,241,255,.22);
+    .nav-links a.active{
+      color:var(--accent);
+      text-shadow:0 0 10px rgba(94,241,255,.6);
+      background:rgba(94,241,255,.10);
+      border:1px solid rgba(94,241,255,.22);
     }
 
     /* ページ見出し */
+    main{ padding-top:86px; } /* ← 固定ナビ高さぶん余白 */
     .page-hero{ max-width:1100px; margin: clamp(20px,4vw,40px) auto 8px; padding: 6px 8px; }
     .page-hero h1{
       margin:0 0 6px; font-size:clamp(28px,3.6vw,44px); letter-spacing:.02em;
@@ -106,16 +130,24 @@
   </style>
 </head>
 <body class="activity-page">
-  <header>
-    <div class="nav-links" role="navigation" aria-label="Main">
-      <a href="index.html">Home</a>
-      <a href="schedule.html">Schedule</a>
-      <a href="contact.html">Contact</a>
-      <a href="#" id="openBooks">蔵書</a>
-      <a href="qa.html">Q&amp;A</a>
-      <a href="activity.html" class="active">活動報告</a>
+
+  <!-- ▼ 固定ナビ（統一ヘッダー） -->
+  <nav>
+    <div class="nav-inner">
+      <div class="brand">
+        <div class="brand-badge">∑</div>
+        <div>京都府立医科大学 数学研究部</div>
+      </div>
+      <div class="nav-links" role="navigation" aria-label="Main">
+        <a href="index.html">Home</a>
+        <a href="activity.html" class="active">活動報告</a>
+        <a href="schedule.html">Schedule</a>
+        <a href="contact.html">Contact</a>
+        <a href="#" id="openBooks">蔵書</a>
+        <a href="qa.html">Q&amp;A</a>
+      </div>
     </div>
-  </header>
+  </nav>
 
   <main>
     <section class="page-hero">
@@ -125,7 +157,7 @@
 
     <section class="activity-wrap">
       <div class="timeline">
-        <!-- 例1：自由に編集してください -->
+
         <article class="entry" data-year="2024">
           <div class="head">
             <div class="title">京都府立医科大学に数学研究部を設立</div>
@@ -155,7 +187,7 @@
           <div class="tags"><span class="tag">Vercel</span><span class="tag">CI/CD</span></div>
         </article>
 
-<article class="entry" data-year="2026">
+        <article class="entry" data-year="2026">
           <div class="head">
             <div class="title">心電図検定を部として受験予定。</div>
             <span class="when">2026-Dec</span>
@@ -163,7 +195,7 @@
           <p>参加希望の方はContactよりご連絡下さい。</p>
           <div class="tags"><span class="tag">Vercel</span><span class="tag">CI/CD</span></div>
         </article>
-        
+
       </div>
     </section>
   </main>
@@ -171,5 +203,21 @@
   <footer>
     <p><a href="index.html">← ホームに戻る</a></p>
   </footer>
+
+  <!-- 蔵書ボタン：Homeにモーダルがあれば開く／無ければHomeの蔵書へ -->
+  <script>
+    (function(){
+      const btn = document.getElementById('openBooks');
+      if(!btn) return;
+      btn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        if (typeof window.__openBooksModal === 'function') {
+          window.__openBooksModal();
+        } else {
+          location.href = 'index.html#books';
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
