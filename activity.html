@@ -1,44 +1,51 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>活動報告 | KPUM Math Club</title>
-  <!-- 既存の見た目を引き継ぎたい場合は保持（無くても動きます） -->
-  <link rel="stylesheet" href="style.css" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+
   <style>
-    /* ====== このページ専用の近未来スタイル（1ファイル完結） ====== */
+    /* ===== indexと同じ変数・ベース ===== */
     :root{
-      --bg:#0b0f1a; --panel:#0e1525cc; --text:#e6f1ff; --muted:#9fb2c8;
-      --accent:#5ef1ff; --accent2:#8a63ff;
-      --glass: rgba(255,255,255,.08);
-      --border: rgba(255,255,255,.18);
-      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --bg:#0b0d12; --fg:#e7e9ee; --muted:#9aa3af;
+      --accent:#54d6a3; --accent-2:#5da8ff;
+      --glass:rgba(255,255,255,.08); --border:rgba(255,255,255,.18);
+      --shadow:0 10px 30px rgba(0,0,0,.35); --card-radius:18px;
+      --focus:0 0 0 3px rgba(93,168,255,.35);
+    }
+    [data-theme="light"]{
+      --bg:#f7f8fb; --fg:#0c111a; --muted:#4b5563;
+      --accent:#1ea972; --accent-2:#2f7cff;
+      --glass:rgba(255,255,255,.7); --border:rgba(17,24,39,.08);
+      --shadow:0 10px 30px rgba(0,0,0,.08);
+      --focus:0 0 0 3px rgba(47,124,255,.25);
     }
 
-    body.activity-page{
-      margin:0; color:var(--text);
-      background:
-        radial-gradient(1200px 600px at 10% -20%, #15203b 0%, transparent 60%),
-        radial-gradient(1000px 800px at 110% 120%, #1a2344 0%, transparent 60%),
-        linear-gradient(180deg, #090d16 0%, #0b0f1a 100%);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif;
+    *{ box-sizing:border-box }
+    html,body{ height:100% }
+    html, body{
+      margin:0; padding:0; overflow-x:hidden;
+      background:var(--bg); color:var(--fg);
+      font-family:"Inter", system-ui, -apple-system, "Noto Serif JP", serif;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+      overscroll-behavior:none;
     }
-    body.activity-page::before{
-      content:""; position:fixed; inset:0; pointer-events:none; opacity:.35;
-      background:
-        linear-gradient(transparent 95%, rgba(94,241,255,.12) 95%),
-        linear-gradient(90deg, transparent 95%, rgba(94,241,255,.12) 95%);
-      background-size:28px 28px;
-      mask-image: radial-gradient(ellipse at 50% 0%, black 40%, transparent 80%);
-    }
+    a{ color:inherit; text-decoration:none }
+    a:focus-visible, button:focus-visible{ outline:none; box-shadow:var(--focus); border-radius:10px }
 
-    /* ====== 固定ナビ（Homeと統一デザイン） ====== */
+    /* ===== indexと同じ固定ナビ ===== */
     nav{
-      position:fixed; top:0; left:0; right:0; z-index:10;
+      position:fixed; top:0; left:0; right:0; z-index:1000;
       backdrop-filter: blur(12px);
       background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.10)), var(--glass);
       border-bottom:1px solid var(--border);
+      box-shadow: var(--shadow);
     }
     .nav-inner{
       max-width:1100px; margin:0 auto;
@@ -46,24 +53,23 @@
     }
     .brand{
       display:flex; align-items:center; gap:12px;
-      font-weight:700; letter-spacing:.02em;
+      font-weight:700; letter-spacing:.02em; font-family:"Noto Serif JP", serif;
     }
     .brand-badge{
       display:inline-grid; place-items:center;
       width:34px; height:34px; border-radius:10px;
-      background:linear-gradient(135deg, var(--accent), var(--accent2));
-      color:#0a0f1a; font-weight:800; box-shadow:0 6px 18px rgba(0,0,0,.25);
+      background:linear-gradient(135deg, var(--accent), var(--accent-2));
+      color:#fff; font-weight:800; box-shadow:0 6px 18px rgba(0,0,0,.25);
     }
     .nav-links{
       margin-left:auto; display:flex; gap:18px; flex-wrap:wrap; align-items:center;
     }
     .nav-links a{
-      color:#ddebff; text-decoration:none; padding:8px 10px; border-radius:10px; line-height:1;
+      padding:8px 10px; border-radius:10px; opacity:.95;
       transition: color .15s ease, background .15s ease, text-shadow .15s ease, border-color .15s ease;
     }
     .nav-links a:hover{
-      color:var(--accent);
-      background:rgba(94,241,255,.08);
+      color:var(--accent); background:rgba(94,241,255,.08);
       text-shadow:0 0 10px rgba(94,241,255,.5);
     }
     .nav-links a.active{
@@ -72,28 +78,39 @@
       background:rgba(94,241,255,.10);
       border:1px solid rgba(94,241,255,.22);
     }
+    .theme-toggle{
+      margin-left:6px; border:1px solid var(--border); background:var(--glass);
+      border-radius:12px; padding:8px 12px; cursor:pointer; box-shadow:var(--shadow); font-weight:600;
+    }
+    .difficulty{
+      display:flex; gap:10px; align-items:center; padding:8px 12px; border-radius:12px;
+      background:var(--glass); border:1px solid var(--border); box-shadow:var(--shadow);
+      font-size:13px;
+    }
+    .difficulty input[type="range"]{ width:160px; accent-color: var(--accent-2); }
 
-    /* ページ見出し */
-    main{ padding-top:86px; } /* ← 固定ナビ高さぶん余白 */
+    main{ padding-top:86px; }
+    .container{ max-width:1100px; margin:0 auto; padding:0 8px 64px; }
+
+    /* ===== ここから下は元のactivityページの見た目（必要最小限で維持） ===== */
     .page-hero{ max-width:1100px; margin: clamp(20px,4vw,40px) auto 8px; padding: 6px 8px; }
     .page-hero h1{
       margin:0 0 6px; font-size:clamp(28px,3.6vw,44px); letter-spacing:.02em;
       text-shadow: 0 0 18px rgba(94,241,255,.35);
+      font-family:"Noto Serif JP", serif;
     }
     .page-hero .sub{ color:var(--muted); font-size:clamp(13px,1.6vw,15px); }
 
-    /* タイムライン */
-    .activity-wrap{ max-width:1100px; margin: 0 auto 80px; padding:0 8px; }
+    .activity-wrap{ max-width:1100px; margin: 0 auto 80px; }
     .timeline{ position:relative; padding-left:22px; }
     .timeline::before{
       content:""; position:absolute; left:9px; top:0; bottom:0; width:2px; border-radius:2px;
-      background: linear-gradient(180deg, var(--accent), var(--accent2)); opacity:.7;
+      background: linear-gradient(180deg, var(--accent), var(--accent-2)); opacity:.7;
     }
 
-    /* カード */
     .entry{
       position:relative; margin:14px 0; padding: clamp(14px,2.2vw,22px);
-      background: var(--panel); border:1px solid rgba(94,241,255,.18); border-radius:14px;
+      background: rgba(14,21,37,.8); border:1px solid rgba(94,241,255,.18); border-radius:14px;
       box-shadow: 0 0 0 1px rgba(138,99,255,.06) inset, 0 10px 30px rgba(0,0,0,.35);
       backdrop-filter: blur(8px);
       transition: transform .18s ease, box-shadow .18s ease;
@@ -108,8 +125,7 @@
     .head{ display:flex; flex-wrap:wrap; gap:10px 14px; align-items:baseline; margin-bottom:8px; }
     .title{ font-weight:600; font-size:clamp(16px,2.3vw,20px); }
     .when{
-      color: var(--muted);
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       font-size:13px; letter-spacing:.02em; padding:2px 8px; border-radius:999px;
       background: linear-gradient(90deg, rgba(94,241,255,.12), rgba(138,99,255,.12));
       border:1px solid rgba(94,241,255,.22);
@@ -121,23 +137,22 @@
       border:1px solid rgba(155,107,255,.25); background: rgba(155,107,255,.10);
     }
 
-    footer{ text-align:center; color:#9fb2c8; margin:40px 0 24px; }
+    footer{ text-align:center; color:var(--muted); margin:40px 0 24px; }
     footer a{ color:inherit; }
-
     @media (prefers-reduced-motion: reduce){
-      .entry{ transition:none } body.activity-page::before{ opacity:.2 }
+      .entry{ transition:none }
     }
   </style>
 </head>
-<body class="activity-page">
-
-  <!-- ▼ 固定ナビ（統一ヘッダー） -->
+<body>
+  <!-- indexと同一ナビ -->
   <nav>
     <div class="nav-inner">
       <div class="brand">
         <div class="brand-badge">∑</div>
         <div>京都府立医科大学 数学研究部</div>
       </div>
+
       <div class="nav-links" role="navigation" aria-label="Main">
         <a href="index.html">Home</a>
         <a href="activity.html" class="active">活動報告</a>
@@ -145,67 +160,106 @@
         <a href="contact.html">Contact</a>
         <a href="#" id="openBooks">蔵書</a>
         <a href="qa.html">Q&amp;A</a>
+
+        <!-- Difficulty（Home互換：他ページではno-opでもOK） -->
+        <div class="difficulty" title="黒点（Walker）の数">
+          <span>Difficulty</span>
+          <input id="walkerRange" type="range" min="50" max="600" step="10" />
+          <span id="walkerValue"></span>
+          <button id="applyWalker" class="theme-toggle" style="padding:6px 10px;">Apply</button>
+        </div>
+
+        <button class="theme-toggle" onclick="toggleTheme()">Theme</button>
       </div>
     </div>
   </nav>
 
   <main>
-    <section class="page-hero">
-      <h1>活動報告</h1>
-      <p class="sub">KPUM Math Club のイベント・制作・発表を時系列でアーカイブします。</p>
-    </section>
+    <div class="container">
+      <section class="page-hero">
+        <h1>活動報告</h1>
+        <p class="sub">KPUM Math Club のイベント・制作・発表を時系列でアーカイブします。</p>
+      </section>
 
-    <section class="activity-wrap">
-      <div class="timeline">
+      <section class="activity-wrap">
+        <div class="timeline">
+          <!-- ここからタイムライン項目 -->
+          <article class="entry" data-year="2024">
+            <div class="head">
+              <div class="title">京都府立医科大学に数学研究部を設立</div>
+              <span class="when">2024-Feb</span>
+            </div>
+            <p>関係各位のご高配とご協力により、設立いたしました。ここに謹んで御礼申し上げます。</p>
+            <div class="tags"><span class="tag">p5.js</span><span class="tag">UI/UX</span><span class="tag">Animation</span></div>
+          </article>
 
-        <article class="entry" data-year="2024">
-          <div class="head">
-            <div class="title">京都府立医科大学に数学研究部を設立</div>
-            <span class="when">2024-Feb</span>
-          </div>
-          <p>関係各位のご高配とご協力により、設立いたしました。ここに謹んで御礼申し上げます。</p>
-          <div class="tags"><span class="tag">p5.js</span><span class="tag">UI/UX</span><span class="tag">Animation</span></div>
-        </article>
+          <article class="entry" data-year="2024">
+            <div class="head">
+              <div class="title">Trias Festival 2024にて入試企画を実施</div>
+              <span class="when">2024-Nov</span>
+            </div>
+            <p>当部としては設立以来初の公的イベント参加となりましたが、
+            多数の皆さまにお運びいただき、盛況裡に終えることができました。厚く御礼申し上げます。</p>
+            <div class="tags"><span class="tag">Design</span><span class="tag">Accessibility</span></div>
+          </article>
 
-        <article class="entry" data-year="2024">
-          <div class="head">
-            <div class="title">Trias Festival 2024にて入試企画を実施</div>
-            <span class="when">2024-Nov</span>
-          </div>
-          <p>当部としては設立以来初の公的イベント参加となりましたが、
-多数の皆さまにお運びいただき、盛況裡に終えることができました。厚く御礼申し上げます。</p>
-          <div class="tags"><span class="tag">Design</span><span class="tag">Accessibility</span></div>
-        </article>
+          <article class="entry" data-year="2025">
+            <div class="head">
+              <div class="title">Trias Festival 2025にて入試企画を実施</div>
+              <span class="when">2025-Nov</span>
+            </div>
+            <p>実行委員長のご助言を踏まえ、科目数を拡充のうえ実施いたしました。
+            多数の皆さまに足をお運びいただき、昨年以上の賑わいとなりました。</p>
+            <div class="tags"><span class="tag">Vercel</span><span class="tag">CI/CD</span></div>
+          </article>
 
-        <article class="entry" data-year="2025">
-          <div class="head">
-            <div class="title">Trias Festival 2025にて入試企画を実施</div>
-            <span class="when">2025-Nov</span>
-          </div>
-          <p>実行委員長のご助言を踏まえ、科目数を拡充のうえ実施いたしました。
-多数の皆さまに足をお運びいただき、昨年以上の賑わいとなりました。</p>
-          <div class="tags"><span class="tag">Vercel</span><span class="tag">CI/CD</span></div>
-        </article>
+          <article class="entry" data-year="2026">
+            <div class="head">
+              <div class="title">心電図検定を部として受験予定。</div>
+              <span class="when">2026-Dec</span>
+            </div>
+            <p>参加希望の方はContactよりご連絡下さい。</p>
+            <div class="tags"><span class="tag">Vercel</span><span class="tag">CI/CD</span></div>
+          </article>
+          <!-- ここまでタイムライン項目 -->
+        </div>
+      </section>
 
-        <article class="entry" data-year="2026">
-          <div class="head">
-            <div class="title">心電図検定を部として受験予定。</div>
-            <span class="when">2026-Dec</span>
-          </div>
-          <p>参加希望の方はContactよりご連絡下さい。</p>
-          <div class="tags"><span class="tag">Vercel</span><span class="tag">CI/CD</span></div>
-        </article>
-
-      </div>
-    </section>
+      <footer>
+        <p><a href="index.html">← ホームに戻る</a></p>
+      </footer>
+    </div>
   </main>
 
-  <footer>
-    <p><a href="index.html">← ホームに戻る</a></p>
-  </footer>
-
-  <!-- 蔵書ボタン：Homeにモーダルがあれば開く／無ければHomeの蔵書へ -->
+  <!-- ===== Theme切替（indexと同じ） & Difficulty（Home互換でno-op可） ===== -->
   <script>
+    (function(){
+      const saved = localStorage.getItem('theme');
+      if(saved) document.documentElement.setAttribute('data-theme', saved);
+      window.toggleTheme = function(){
+        const root = document.documentElement;
+        const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        root.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+      }
+    })();
+
+    (function(){ // Difficultyスライダー：Homeがある時だけ反映
+      const DEFAULT_WALKERS = parseInt(localStorage.getItem('walkerCount') || '300', 10);
+      const range = document.getElementById('walkerRange');
+      const val = document.getElementById('walkerValue');
+      const apply = document.getElementById('applyWalker');
+      range.value = DEFAULT_WALKERS;
+      val.textContent = DEFAULT_WALKERS;
+      range.addEventListener('input', ()=> val.textContent = range.value);
+      apply.addEventListener('click', ()=>{
+        const n = parseInt(range.value,10);
+        localStorage.setItem('walkerCount', String(n));
+        if (window.__setWalkerCount) window.__setWalkerCount(n); // Home側のみ反応
+      });
+    })();
+
+    // 「蔵書」ボタン：Homeにモーダルがあれば開く／なければHomeへ
     (function(){
       const btn = document.getElementById('openBooks');
       if(!btn) return;
